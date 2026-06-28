@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
-import { Header } from '@/widgets/header'
-import { Footer } from '@/widgets/footer'
+import { Desktop } from '@/widgets/desktop'
 import { HomePage } from '@/pages/home'
 import { PostPage } from '@/pages/post'
 import { AboutPage } from '@/pages/about'
@@ -21,16 +20,14 @@ export function AppRoutes() {
   return (
     <>
       <RouteHead />
-      <Header />
-      <main className="site-main">
+      <Desktop>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/posts/:slug" element={<PostPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="*" element={<HomePage />} />
         </Routes>
-      </main>
-      <Footer />
+      </Desktop>
     </>
   )
 }

@@ -1,7 +1,7 @@
 export function formatDate(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number)
+  const [y, m, d] = iso.split('-')
   if (!y || !m || !d) return iso
-  return `${y}년 ${m}월 ${d}일`
+  return `${y}.${m}.${d}`
 }
 
 interface PostMetaProps {
@@ -12,16 +12,14 @@ interface PostMetaProps {
 export function PostMeta({ date, categories }: PostMetaProps) {
   return (
     <div className="post-meta">
-      <time dateTime={date}>{formatDate(date)}</time>
-      {categories && categories.length > 0 && (
-        <span className="post-meta__tags">
-          {categories.map((c) => (
-            <span key={c} className="tag">
-              {c}
-            </span>
-          ))}
+      {categories?.map((c) => (
+        <span key={c} className="tag tag--cat">
+          {c}
         </span>
-      )}
+      ))}
+      <time className="font-mono" dateTime={date}>
+        {formatDate(date)}
+      </time>
     </div>
   )
 }

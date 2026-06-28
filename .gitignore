@@ -4,3 +4,4 @@ dist-server/
 .DS_Store
 *.local
 .vite/
+design_reference/
