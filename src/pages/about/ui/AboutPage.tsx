@@ -16,7 +16,7 @@ export function AboutPage() {
 
       <div className="profile">
         <div className="profile__avatar w98-field">
-          <span>단</span>
+          <img src={`${import.meta.env.BASE_URL}avatar.png`} alt="단타마스터 프로필" width={92} height={92} />
         </div>
         <div className="profile__info">
           <div className="profile__name-row">
