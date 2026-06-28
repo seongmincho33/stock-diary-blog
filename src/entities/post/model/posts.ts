@@ -51,3 +51,17 @@ export const posts: Post[] = Object.entries(raws)
 export function getPost(slug: string): Post | undefined {
   return posts.find((p) => p.slug === slug)
 }
+
+/**
+ * 인접 글. posts는 최신순(내림차순) 정렬이므로
+ * - newer(다음 매매일지) = 더 최근 날짜 = 한 칸 위(i-1)
+ * - older(이전 매매일지) = 더 과거 날짜 = 한 칸 아래(i+1)
+ */
+export function getAdjacent(slug: string): { older?: Post; newer?: Post } {
+  const i = posts.findIndex((p) => p.slug === slug)
+  if (i === -1) return {}
+  return {
+    newer: i > 0 ? posts[i - 1] : undefined,
+    older: i < posts.length - 1 ? posts[i + 1] : undefined,
+  }
+}

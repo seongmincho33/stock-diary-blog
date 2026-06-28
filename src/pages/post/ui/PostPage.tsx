@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { Markdown } from '@/shared/lib/Markdown'
-import { getPost, formatDate } from '@/entities/post'
+import { getPost, getAdjacent, formatDate } from '@/entities/post'
 
 export function PostPage() {
   const { slug } = useParams()
@@ -17,6 +17,7 @@ export function PostPage() {
   }
 
   const category = post.categories[0] ?? '매매일지'
+  const { older, newer } = getAdjacent(post.slug)
 
   return (
     <div className="screen">
@@ -40,11 +41,33 @@ export function PostPage() {
 
         <Markdown content={post.body} />
 
-        <div className="post__foot">
-          <Link className="btn-98" to="/">
-            ◀ 목록으로
+        <nav className="post__nav">
+          <div className="post__nav-side post__nav-side--prev">
+            {older && (
+              <Link className="btn-98 post__nav-btn" to={`/posts/${older.slug}`}>
+                <span className="post__nav-dir">◀ 이전 매매일지</span>
+                <span className="post__nav-ttl">
+                  {formatDate(older.date)} · {older.title}
+                </span>
+              </Link>
+            )}
+          </div>
+
+          <Link className="btn-98 post__nav-list" to="/">
+            목록
           </Link>
-        </div>
+
+          <div className="post__nav-side post__nav-side--next">
+            {newer && (
+              <Link className="btn-98 post__nav-btn post__nav-btn--next" to={`/posts/${newer.slug}`}>
+                <span className="post__nav-dir">다음 매매일지 ▶</span>
+                <span className="post__nav-ttl">
+                  {formatDate(newer.date)} · {newer.title}
+                </span>
+              </Link>
+            )}
+          </div>
+        </nav>
       </article>
     </div>
   )

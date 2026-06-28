@@ -652,10 +652,54 @@ img {
   padding-bottom: 12px;
   margin-bottom: 18px;
 }
-.post__foot {
-  margin-top: 26px;
-  padding-top: 14px;
+.post__nav {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 28px;
+  padding-top: 16px;
   border-top: 1px solid #ddd;
+}
+.post__nav-side {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+}
+.post__nav-side--next {
+  justify-content: flex-end;
+}
+.post__nav-list {
+  flex: 0 0 auto;
+  align-self: center;
+}
+.post__nav-btn {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 6px 12px;
+}
+.post__nav-btn--next {
+  align-items: flex-end;
+  text-align: right;
+}
+.post__nav-dir {
+  color: var(--navy);
+}
+.post__nav-ttl {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #555;
+}
+
+@media (max-width: 600px) {
+  .post__nav-ttl {
+    display: none;
+  }
 }
 
 /* =========================================================
