@@ -1,0 +1,30 @@
+title: 개미의 웃픈 매매일지
+tagline: 공포와 욕심 사이를 자이로드롭처럼 오간 어느 개미의 회고록
+description: >-
+  삼성전자·SK하이닉스에 1억을 넣고 공포와 욕심 사이를 오간
+  한 개인투자자의 웃프고 솔직한 매매 회고록.
+author: seongmincho
+lang: ko-KR
+
+# 프로젝트 레포라서 baseurl 필요 (https://seongmincho33.github.io/stock-diary-blog)
+url: "https://seongmincho33.github.io"
+baseurl: "/stock-diary-blog"
+
+theme: minima
+future: true          # 일기 날짜가 미래여도 빌드되게
+permalink: /:year/:month/:day/:title/
+show_excerpts: true   # 홈에 글 미리보기 노출
+
+minima:
+  date_format: "%Y년 %m월 %d일"
+
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+
+# 빌드에서 제외
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - README.md
+  - vendor
