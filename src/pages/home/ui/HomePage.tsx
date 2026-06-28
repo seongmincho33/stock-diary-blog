@@ -1,25 +1,15 @@
 import { site } from '@/shared/config/site'
 import { posts, PostCard } from '@/entities/post'
 import { CandleChart } from '@/shared/ui/CandleChart'
+import { IntroPlayer } from '@/widgets/intro-player'
 
 export function HomePage() {
   return (
     <div className="screen">
       <h1 className="sr-only">{site.title}</h1>
 
-      {/* 손수 만든 배너 */}
-      <section className="panel">
-        <div className="panel__title">■ 단타마스터.bmp</div>
-        <div className="panel__body panel__body--flush">
-          <img
-            className="hero-banner"
-            src={`${import.meta.env.BASE_URL}banner.png`}
-            alt="단타마스터 — 야구 단타 치듯 치고 빠지려는 개미의 매매일지 배너"
-            width={1247}
-            height={759}
-          />
-        </div>
-      </section>
+      {/* 인트로 영상 → 배너로 크로스페이드 */}
+      <IntroPlayer />
 
       {/* 분위기용 캔들차트 */}
       <section className="panel">

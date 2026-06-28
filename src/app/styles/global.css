@@ -496,6 +496,116 @@ img {
 }
 
 /* =========================================================
+   미디어 재생기 (인트로 영상 → 배너)
+   ========================================================= */
+.mediaplayer__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mediaplayer__title > span:first-child {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mediaplayer__led {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #5a0d0d;
+  box-shadow: inset 0 0 0 1px #00000066, 0 0 2px #000;
+}
+.mediaplayer__led.is-on {
+  background: #ff3b30;
+  box-shadow: inset 0 0 0 1px #00000066, 0 0 6px #ff3b30;
+  animation: cblink 1s step-end infinite;
+}
+
+.mediaplayer__screen {
+  position: relative;
+  aspect-ratio: 1247 / 759;
+  background: #000;
+  overflow: hidden;
+  box-shadow: var(--bevel-sunken);
+}
+.mediaplayer__video,
+.mediaplayer__still {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+.mediaplayer__video {
+  cursor: pointer;
+}
+.mediaplayer__still {
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+}
+.mediaplayer__still.is-shown {
+  opacity: 1;
+}
+.mediaplayer__bigplay {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 4px;
+  font-size: 26px;
+  color: #fff;
+  border: 2px solid #ffffffcc;
+  border-radius: 50%;
+  background: #000000a6;
+  cursor: pointer;
+  z-index: 2;
+}
+.mediaplayer__bigplay:hover {
+  background: #000000cc;
+}
+
+.mediaplayer__controls {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 6px;
+  background: var(--silver);
+  box-shadow: inset 0 1px #fff;
+}
+.mediaplayer__btn {
+  min-width: 34px;
+  justify-content: center;
+  padding: 3px 8px;
+}
+.mediaplayer__bar {
+  flex: 1;
+  height: 14px;
+  background: #fff;
+  box-shadow: var(--bevel-sunken);
+  cursor: pointer;
+  overflow: hidden;
+}
+.mediaplayer__bar-fill {
+  height: 100%;
+  background: var(--navy-grad);
+}
+.mediaplayer__time {
+  flex: 0 0 auto;
+  color: #333;
+  white-space: nowrap;
+}
+
+/* =========================================================
    HTS 종목 리스트
    ========================================================= */
 .hts-list__head {
