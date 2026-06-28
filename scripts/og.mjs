@@ -14,7 +14,7 @@ const fontRegular = readFileSync(join(root, 'assets/fonts/Pretendard-Regular.ttf
 
 const { getOgCards } = await import(join(root, 'dist-server', 'entry-server.js'))
 
-const SITE = '개미의 웃픈 매매일지'
+const SITE = '단타마스터'
 const URLTEXT = 'seongmincho33.github.io/stock-diary-blog'
 const ACCENT = '#d23b2e'
 const INK = '#1d1b18'
@@ -72,7 +72,7 @@ for (const c of getOgCards()) {
   await renderCard(card({ title: c.title, subtitle: c.subtitle, footer: c.date }), join(ogDir, `${c.slug}.png`))
 }
 await renderCard(
-  card({ title: SITE, subtitle: '공포와 욕심 사이를 자이로드롭처럼 오간 어느 개미의 회고록' }),
+  card({ title: SITE, subtitle: '치고 빠지려다 풀스윙 헛스윙 — 어느 개미의 웃픈 매매일지' }),
   join(ogDir, 'default.png'),
 )
 console.log('OG 카드 생성 완료')

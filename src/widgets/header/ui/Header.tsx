@@ -7,7 +7,7 @@ export function Header() {
       <div className="container site-header__inner">
         <Link to="/" className="site-header__brand">
           <span className="site-header__emoji" aria-hidden>
-            🐜
+            ⚾
           </span>
           <span>{site.title}</span>
         </Link>

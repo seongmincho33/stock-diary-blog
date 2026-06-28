@@ -2,9 +2,9 @@ const ORIGIN = 'https://seongmincho33.github.io'
 const BASE_PATH = '/stock-diary-blog'
 
 export const site = {
-  title: '개미의 웃픈 매매일지',
-  tagline: '공포와 욕심 사이를 자이로드롭처럼 오간 어느 개미의 회고록',
-  description: '코스피 반도체 랠리 한복판을 통과한 어느 개미의 웃프고 솔직한 매매 회고록.',
+  title: '단타마스터',
+  tagline: '치고 빠지려다 풀스윙 헛스윙 — 어느 개미의 웃픈 매매일지',
+  description: '단타로 흥하고 단타로 물린 코스피 반도체 랠리 생존기. 웃프고 솔직한 개미의 매매 회고록.',
   author: 'seongmincho',
   origin: ORIGIN,
   basePath: BASE_PATH,
