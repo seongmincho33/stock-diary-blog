@@ -1,0 +1,22 @@
+import { Container } from '@/shared/ui/Container'
+
+export function AboutPage() {
+  return (
+    <Container className="post-page">
+      <article className="prose">
+        <h1>소개</h1>
+        <p>
+          2026년 5~6월, 코스피 반도체 랠리 한복판에서 삼성전자·SK하이닉스(삼닉)에 1억 넘게
+          넣고 공포와 욕심 사이를 자이로드롭처럼 오간 어느 개미의 매매 회고록입니다.
+        </p>
+        <p>
+          수익 자랑도, 종목 추천도 아닙니다. 그저 <strong>“나만 이런 거 아니구나”</strong> 하고
+          같이 웃자고 적는 기록이에요. 투자 권유 아님, 모든 매매는 본인 책임. 🐜
+        </p>
+        <blockquote>
+          <p>모든 사달의 근원은 사실 맥북프로 한 대였다.</p>
+        </blockquote>
+      </article>
+    </Container>
+  )
+}
