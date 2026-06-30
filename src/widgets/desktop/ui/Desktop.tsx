@@ -98,11 +98,11 @@ export function Desktop({ children }: { children: ReactNode }) {
             <NavLink to="/posts" className={() => `tab${isPosts ? ' is-active' : ''}`}>
               매매일지
             </NavLink>
-            <NavLink to="/about" className={() => `tab${isAbout ? ' is-active' : ''}`}>
-              소개
-            </NavLink>
             <NavLink to="/books" className={() => `tab${isBooks ? ' is-active' : ''}`}>
               추천도서
+            </NavLink>
+            <NavLink to="/about" className={() => `tab${isAbout ? ' is-active' : ''}`}>
+              소개
             </NavLink>
           </nav>
           <Ticker />
