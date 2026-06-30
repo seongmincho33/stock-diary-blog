@@ -43,9 +43,17 @@ export function Desktop({ children }: { children: ReactNode }) {
     <div className="desktop">
       {/* 바탕화면 아이콘 (데스크톱 전용) */}
       <div className="desktop__icons" aria-hidden>
+        <Link to="/" className="dicon">
+          <span className="dicon__img dicon__img--home" />
+          <span className="dicon__label">홈</span>
+        </Link>
         <Link to="/posts" className="dicon">
           <span className="dicon__img dicon__img--folder" />
           <span className="dicon__label">내 일지</span>
+        </Link>
+        <Link to="/books" className="dicon">
+          <span className="dicon__img dicon__img--book" />
+          <span className="dicon__label">추천도서</span>
         </Link>
         <Link to="/about" className="dicon">
           <span className="dicon__img dicon__img--chart">

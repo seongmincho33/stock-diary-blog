@@ -154,6 +154,53 @@ img {
 .dicon__img--chart .mini-candle__b--d {
   height: 8px;
 }
+/* 홈 = 집 (빨강 지붕 + 크림 몸체) */
+.dicon__img--home {
+  position: relative;
+}
+.dicon__img--home::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-left: 17px solid transparent;
+  border-right: 17px solid transparent;
+  border-bottom: 13px solid #d23b2e;
+}
+.dicon__img--home::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  bottom: 0;
+  height: 17px;
+  background: #fff8d0;
+  box-shadow: inset -1px -1px #808080, inset 1px 1px #fff;
+}
+/* 추천도서 = 책 (파랑 표지 + 노랑 책등 + 흰 페이지) */
+.dicon__img--book {
+  position: relative;
+  background: #1655d6;
+  box-shadow: inset -1px -1px #00000055, inset 1px 1px #ffffff70;
+}
+.dicon__img--book::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  background: #ffd54a;
+}
+.dicon__img--book::after {
+  content: '';
+  position: absolute;
+  right: 3px;
+  top: 5px;
+  bottom: 5px;
+  width: 4px;
+  background: #fff;
+}
 .dicon__label {
   color: #fff;
   text-align: center;
