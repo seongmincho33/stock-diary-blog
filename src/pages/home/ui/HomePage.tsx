@@ -2,6 +2,7 @@ import { site } from '@/shared/config/site'
 import { posts, PostCard } from '@/entities/post'
 import { CandleChart } from '@/shared/ui/CandleChart'
 import { IntroPlayer } from '@/widgets/intro-player'
+import { BookShelf } from '@/widgets/book-shelf'
 
 export function HomePage() {
   return (
@@ -50,6 +51,9 @@ export function HomePage() {
           <span className="pager__btn">▶</span>
         </div>
       </section>
+
+      {/* 추천도서 */}
+      <BookShelf />
     </div>
   )
 }
