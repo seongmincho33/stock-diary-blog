@@ -4,6 +4,7 @@ import { Desktop } from '@/widgets/desktop'
 import { HomePage } from '@/pages/home'
 import { PostPage } from '@/pages/post'
 import { AboutPage } from '@/pages/about'
+import { BooksPage } from '@/pages/books'
 import { getMeta } from '@/shared/seo/meta'
 
 // 서버엔 useLayoutEffect 경고가 나므로 클라에서만 레이아웃 이펙트 사용
@@ -38,6 +39,7 @@ export function AppRoutes() {
           <Route path="/" element={<HomePage />} />
           <Route path="/posts/:slug" element={<PostPage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/books" element={<BooksPage />} />
           <Route path="*" element={<HomePage />} />
         </Routes>
       </Desktop>

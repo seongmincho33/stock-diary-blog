@@ -16,6 +16,7 @@ function Clock() {
 
 const START_ITEMS = [
   { label: '매매일지', to: '/', ic: '#ffd54a' },
+  { label: '추천도서', to: '/books', ic: '#b58900' },
   { label: '소개', to: '/about', ic: '#0a7d2c' },
 ]
 

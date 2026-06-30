@@ -26,13 +26,16 @@ function MiniCandle() {
 function screenLabel(pathname: string): string {
   if (pathname.startsWith('/posts/')) return '글 보기'
   if (pathname.startsWith('/about')) return '소개'
+  if (pathname.startsWith('/books')) return '추천도서'
   return '매매일지'
 }
 
 export function Desktop({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
   const label = screenLabel(pathname)
-  const isList = !pathname.startsWith('/about')
+  const isAbout = pathname.startsWith('/about')
+  const isBooks = pathname.startsWith('/books')
+  const isList = !isAbout && !isBooks
 
   return (
     <div className="desktop">
@@ -79,11 +82,14 @@ export function Desktop({ children }: { children: ReactNode }) {
         {/* 탭(네비) + 티커 */}
         <div className="tabbar">
           <nav className="tabbar__tabs">
-            <NavLink to="/" end className={() => `tab${isList ? ' is-active' : ''}`}>
+            <NavLink to="/" className={() => `tab${isList ? ' is-active' : ''}`}>
               매매일지
             </NavLink>
-            <NavLink to="/about" className={({ isActive }) => `tab${isActive ? ' is-active' : ''}`}>
+            <NavLink to="/about" className={() => `tab${isAbout ? ' is-active' : ''}`}>
               소개
+            </NavLink>
+            <NavLink to="/books" className={() => `tab${isBooks ? ' is-active' : ''}`}>
+              추천도서
             </NavLink>
           </nav>
           <Ticker />

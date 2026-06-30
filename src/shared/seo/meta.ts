@@ -69,6 +69,17 @@ export function getMeta(path: string): PageMeta {
     }
   }
 
+  if (path === '/books') {
+    return {
+      title: `추천도서 · ${site.title}`,
+      description: '단타마스터가 추천하는 투자 도서 — 주식투자를 잘한다는 것(육과장), 진보를 위한 주식투자(이광수), 투자 디톡스, 박곰희 연금 부자 수업, 누구나 투자로 부자가 될 수 있다.',
+      canonical: absUrl('/books'),
+      ogImage: ogImageFor(),
+      ogType: 'website',
+      jsonLd: websiteJsonLd(),
+    }
+  }
+
   if (path === '/about') {
     return {
       title: `소개 · ${site.title}`,
