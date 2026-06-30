@@ -24,7 +24,7 @@ export function render(path: string): RenderResult {
 }
 
 export function getStaticPaths(): string[] {
-  return ['/', '/about', '/books', ...posts.map((p) => `/posts/${p.slug}`)]
+  return ['/', '/posts', '/about', '/books', ...posts.map((p) => `/posts/${p.slug}`)]
 }
 
 export interface OgCard {

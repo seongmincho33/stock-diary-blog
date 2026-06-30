@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { Desktop } from '@/widgets/desktop'
 import { HomePage } from '@/pages/home'
+import { PostListPage } from '@/pages/post-list'
 import { PostPage } from '@/pages/post'
 import { AboutPage } from '@/pages/about'
 import { BooksPage } from '@/pages/books'
@@ -37,6 +38,7 @@ export function AppRoutes() {
       <Desktop>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/posts" element={<PostListPage />} />
           <Route path="/posts/:slug" element={<PostPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/books" element={<BooksPage />} />

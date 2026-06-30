@@ -24,24 +24,26 @@ function MiniCandle() {
 }
 
 function screenLabel(pathname: string): string {
-  if (pathname.startsWith('/posts/')) return '글 보기'
+  if (/^\/posts\/.+/.test(pathname)) return '글 보기' // /posts/<슬러그> (개별 글)
+  if (pathname.startsWith('/posts')) return '매매일지' // /posts, /posts/ (목록)
   if (pathname.startsWith('/about')) return '소개'
   if (pathname.startsWith('/books')) return '추천도서'
-  return '매매일지'
+  return '홈'
 }
 
 export function Desktop({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
   const label = screenLabel(pathname)
+  const isPosts = pathname.startsWith('/posts')
   const isAbout = pathname.startsWith('/about')
   const isBooks = pathname.startsWith('/books')
-  const isList = !isAbout && !isBooks
+  const isHome = !isPosts && !isAbout && !isBooks
 
   return (
     <div className="desktop">
       {/* 바탕화면 아이콘 (데스크톱 전용) */}
       <div className="desktop__icons" aria-hidden>
-        <Link to="/" className="dicon">
+        <Link to="/posts" className="dicon">
           <span className="dicon__img dicon__img--folder" />
           <span className="dicon__label">내 일지</span>
         </Link>
@@ -82,7 +84,10 @@ export function Desktop({ children }: { children: ReactNode }) {
         {/* 탭(네비) + 티커 */}
         <div className="tabbar">
           <nav className="tabbar__tabs">
-            <NavLink to="/" className={() => `tab${isList ? ' is-active' : ''}`}>
+            <NavLink to="/" className={() => `tab${isHome ? ' is-active' : ''}`}>
+              홈
+            </NavLink>
+            <NavLink to="/posts" className={() => `tab${isPosts ? ' is-active' : ''}`}>
               매매일지
             </NavLink>
             <NavLink to="/about" className={() => `tab${isAbout ? ' is-active' : ''}`}>

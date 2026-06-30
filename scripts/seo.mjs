@@ -17,6 +17,7 @@ const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, 
 // ── sitemap.xml ──
 const urls = [
   { loc: HOME, lastmod: posts[0]?.date },
+  { loc: abs('/posts'), lastmod: posts[0]?.date },
   { loc: abs('/about') },
   { loc: abs('/books') },
   ...posts.map((p) => ({ loc: abs(`/posts/${p.slug}`), lastmod: p.date })),

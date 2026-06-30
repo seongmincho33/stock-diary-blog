@@ -69,6 +69,17 @@ export function getMeta(path: string): PageMeta {
     }
   }
 
+  if (path === '/posts') {
+    return {
+      title: `매매일지 · ${site.title}`,
+      description: '단타마스터의 매매일지 전체 목록 — 공포와 욕심 사이를 자이로드롭처럼 오간 어느 개미의 기록.',
+      canonical: absUrl('/posts'),
+      ogImage: ogImageFor(),
+      ogType: 'website',
+      jsonLd: websiteJsonLd(),
+    }
+  }
+
   if (path === '/books') {
     return {
       title: `추천도서 · ${site.title}`,
