@@ -57,4 +57,10 @@ export const books: Book[] = [
     cover: `${B}books/book8.jpg`,
     url: 'https://product.kyobobook.co.kr/detail/S000203074371',
   },
+  {
+    title: '한눈에 보는 AI 반도체 산업',
+    author: 'MrTrigger',
+    cover: `${B}books/book9.jpg`,
+    url: 'https://product.kyobobook.co.kr/detail/S000219545154',
+  },
 ]
