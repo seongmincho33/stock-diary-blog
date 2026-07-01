@@ -38,4 +38,16 @@ export const books: Book[] = [
     cover: `${B}books/book4.jpg`,
     url: 'https://product.kyobobook.co.kr/detail/S000218358457',
   },
+  {
+    title: '위대한 기업에 투자하라',
+    author: '필립 피셔',
+    cover: `${B}books/book6.jpg`,
+    url: 'https://product.kyobobook.co.kr/detail/S000217068294',
+  },
+  {
+    title: '돈, 뜨겁게 사랑하고 차갑게 다루어라',
+    author: '앙드레 코스톨라니',
+    cover: `${B}books/book7.jpg`,
+    url: 'https://product.kyobobook.co.kr/detail/S000209182287',
+  },
 ]
