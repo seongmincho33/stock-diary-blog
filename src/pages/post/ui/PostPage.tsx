@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom'
 import { Markdown } from '@/shared/lib/Markdown'
 import { getPost, getAdjacent, formatDate } from '@/entities/post'
+import { Comments } from '@/widgets/comments'
 
 export function PostPage() {
   const { slug } = useParams()
@@ -68,6 +69,8 @@ export function PostPage() {
             )}
           </div>
         </nav>
+
+        <Comments term={post.slug} />
       </article>
     </div>
   )

@@ -932,6 +932,54 @@ img {
 }
 
 /* =========================================================
+   댓글 (giscus) — Win98 창으로 감싸기
+   ========================================================= */
+.comments {
+  margin-top: 28px;
+}
+.comments__bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px;
+  background: var(--navy-grad);
+  color: #fff;
+  box-shadow: var(--bevel-raised);
+}
+.comments__title {
+  font-family: var(--font-head);
+  font-size: 13px;
+}
+.comments__hint {
+  font-size: 11px;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+.comments__body {
+  padding: 10px;
+  background: var(--silver);
+  box-shadow: var(--bevel-raised);
+  border-top: none;
+}
+.comments__giscus {
+  min-height: 120px;
+  padding: 10px 12px;
+  background: #fff;
+  box-shadow: var(--bevel-sunken);
+}
+.comments__giscus .giscus,
+.comments__giscus .giscus-frame {
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .comments__hint {
+    display: none;
+  }
+}
+
+/* =========================================================
    프로즈 (마크다운 본문)
    ========================================================= */
 .prose {
