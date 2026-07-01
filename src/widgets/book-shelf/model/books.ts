@@ -8,6 +8,19 @@ export interface Book {
 const B = import.meta.env.BASE_URL
 
 export const books: Book[] = [
+  // 투자 고전 (맨 앞)
+  {
+    title: '위대한 기업에 투자하라',
+    author: '필립 피셔',
+    cover: `${B}books/book6.jpg`,
+    url: 'https://product.kyobobook.co.kr/detail/S000217068294',
+  },
+  {
+    title: '돈, 뜨겁게 사랑하고 차갑게 다루어라',
+    author: '앙드레 코스톨라니',
+    cover: `${B}books/book7.jpg`,
+    url: 'https://product.kyobobook.co.kr/detail/S000209182287',
+  },
   {
     title: '주식투자를 잘한다는 것',
     author: '육과장',
@@ -39,15 +52,9 @@ export const books: Book[] = [
     url: 'https://product.kyobobook.co.kr/detail/S000218358457',
   },
   {
-    title: '위대한 기업에 투자하라',
-    author: '필립 피셔',
-    cover: `${B}books/book6.jpg`,
-    url: 'https://product.kyobobook.co.kr/detail/S000217068294',
-  },
-  {
-    title: '돈, 뜨겁게 사랑하고 차갑게 다루어라',
-    author: '앙드레 코스톨라니',
-    cover: `${B}books/book7.jpg`,
-    url: 'https://product.kyobobook.co.kr/detail/S000209182287',
+    title: '위기의 역사',
+    author: '오건영',
+    cover: `${B}books/book8.jpg`,
+    url: 'https://product.kyobobook.co.kr/detail/S000203074371',
   },
 ]
