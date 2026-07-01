@@ -33,7 +33,7 @@ export function Comments({ term }: { term: string }) {
       'data-reactions-enabled': '1',
       'data-emit-metadata': '0',
       'data-input-position': 'top',
-      'data-theme': 'light',
+      'data-theme': giscus.themeUrl,
       'data-lang': 'ko',
       'data-loading': 'lazy',
     }
