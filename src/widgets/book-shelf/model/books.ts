@@ -81,4 +81,10 @@ export const books: Book[] = [
     cover: `${B}books/book12.jpg`,
     url: 'https://product.kyobobook.co.kr/detail/S000220340144',
   },
+  {
+    title: '세이노의 가르침',
+    author: '세이노',
+    cover: `${B}books/book13.jpg`,
+    url: 'https://ebook-product.kyobobook.co.kr/dig/epd/ebook/E000005140391',
+  },
 ]
