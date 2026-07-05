@@ -63,4 +63,22 @@ export const books: Book[] = [
     cover: `${B}books/book9.jpg`,
     url: 'https://product.kyobobook.co.kr/detail/S000219545154',
   },
+  {
+    title: '거인의 어깨 1',
+    author: '홍진채',
+    cover: `${B}books/book10.jpg`,
+    url: 'https://product.kyobobook.co.kr/detail/S000200348347',
+  },
+  {
+    title: '포즈랑의 투자 이야기',
+    author: '포즈랑',
+    cover: `${B}books/book11.jpg`,
+    url: 'https://product.kyobobook.co.kr/detail/S000218171892',
+  },
+  {
+    title: '전설로 떠나는 월가의 영웅',
+    author: '피터 린치',
+    cover: `${B}books/book12.jpg`,
+    url: 'https://product.kyobobook.co.kr/detail/S000220340144',
+  },
 ]
