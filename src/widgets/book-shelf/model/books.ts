@@ -87,4 +87,10 @@ export const books: Book[] = [
     cover: `${B}books/book13.jpg`,
     url: 'https://ebook-product.kyobobook.co.kr/dig/epd/ebook/E000005140391',
   },
+  {
+    title: '미국 주식으로 살아남기',
+    author: '문남중',
+    cover: `${B}books/book14.jpg`,
+    url: 'https://ebook-product.kyobobook.co.kr/dig/epd/ebook/E000003086825',
+  },
 ]
