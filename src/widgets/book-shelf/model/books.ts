@@ -93,4 +93,10 @@ export const books: Book[] = [
     cover: `${B}books/book14.jpg`,
     url: 'https://ebook-product.kyobobook.co.kr/dig/epd/ebook/E000003086825',
   },
+  {
+    title: '윤제성의 월가의 투자',
+    author: '윤제성·김현석',
+    cover: `${B}books/book15.jpg`,
+    url: 'https://ebook-product.kyobobook.co.kr/dig/epd/ebook/E000005494268',
+  },
 ]
