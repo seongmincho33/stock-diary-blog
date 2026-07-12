@@ -2,6 +2,7 @@ import { useParams, Link } from 'react-router-dom'
 import { Markdown } from '@/shared/lib/Markdown'
 import { getPost, getAdjacent, formatDate } from '@/entities/post'
 import { Comments } from '@/widgets/comments'
+import { DiaryGate } from '@/widgets/diary-gate'
 
 export function PostPage() {
   const { slug } = useParams()
@@ -22,6 +23,7 @@ export function PostPage() {
 
   return (
     <div className="screen">
+      <DiaryGate>
       <article className="post">
         <Link className="btn-98 post__back" to="/">
           ◀ 목록으로
@@ -72,6 +74,7 @@ export function PostPage() {
 
         <Comments term={post.slug} />
       </article>
+      </DiaryGate>
     </div>
   )
 }

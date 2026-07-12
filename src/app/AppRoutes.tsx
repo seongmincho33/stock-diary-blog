@@ -8,6 +8,7 @@ import { AboutPage } from '@/pages/about'
 import { BooksPage } from '@/pages/books'
 import { PrayerPage } from '@/pages/prayer'
 import { CreedPage } from '@/pages/creed'
+import { AdminPage } from '@/pages/admin'
 import { getMeta } from '@/shared/seo/meta'
 
 // 서버엔 useLayoutEffect 경고가 나므로 클라에서만 레이아웃 이펙트 사용
@@ -48,6 +49,7 @@ export function AppRoutes() {
           <Route path="/principles" element={<CreedPage slug="principles" />} />
           <Route path="/mindset" element={<CreedPage slug="mindset" />} />
           <Route path="/truths" element={<CreedPage slug="truths" />} />
+          <Route path="/admin" element={<AdminPage />} />
           <Route path="*" element={<HomePage />} />
         </Routes>
       </Desktop>

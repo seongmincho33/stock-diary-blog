@@ -9,6 +9,7 @@ export interface PageMeta {
   ogType: 'website' | 'article'
   jsonLd: object
   publishedDate?: string
+  noindex?: boolean
 }
 
 function ogImageFor(slug?: string): string {
@@ -139,6 +140,18 @@ export function getMeta(path: string): PageMeta {
     }
   }
 
+  if (path === '/admin') {
+    return {
+      title: `관리자 · ${site.title}`,
+      description: '단타마스터 관리자 페이지.',
+      canonical: absUrl('/admin'),
+      ogImage: ogImageFor(),
+      ogType: 'website',
+      jsonLd: websiteJsonLd(),
+      noindex: true,
+    }
+  }
+
   if (path === '/about') {
     return {
       title: `소개 · ${site.title}`,
@@ -174,6 +187,9 @@ export function renderHeadTags(meta: PageMeta): string {
   tags.push(`<title>${esc(meta.title)}</title>`)
   tags.push(`<meta name="description" content="${esc(meta.description)}" />`)
   tags.push(`<link rel="canonical" href="${meta.canonical}" />`)
+  if (meta.noindex) {
+    tags.push(`<meta name="robots" content="noindex, nofollow" />`)
+  }
 
   // Open Graph (카카오톡/페북)
   tags.push(`<meta property="og:type" content="${meta.ogType}" />`)

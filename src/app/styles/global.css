@@ -358,6 +358,7 @@ img {
 /* 메뉴바 */
 .menubar {
   display: flex;
+  flex-wrap: wrap;
   gap: 2px;
   padding: 3px 4px;
 }
@@ -366,6 +367,16 @@ img {
 }
 .menubar__item u {
   text-decoration: underline;
+}
+/* 관리자 진입 (도움말 옆, 실제 클릭 가능) */
+.menubar__item--admin {
+  cursor: pointer;
+  color: #000;
+}
+.menubar__item--admin:hover,
+.menubar__item--admin.active {
+  background: var(--navy);
+  color: #fff;
 }
 
 /* 탭바 + 티커 */
@@ -1012,6 +1023,106 @@ img {
   .creed__item {
     padding-left: 30px;
   }
+}
+
+/* =========================================================
+   매매일지 잠금 게이트 + 관리자 (Win98 다이얼로그)
+   ========================================================= */
+.gate-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: 24px 8px;
+}
+.gate-dialog {
+  width: 100%;
+  max-width: 340px;
+}
+.gate-dialog__body,
+.admin-gate__body {
+  text-align: center;
+}
+.gate-dialog__msg,
+.admin-gate__msg {
+  margin: 2px 0 12px;
+  color: #333;
+}
+.gate-dialog__form,
+.admin-gate__form {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+.gate-dialog__input,
+.admin-gate__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  padding: 5px 8px;
+  background: #fff;
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+.gate-dialog__err,
+.admin-gate__err {
+  margin: 10px 0 0;
+  color: var(--up);
+  font-size: 12px;
+}
+
+/* 관리자 로그인 패널 */
+.admin-gate {
+  max-width: 360px;
+  margin: 18px auto 0;
+}
+
+/* 관리자 대시보드 */
+.admin__status {
+  margin: 0 0 12px;
+  color: #222;
+}
+.admin__badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  background: var(--silver);
+  box-shadow: var(--bevel-raised);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #333;
+}
+.admin__form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.admin__input {
+  flex: 1 1 180px;
+  min-width: 0;
+  border: 0;
+  padding: 5px 8px;
+  background: #fff;
+  box-shadow: var(--bevel-sunken);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+.admin__saved {
+  margin: 10px 0 0;
+  color: var(--green);
+  font-size: 12px;
+}
+.admin__note {
+  margin: 14px 0 0;
+  padding-top: 10px;
+  border-top: 1px dotted #ccc;
+  color: #777;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.admin__logout {
+  margin-top: 14px;
 }
 
 /* =========================================================

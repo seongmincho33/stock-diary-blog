@@ -32,6 +32,7 @@ function screenLabel(pathname: string): string {
   if (pathname.startsWith('/principles')) return '원칙'
   if (pathname.startsWith('/mindset')) return '심법'
   if (pathname.startsWith('/truths')) return '진리'
+  if (pathname.startsWith('/admin')) return '관리자'
   return '홈'
 }
 
@@ -45,7 +46,9 @@ export function Desktop({ children }: { children: ReactNode }) {
   const isPrinciples = pathname.startsWith('/principles')
   const isMindset = pathname.startsWith('/mindset')
   const isTruths = pathname.startsWith('/truths')
-  const isHome = !isPosts && !isAbout && !isBooks && !isPrayer && !isPrinciples && !isMindset && !isTruths
+  const isAdmin = pathname.startsWith('/admin')
+  const isHome =
+    !isPosts && !isAbout && !isBooks && !isPrayer && !isPrinciples && !isMindset && !isTruths && !isAdmin
 
   return (
     <div className="desktop">
@@ -103,14 +106,17 @@ export function Desktop({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        {/* 메뉴바 (장식) */}
-        <div className="menubar" aria-hidden>
+        {/* 메뉴바 (장식 + 관리자 진입) */}
+        <div className="menubar">
           {MENUS.map(([k, r]) => (
-            <span key={k} className="menubar__item">
+            <span key={k} className="menubar__item" aria-hidden>
               <u>{k}</u>
               {r}
             </span>
           ))}
+          <NavLink to="/admin" className="menubar__item menubar__item--admin">
+            <u>관</u>리자
+          </NavLink>
         </div>
 
         {/* 탭(네비) + 티커 */}

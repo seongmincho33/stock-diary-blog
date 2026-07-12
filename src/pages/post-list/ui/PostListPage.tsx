@@ -1,9 +1,12 @@
 import { PostList } from '@/widgets/post-list'
+import { DiaryGate } from '@/widgets/diary-gate'
 
 export function PostListPage() {
   return (
     <div className="screen">
-      <PostList />
+      <DiaryGate>
+        <PostList />
+      </DiaryGate>
     </div>
   )
 }

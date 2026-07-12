@@ -2,6 +2,7 @@ import { site } from '@/shared/config/site'
 import { IntroPlayer } from '@/widgets/intro-player'
 import { PostList } from '@/widgets/post-list'
 import { BookShelf } from '@/widgets/book-shelf'
+import { DiaryGate } from '@/widgets/diary-gate'
 
 export function HomePage() {
   return (
@@ -12,7 +13,9 @@ export function HomePage() {
       <IntroPlayer />
 
       {/* 2. 매매일지 */}
-      <PostList />
+      <DiaryGate>
+        <PostList />
+      </DiaryGate>
 
       {/* 3. 추천도서 */}
       <BookShelf />

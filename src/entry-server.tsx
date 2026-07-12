@@ -33,6 +33,7 @@ export function getStaticPaths(): string[] {
     '/principles',
     '/mindset',
     '/truths',
+    '/admin',
     ...posts.map((p) => `/posts/${p.slug}`),
   ]
 }
