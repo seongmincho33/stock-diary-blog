@@ -21,6 +21,9 @@ const urls = [
   { loc: abs('/about') },
   { loc: abs('/books') },
   { loc: abs('/prayer') },
+  { loc: abs('/principles') },
+  { loc: abs('/mindset') },
+  { loc: abs('/truths') },
   ...posts.map((p) => ({ loc: abs(`/posts/${p.slug}`), lastmod: p.date })),
 ]
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

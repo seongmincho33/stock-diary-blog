@@ -29,6 +29,9 @@ function screenLabel(pathname: string): string {
   if (pathname.startsWith('/about')) return '소개'
   if (pathname.startsWith('/books')) return '추천도서'
   if (pathname.startsWith('/prayer')) return '기도문'
+  if (pathname.startsWith('/principles')) return '원칙'
+  if (pathname.startsWith('/mindset')) return '심법'
+  if (pathname.startsWith('/truths')) return '진리'
   return '홈'
 }
 
@@ -39,7 +42,10 @@ export function Desktop({ children }: { children: ReactNode }) {
   const isAbout = pathname.startsWith('/about')
   const isBooks = pathname.startsWith('/books')
   const isPrayer = pathname.startsWith('/prayer')
-  const isHome = !isPosts && !isAbout && !isBooks && !isPrayer
+  const isPrinciples = pathname.startsWith('/principles')
+  const isMindset = pathname.startsWith('/mindset')
+  const isTruths = pathname.startsWith('/truths')
+  const isHome = !isPosts && !isAbout && !isBooks && !isPrayer && !isPrinciples && !isMindset && !isTruths
 
   return (
     <div className="desktop">
@@ -60,6 +66,18 @@ export function Desktop({ children }: { children: ReactNode }) {
         <Link to="/prayer" className="dicon">
           <span className="dicon__img dicon__img--prayer" />
           <span className="dicon__label">기도문</span>
+        </Link>
+        <Link to="/principles" className="dicon">
+          <span className="dicon__img dicon__img--principles" />
+          <span className="dicon__label">원칙</span>
+        </Link>
+        <Link to="/mindset" className="dicon">
+          <span className="dicon__img dicon__img--mindset" />
+          <span className="dicon__label">심법</span>
+        </Link>
+        <Link to="/truths" className="dicon">
+          <span className="dicon__img dicon__img--truths" />
+          <span className="dicon__label">진리</span>
         </Link>
         <Link to="/about" className="dicon">
           <span className="dicon__img dicon__img--chart">
@@ -109,6 +127,15 @@ export function Desktop({ children }: { children: ReactNode }) {
             </NavLink>
             <NavLink to="/prayer" className={() => `tab${isPrayer ? ' is-active' : ''}`}>
               기도문
+            </NavLink>
+            <NavLink to="/principles" className={() => `tab${isPrinciples ? ' is-active' : ''}`}>
+              원칙
+            </NavLink>
+            <NavLink to="/mindset" className={() => `tab${isMindset ? ' is-active' : ''}`}>
+              심법
+            </NavLink>
+            <NavLink to="/truths" className={() => `tab${isTruths ? ' is-active' : ''}`}>
+              진리
             </NavLink>
             <NavLink to="/about" className={() => `tab${isAbout ? ' is-active' : ''}`}>
               소개

@@ -103,6 +103,42 @@ export function getMeta(path: string): PageMeta {
     }
   }
 
+  if (path === '/principles') {
+    return {
+      title: `원칙 · ${site.title}`,
+      description:
+        '단타마스터의 투자 원칙 — 절대로 돈을 잃지 않는다, 예측하지 말고 대응한다, 현금도 포지션이다, 오르는 주식은 함부로 팔지 않는다.',
+      canonical: absUrl('/principles'),
+      ogImage: ogImageFor(),
+      ogType: 'website',
+      jsonLd: websiteJsonLd(),
+    }
+  }
+
+  if (path === '/mindset') {
+    return {
+      title: `심법 · ${site.title}`,
+      description:
+        '단타마스터의 심법 — 외로운 혼자만의 싸움, 계좌 자랑 금지, 마음을 비워라, 빨리 부자가 될 생각을 하지 마라.',
+      canonical: absUrl('/mindset'),
+      ogImage: ogImageFor(),
+      ogType: 'website',
+      jsonLd: websiteJsonLd(),
+    }
+  }
+
+  if (path === '/truths') {
+    return {
+      title: `진리 · ${site.title}`,
+      description:
+        '단타마스터의 진리 — 모두가 몰려사는 자산은 이미 오를 대로 오른 자산이다, 바닥에서 매집할 때는 시끄럽지 않다.',
+      canonical: absUrl('/truths'),
+      ogImage: ogImageFor(),
+      ogType: 'website',
+      jsonLd: websiteJsonLd(),
+    }
+  }
+
   if (path === '/about') {
     return {
       title: `소개 · ${site.title}`,

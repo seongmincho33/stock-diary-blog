@@ -19,6 +19,9 @@ const START_ITEMS = [
   { label: '매매일지', to: '/posts', ic: '#ffd54a' },
   { label: '추천도서', to: '/books', ic: '#b58900' },
   { label: '기도문', to: '/prayer', ic: '#d98a2b' },
+  { label: '원칙', to: '/principles', ic: '#1a3ea8' },
+  { label: '심법', to: '/mindset', ic: '#6a3fb5' },
+  { label: '진리', to: '/truths', ic: '#b0392f' },
   { label: '소개', to: '/about', ic: '#0a7d2c' },
 ]
 
