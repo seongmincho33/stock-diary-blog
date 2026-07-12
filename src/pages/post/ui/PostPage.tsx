@@ -1,8 +1,10 @@
 import { useParams, Link } from 'react-router-dom'
 import { Markdown } from '@/shared/lib/Markdown'
 import { getPost, getAdjacent, formatDate } from '@/entities/post'
+import { getOriginal } from '@/shared/lib/originals'
 import { Comments } from '@/widgets/comments'
 import { DiaryGate } from '@/widgets/diary-gate'
+import { OriginalReveal } from '@/widgets/original-reveal'
 
 export function PostPage() {
   const { slug } = useParams()
@@ -20,6 +22,7 @@ export function PostPage() {
 
   const category = post.categories[0] ?? '매매일지'
   const { older, newer } = getAdjacent(post.slug)
+  const original = getOriginal(post.date)
 
   return (
     <div className="screen">
@@ -43,6 +46,8 @@ export function PostPage() {
         </div>
 
         <Markdown content={post.body} />
+
+        {original && <OriginalReveal text={original} />}
 
         <nav className="post__nav">
           <div className="post__nav-side post__nav-side--prev">

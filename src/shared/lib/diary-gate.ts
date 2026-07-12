@@ -1,4 +1,4 @@
-import { ADMIN_PASSWORD, DIARY_PASSWORD_DEFAULT } from '@/shared/config/admin'
+import { ADMIN_PASSWORD, DIARY_PASSWORD_DEFAULT, ORIGINAL_PASSWORD } from '@/shared/config/admin'
 
 /**
  * 매매일지 클라이언트 소프트 게이트 상태 헬퍼.
@@ -8,6 +8,7 @@ import { ADMIN_PASSWORD, DIARY_PASSWORD_DEFAULT } from '@/shared/config/admin'
 const LS_DIARY_PW = 'dm.diaryPw' // 관리자가 이 브라우저에 설정한 override
 const SS_DIARY_UNLOCK = 'dm.diaryUnlocked' // 이번 세션 잠금 해제 여부
 const SS_ADMIN_AUTH = 'dm.adminAuth' // 관리자 인증 여부(세션)
+const SS_ORIGINAL_UNLOCK = 'dm.originalUnlocked' // 원문보기 잠금 해제 여부(세션)
 
 const hasWindow = (): boolean => typeof window !== 'undefined'
 
@@ -68,4 +69,21 @@ export function adminLogin(pw: string): boolean {
 
 export function adminLogout(): void {
   if (hasWindow()) window.sessionStorage.removeItem(SS_ADMIN_AUTH)
+}
+
+// ── 원문보기(각색 전 원문) 게이트 ──
+export function isOriginalUnlocked(): boolean {
+  if (!hasWindow()) return false
+  if (window.sessionStorage.getItem(SS_ORIGINAL_UNLOCK) === '1') return true
+  // 매매일지를 이미 열었고 그 비번이 원문 비번과 같으면, 원문도 열린 것으로 본다(이중 입력 방지).
+  if (isDiaryUnlocked() && getDiaryPassword() === ORIGINAL_PASSWORD) return true
+  return false
+}
+
+export function tryUnlockOriginal(input: string): boolean {
+  if (input === ORIGINAL_PASSWORD) {
+    if (hasWindow()) window.sessionStorage.setItem(SS_ORIGINAL_UNLOCK, '1')
+    return true
+  }
+  return false
 }
