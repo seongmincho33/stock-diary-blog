@@ -8,4 +8,5 @@ export const ADMIN_PASSWORD = '1373'
 export const DIARY_PASSWORD_DEFAULT = '1373'
 
 // 각 글의 '원문보기'(각색 전 원문) 비밀번호 — 사이트 내장(baked), 소프트 게이트.
-export const ORIGINAL_PASSWORD = '1373'
+// 매매일지 게이트(DIARY_PASSWORD_DEFAULT)와 독립. 다르면 원문보기 때 따로 입력해야 함.
+export const ORIGINAL_PASSWORD = '22'
