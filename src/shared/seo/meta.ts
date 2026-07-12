@@ -91,6 +91,18 @@ export function getMeta(path: string): PageMeta {
     }
   }
 
+  if (path === '/prayer') {
+    return {
+      title: `기도문 · ${site.title}`,
+      description:
+        '초보투자자들을 위한 기도 — 탐욕과 공포 사이에서 길을 잃지 않도록 인내·지혜·용기·원칙을 구하는 단타마스터의 기도문.',
+      canonical: absUrl('/prayer'),
+      ogImage: ogImageFor(),
+      ogType: 'website',
+      jsonLd: websiteJsonLd(),
+    }
+  }
+
   if (path === '/about') {
     return {
       title: `소개 · ${site.title}`,

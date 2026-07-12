@@ -201,6 +201,31 @@ img {
   width: 4px;
   background: #fff;
 }
+/* 기도문 = 촛불 (크림 초 + 앰버 불꽃 — 발광 없는 하드 픽셀, home 지붕과 같은 삼각 기법) */
+.dicon__img--prayer {
+  position: relative;
+}
+.dicon__img--prayer::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 3px;
+  transform: translateX(-50%);
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 9px solid var(--amber);
+}
+.dicon__img--prayer::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translateX(-50%);
+  width: 9px;
+  height: 15px;
+  background: #fff8d0;
+  box-shadow: inset -1px -1px var(--gray), inset 1px 1px #fff;
+}
 .dicon__label {
   color: #fff;
   text-align: center;
@@ -721,6 +746,149 @@ img {
 @media (max-width: 430px) {
   .bookshelf__grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* =========================================================
+   기도문 — 조용한 문서 (라이트 전용)
+   기존 .panel / .panel__title / .panel__body 골격 재사용,
+   시세·캔들·등락색(빨강/파랑) 없이 흰 종이 + 뮤트 앰버 악센트만
+   ========================================================= */
+.prayer__body {
+  padding: 22px 18px 16px;
+}
+/* 좁은 중앙 단 = '종이 한 장'처럼 한 호흡으로 읽히게 */
+.prayer__sheet {
+  max-width: 600px;
+  margin: 0 auto;
+  font-family: var(--font-head);
+  font-size: 14px;
+  line-height: 1.9;
+  color: #1a1a1a;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+.prayer__heading {
+  margin: 4px 0 16px;
+  text-align: center;
+  font-family: var(--font-head);
+  font-size: 19px;
+  font-weight: normal;
+  color: var(--navy);
+  line-height: 1.5;
+}
+.prayer__intro {
+  margin: 0;
+  text-align: center;
+  color: #4a4a4a;
+}
+.prayer__rule {
+  border: 0;
+  border-top: 1px dotted #cbb98a;
+  margin: 20px 0;
+}
+/* 4개 청원 — CSS 카운터 flat navy 서수(뱃지 아님: radius·bevel·glow 없음) */
+.prayer__list {
+  list-style: none;
+  counter-reset: petition;
+  margin: 0;
+  padding: 0;
+}
+.prayer__pet {
+  counter-increment: petition;
+  position: relative;
+  padding-left: 34px;
+  margin: 20px 0;
+}
+.prayer__pet:first-child {
+  margin-top: 0;
+}
+.prayer__pet:last-child {
+  margin-bottom: 0;
+}
+.prayer__pet::before {
+  content: counter(petition);
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--navy);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.prayer__pet-title {
+  margin: 0 0 4px;
+  font-family: var(--font-head);
+  font-size: 15px;
+  font-weight: normal;
+  color: var(--navy);
+  line-height: 1.6;
+}
+.prayer__detail {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.prayer__detail li {
+  position: relative;
+  padding-left: 15px;
+  margin: 4px 0;
+  color: #333;
+  line-height: 1.85;
+}
+/* 세부 간구 마커 — 촛불빛 앰버 대시 (글리프 대신 flat CSS 도형) */
+.prayer__detail li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.8em;
+  width: 7px;
+  height: 2px;
+  background: var(--amber);
+}
+.prayer__closing {
+  margin: 24px 0 0;
+  text-align: center;
+  color: #333;
+}
+/* '아멘' 앞 조용한 서명선 (앰버 헤어라인) */
+.prayer__sign {
+  display: block;
+  width: 26px;
+  height: 2px;
+  margin: 12px auto 10px;
+  background: var(--amber);
+}
+.prayer__amen {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-head);
+  font-size: 19px;
+  color: var(--navy);
+  letter-spacing: 3px;
+}
+.prayer__caption {
+  max-width: 600px;
+  margin: 22px auto 0;
+  text-align: center;
+  color: #999;
+  font-size: 11px;
+}
+
+@media (max-width: 480px) {
+  .prayer__body {
+    padding: 16px 12px 14px;
+  }
+  .prayer__heading {
+    font-size: 17px;
+  }
+  .prayer__pet {
+    padding-left: 30px;
   }
 }
 

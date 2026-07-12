@@ -28,6 +28,7 @@ function screenLabel(pathname: string): string {
   if (pathname.startsWith('/posts')) return '매매일지' // /posts, /posts/ (목록)
   if (pathname.startsWith('/about')) return '소개'
   if (pathname.startsWith('/books')) return '추천도서'
+  if (pathname.startsWith('/prayer')) return '기도문'
   return '홈'
 }
 
@@ -37,7 +38,8 @@ export function Desktop({ children }: { children: ReactNode }) {
   const isPosts = pathname.startsWith('/posts')
   const isAbout = pathname.startsWith('/about')
   const isBooks = pathname.startsWith('/books')
-  const isHome = !isPosts && !isAbout && !isBooks
+  const isPrayer = pathname.startsWith('/prayer')
+  const isHome = !isPosts && !isAbout && !isBooks && !isPrayer
 
   return (
     <div className="desktop">
@@ -54,6 +56,10 @@ export function Desktop({ children }: { children: ReactNode }) {
         <Link to="/books" className="dicon">
           <span className="dicon__img dicon__img--book" />
           <span className="dicon__label">추천도서</span>
+        </Link>
+        <Link to="/prayer" className="dicon">
+          <span className="dicon__img dicon__img--prayer" />
+          <span className="dicon__label">기도문</span>
         </Link>
         <Link to="/about" className="dicon">
           <span className="dicon__img dicon__img--chart">
@@ -100,6 +106,9 @@ export function Desktop({ children }: { children: ReactNode }) {
             </NavLink>
             <NavLink to="/books" className={() => `tab${isBooks ? ' is-active' : ''}`}>
               추천도서
+            </NavLink>
+            <NavLink to="/prayer" className={() => `tab${isPrayer ? ' is-active' : ''}`}>
+              기도문
             </NavLink>
             <NavLink to="/about" className={() => `tab${isAbout ? ' is-active' : ''}`}>
               소개
