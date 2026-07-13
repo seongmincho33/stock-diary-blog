@@ -22,7 +22,8 @@ const START_ITEMS = [
   { label: '원칙', to: '/principles', ic: '#1a3ea8' },
   { label: '심법', to: '/mindset', ic: '#6a3fb5' },
   { label: '진리', to: '/truths', ic: '#b0392f' },
-  { label: '소개', to: '/about', ic: '#0a7d2c' },
+  { label: '연구', to: '/research', ic: '#0a7d2c' },
+  { label: '소개', to: '/about', ic: '#1186d6' },
 ]
 
 export function Taskbar() {

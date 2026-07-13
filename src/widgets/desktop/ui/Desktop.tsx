@@ -32,6 +32,7 @@ function screenLabel(pathname: string): string {
   if (pathname.startsWith('/principles')) return '원칙'
   if (pathname.startsWith('/mindset')) return '심법'
   if (pathname.startsWith('/truths')) return '진리'
+  if (pathname.startsWith('/research')) return '연구'
   if (pathname.startsWith('/admin')) return '관리자'
   return '홈'
 }
@@ -47,8 +48,17 @@ export function Desktop({ children }: { children: ReactNode }) {
   const isMindset = pathname.startsWith('/mindset')
   const isTruths = pathname.startsWith('/truths')
   const isAdmin = pathname.startsWith('/admin')
+  const isResearch = pathname.startsWith('/research')
   const isHome =
-    !isPosts && !isAbout && !isBooks && !isPrayer && !isPrinciples && !isMindset && !isTruths && !isAdmin
+    !isPosts &&
+    !isAbout &&
+    !isBooks &&
+    !isPrayer &&
+    !isPrinciples &&
+    !isMindset &&
+    !isTruths &&
+    !isAdmin &&
+    !isResearch
 
   return (
     <div className="desktop">
@@ -81,6 +91,10 @@ export function Desktop({ children }: { children: ReactNode }) {
         <Link to="/truths" className="dicon">
           <span className="dicon__img dicon__img--truths" />
           <span className="dicon__label">진리</span>
+        </Link>
+        <Link to="/research" className="dicon">
+          <span className="dicon__img dicon__img--research" />
+          <span className="dicon__label">연구</span>
         </Link>
         <Link to="/about" className="dicon">
           <span className="dicon__img dicon__img--chart">
@@ -142,6 +156,9 @@ export function Desktop({ children }: { children: ReactNode }) {
             </NavLink>
             <NavLink to="/truths" className={() => `tab${isTruths ? ' is-active' : ''}`}>
               진리
+            </NavLink>
+            <NavLink to="/research" className={() => `tab${isResearch ? ' is-active' : ''}`}>
+              연구
             </NavLink>
             <NavLink to="/about" className={() => `tab${isAbout ? ' is-active' : ''}`}>
               소개

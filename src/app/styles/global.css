@@ -274,6 +274,31 @@ img {
   transform: translate(-50%, -50%);
   background: var(--amber);
 }
+/* 연구 = 플라스크 (초록 액체 삼각 몸체 + 흰 목, flat 픽셀) */
+.dicon__img--research {
+  position: relative;
+}
+.dicon__img--research::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translateX(-50%);
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 14px solid var(--green);
+}
+.dicon__img--research::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 13px;
+  background: #fff;
+  box-shadow: inset -1px -1px var(--gray), inset 1px 1px #fff;
+}
 .dicon__label {
   color: #fff;
   text-align: center;
@@ -1207,6 +1232,10 @@ img {
   display: grid;
   grid-template-columns: 42px 86px 1fr 78px;
   align-items: center;
+}
+/* 연구 목록: 번호 + 주제 2열 */
+.hts-row--research {
+  grid-template-columns: 42px 1fr;
 }
 .hts-row--head {
   background: var(--silver);

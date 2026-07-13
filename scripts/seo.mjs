@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const dist = join(root, 'dist')
 
-const { posts } = await import(join(root, 'dist-server', 'entry-server.js'))
+const { posts, researchNotes } = await import(join(root, 'dist-server', 'entry-server.js'))
 
 const ORIGIN = 'https://seongmincho33.github.io'
 const BASE = '/stock-diary-blog'
@@ -24,6 +24,8 @@ const urls = [
   { loc: abs('/principles') },
   { loc: abs('/mindset') },
   { loc: abs('/truths') },
+  { loc: abs('/research') },
+  ...researchNotes.map((n) => ({ loc: abs(`/research/${n.num}`) })),
   ...posts.map((p) => ({ loc: abs(`/posts/${p.slug}`), lastmod: p.date })),
 ]
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

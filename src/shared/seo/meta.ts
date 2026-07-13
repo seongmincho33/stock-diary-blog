@@ -1,5 +1,6 @@
 import { site, absUrl } from '@/shared/config/site'
 import { posts, getPost } from '@/entities/post'
+import { getResearchNote } from '@/entities/research'
 
 export interface PageMeta {
   title: string
@@ -134,6 +135,34 @@ export function getMeta(path: string): PageMeta {
       description:
         '단타마스터의 진리 — 모두가 몰려사는 자산은 이미 오를 대로 오른 자산이다, 바닥에서 매집할 때는 시끄럽지 않다.',
       canonical: absUrl('/truths'),
+      ogImage: ogImageFor(),
+      ogType: 'website',
+      jsonLd: websiteJsonLd(),
+    }
+  }
+
+  const researchMatch = /^\/research\/(\d+)\/?$/.exec(path)
+  if (researchMatch) {
+    const note = getResearchNote(parseInt(researchMatch[1], 10))
+    if (note) {
+      const canonical = absUrl(`/research/${note.num}`)
+      return {
+        title: `연구 ${String(note.num).padStart(2, '0')} ${note.title} · ${site.title}`,
+        description: truncate(`「${note.subtitle}」 — 단타마스터의 투자 연구노트.`, 150),
+        canonical,
+        ogImage: ogImageFor(),
+        ogType: 'article',
+        jsonLd: websiteJsonLd(),
+      }
+    }
+  }
+
+  if (path === '/research') {
+    return {
+      title: `연구 · ${site.title}`,
+      description:
+        '단타마스터의 투자 연구노트 — 종목 선정, 이격도, 비중 조절, 매크로, 거래대금, 실적, 매물대, 외국인 수급, 8부능선, RSI. 물리고 배운 것들의 정리.',
+      canonical: absUrl('/research'),
       ogImage: ogImageFor(),
       ogType: 'website',
       jsonLd: websiteJsonLd(),

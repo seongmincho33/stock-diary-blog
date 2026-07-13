@@ -2,6 +2,7 @@ import { renderToString } from 'react-dom/server'
 import { StaticRouter } from 'react-router-dom/server'
 import { AppRoutes } from '@/app/AppRoutes'
 import { posts } from '@/entities/post'
+import { researchNotes } from '@/entities/research'
 import { getMeta, renderHeadTags } from '@/shared/seo/meta'
 
 const BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '')
@@ -34,6 +35,8 @@ export function getStaticPaths(): string[] {
     '/mindset',
     '/truths',
     '/admin',
+    '/research',
+    ...researchNotes.map((n) => `/research/${n.num}`),
     ...posts.map((p) => `/posts/${p.slug}`),
   ]
 }
@@ -49,4 +52,4 @@ export function getOgCards(): OgCard[] {
   return posts.map((p) => ({ slug: p.slug, title: p.title, subtitle: p.subtitle, date: p.date }))
 }
 
-export { posts }
+export { posts, researchNotes }
