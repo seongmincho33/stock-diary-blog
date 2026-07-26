@@ -134,6 +134,13 @@ export const books: Book[] = [
     cover: `${B}books/dev1.jpg`,
     url: 'https://product.kyobobook.co.kr/detail/S000220036708',
   },
+  {
+    category: 'dev',
+    title: 'AI 시대에 개발자가 알아야 할 인프라 구성 배포 with 클로드 코드',
+    author: '조훈',
+    cover: `${B}books/dev2.jpg`,
+    url: 'https://product.kyobobook.co.kr/detail/S000220220936',
+  },
 ]
 
 export const bookSections: BookSection[] = [
