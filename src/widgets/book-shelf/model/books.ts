@@ -148,6 +148,27 @@ export const books: Book[] = [
     cover: `${B}books/dev3.jpg`,
     url: 'https://product.kyobobook.co.kr/detail/S000220307813',
   },
+  {
+    category: 'dev',
+    title: '30가지 패턴으로 배우는 분산 시스템 설계와 구현 기법',
+    author: '운메시 조시',
+    cover: `${B}books/dev4.jpg`,
+    url: 'https://product.kyobobook.co.kr/detail/S000216211590',
+  },
+  {
+    category: 'dev',
+    title: '사용자 입장에서 생각하세요',
+    author: '정그린',
+    cover: `${B}books/dev5.jpg`,
+    url: 'https://product.kyobobook.co.kr/detail/S000220616248',
+  },
+  {
+    category: 'dev',
+    title: '온톨로지 과학자를 위한 지식그래프',
+    author: 'Dean Allemang 외',
+    cover: `${B}books/dev6.jpg`,
+    url: 'https://product.kyobobook.co.kr/detail/S000001743834',
+  },
 ]
 
 export const bookSections: BookSection[] = [
