@@ -141,6 +141,13 @@ export const books: Book[] = [
     cover: `${B}books/dev2.jpg`,
     url: 'https://product.kyobobook.co.kr/detail/S000220220936',
   },
+  {
+    category: 'dev',
+    title: '아키텍처는 진화한다',
+    author: '공상휘',
+    cover: `${B}books/dev3.jpg`,
+    url: 'https://product.kyobobook.co.kr/detail/S000220307813',
+  },
 ]
 
 export const bookSections: BookSection[] = [

@@ -86,7 +86,7 @@ export function getMeta(path: string): PageMeta {
     return {
       title: `추천도서 · ${site.title}`,
       description:
-        '단타마스터의 책장 — 주식·투자 책(위대한 기업에 투자하라, 주식투자를 잘한다는 것, 전설로 떠나는 월가의 영웅)과 개발 책(다시 소프트웨어 엔지니어, AI 시대에 개발자가 알아야 할 인프라 구성 배포 with 클로드 코드)을 나눠서 추천합니다.',
+        '단타마스터의 책장 — 주식·투자 책(위대한 기업에 투자하라, 주식투자를 잘한다는 것, 전설로 떠나는 월가의 영웅)과 개발 책(다시 소프트웨어 엔지니어, 아키텍처는 진화한다, 클로드 코드로 하는 인프라 구성 배포)을 나눠서 추천합니다.',
       canonical: absUrl('/books'),
       ogImage: ogImageFor(),
       ogType: 'website',
