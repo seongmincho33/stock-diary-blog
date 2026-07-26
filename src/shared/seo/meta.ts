@@ -85,7 +85,8 @@ export function getMeta(path: string): PageMeta {
   if (path === '/books') {
     return {
       title: `추천도서 · ${site.title}`,
-      description: '단타마스터가 추천하는 투자 도서 — 주식투자를 잘한다는 것(육과장), 진보를 위한 주식투자(이광수), 투자 디톡스, 박곰희 연금 부자 수업, 누구나 투자로 부자가 될 수 있다.',
+      description:
+        '단타마스터의 책장 — 주식·투자 책(위대한 기업에 투자하라, 주식투자를 잘한다는 것, 전설로 떠나는 월가의 영웅)과 개발 책(다시, 소프트웨어 엔지니어)을 나눠서 추천합니다.',
       canonical: absUrl('/books'),
       ogImage: ogImageFor(),
       ogType: 'website',

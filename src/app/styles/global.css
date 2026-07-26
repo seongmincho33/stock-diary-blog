@@ -767,6 +767,54 @@ img {
 .bookshelf__body {
   padding: 16px 14px;
 }
+.bookshelf__section + .bookshelf__section {
+  margin-top: 26px;
+}
+/* 분류 머리글 — 윈98 그루브 구분선 + 색 칩 */
+.bookshelf__cat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-family: var(--font-head);
+  font-size: 13px;
+  font-weight: normal;
+  color: var(--navy);
+}
+.bookshelf__cat-ic {
+  flex: 0 0 auto;
+  width: 11px;
+  height: 11px;
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+.bookshelf__cat-ic--stock {
+  background: var(--up);
+}
+.bookshelf__cat-ic--dev {
+  background: var(--navy);
+}
+.bookshelf__cat-note {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: #888;
+}
+.bookshelf__cat-rule {
+  flex: 1 1 auto;
+  min-width: 12px;
+  height: 2px;
+  border-top: 1px solid var(--gray);
+  border-bottom: 1px solid #fff;
+}
+.bookshelf__cat-n {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: #777;
+}
 .bookshelf__grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -825,6 +873,11 @@ img {
 @media (max-width: 700px) {
   .bookshelf__grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 520px) {
+  .bookshelf__cat-note {
+    display: none;
   }
 }
 @media (max-width: 430px) {
