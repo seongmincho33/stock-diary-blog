@@ -1610,6 +1610,22 @@ img {
   background: var(--silver-lt);
   padding: 1px 4px;
 }
+/* 코드 블록 — Win98 sunken 필드. 긴 줄은 블록 안에서만 가로 스크롤(본문은 안 밀림) */
+.prose pre {
+  margin: 14px 0;
+  padding: 10px 12px;
+  background: #fff;
+  box-shadow: var(--bevel-sunken);
+  overflow-x: auto;
+}
+.prose pre code {
+  display: block;
+  padding: 0;
+  background: none;
+  font-size: 12.5px;
+  line-height: 1.75;
+  white-space: pre;
+}
 .prose blockquote {
   margin: 16px 0;
   padding: 8px 12px;
