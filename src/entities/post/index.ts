@@ -1,4 +1,5 @@
-export type { Post } from './model/types'
-export { posts, getPost, getAdjacent } from './model/posts'
+export type { Post, PostKind } from './model/types'
+export { baseOf } from './model/types'
+export { posts, devPosts, postsOf, getPost, getAdjacent } from './model/posts'
 export { PostCard } from './ui/PostCard'
 export { PostMeta, formatDate } from './ui/PostMeta'

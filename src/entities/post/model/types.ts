@@ -1,3 +1,6 @@
+/** 어느 일지인가 — 매매일지(stock) / 개발일지(dev) */
+export type PostKind = 'stock' | 'dev'
+
 export interface Post {
   /** 라우트 슬러그 (파일명에서 확장자 제거) */
   slug: string
@@ -11,4 +14,10 @@ export interface Post {
   categories: string[]
   /** front matter를 제거한 마크다운 본문 */
   body: string
+  kind: PostKind
+}
+
+/** 종류별 라우트 접두사 (/posts/<slug>, /dev/<slug>) */
+export function baseOf(kind: PostKind): string {
+  return kind === 'dev' ? '/dev' : '/posts'
 }

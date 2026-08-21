@@ -26,6 +26,8 @@ function MiniCandle() {
 function screenLabel(pathname: string): string {
   if (/^\/posts\/.+/.test(pathname)) return '글 보기' // /posts/<슬러그> (개별 글)
   if (pathname.startsWith('/posts')) return '매매일지' // /posts, /posts/ (목록)
+  if (/^\/dev\/.+/.test(pathname)) return '글 보기' // /dev/<슬러그> (개별 글)
+  if (pathname.startsWith('/dev')) return '개발일지' // /dev, /dev/ (목록)
   if (pathname.startsWith('/about')) return '소개'
   if (pathname.startsWith('/books')) return '추천도서'
   if (pathname.startsWith('/prayer')) return '기도문'
@@ -41,6 +43,7 @@ export function Desktop({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
   const label = screenLabel(pathname)
   const isPosts = pathname.startsWith('/posts')
+  const isDev = pathname.startsWith('/dev')
   const isAbout = pathname.startsWith('/about')
   const isBooks = pathname.startsWith('/books')
   const isPrayer = pathname.startsWith('/prayer')
@@ -51,6 +54,7 @@ export function Desktop({ children }: { children: ReactNode }) {
   const isResearch = pathname.startsWith('/research')
   const isHome =
     !isPosts &&
+    !isDev &&
     !isAbout &&
     !isBooks &&
     !isPrayer &&
@@ -71,6 +75,10 @@ export function Desktop({ children }: { children: ReactNode }) {
         <Link to="/posts" className="dicon">
           <span className="dicon__img dicon__img--folder" />
           <span className="dicon__label">내 일지</span>
+        </Link>
+        <Link to="/dev" className="dicon">
+          <span className="dicon__img dicon__img--dev" />
+          <span className="dicon__label">개발일지</span>
         </Link>
         <Link to="/books" className="dicon">
           <span className="dicon__img dicon__img--book" />
@@ -141,6 +149,9 @@ export function Desktop({ children }: { children: ReactNode }) {
             </NavLink>
             <NavLink to="/posts" className={() => `tab${isPosts ? ' is-active' : ''}`}>
               매매일지
+            </NavLink>
+            <NavLink to="/dev" className={() => `tab${isDev ? ' is-active' : ''}`}>
+              개발일지
             </NavLink>
             <NavLink to="/books" className={() => `tab${isBooks ? ' is-active' : ''}`}>
               추천도서

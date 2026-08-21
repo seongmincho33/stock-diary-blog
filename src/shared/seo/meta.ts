@@ -1,5 +1,5 @@
 import { site, absUrl } from '@/shared/config/site'
-import { posts, getPost } from '@/entities/post'
+import { posts, devPosts, getPost, baseOf } from '@/entities/post'
 import { getResearchNote } from '@/entities/research'
 
 export interface PageMeta {
@@ -29,12 +29,15 @@ function websiteJsonLd(): object {
     description: site.description,
     url: absUrl('/'),
     inLanguage: 'ko-KR',
-    blogPost: posts.slice(0, 20).map((p) => ({
-      '@type': 'BlogPosting',
-      headline: p.title,
-      datePublished: p.date,
-      url: absUrl(`/posts/${p.slug}`),
-    })),
+    blogPost: [...posts, ...devPosts]
+      .sort((a, b) => (a.date < b.date ? 1 : -1))
+      .slice(0, 20)
+      .map((p) => ({
+        '@type': 'BlogPosting',
+        headline: p.title,
+        datePublished: p.date,
+        url: absUrl(`${baseOf(p.kind)}/${p.slug}`),
+      })),
   }
 }
 
@@ -68,6 +71,51 @@ export function getMeta(path: string): PageMeta {
           inLanguage: 'ko-KR',
         },
       }
+    }
+  }
+
+  const devMatch = /^\/dev\/(.+?)\/?$/.exec(path)
+  if (devMatch) {
+    const post = getPost(decodeURIComponent(devMatch[1]), 'dev')
+    if (post) {
+      const desc = truncate(post.subtitle ? `${post.subtitle} — ${post.excerpt}` : post.excerpt, 150)
+      const canonical = absUrl(`/dev/${post.slug}`)
+      // 개발일지 OG 카드는 매매일지와 파일명이 겹치지 않도록 dev- 접두사
+      const ogImage = ogImageFor(`dev-${post.slug}`)
+      return {
+        title: `${post.title} · ${site.title}`,
+        description: desc,
+        canonical,
+        ogImage,
+        ogType: 'article',
+        publishedDate: post.date,
+        jsonLd: {
+          '@context': 'https://schema.org',
+          '@type': 'BlogPosting',
+          headline: post.title,
+          description: desc,
+          datePublished: post.date,
+          dateModified: post.date,
+          author: { '@type': 'Person', name: site.author },
+          publisher: { '@type': 'Organization', name: site.title },
+          mainEntityOfPage: canonical,
+          url: canonical,
+          image: ogImage,
+          inLanguage: 'ko-KR',
+        },
+      }
+    }
+  }
+
+  if (path === '/dev') {
+    return {
+      title: `개발일지 · ${site.title}`,
+      description:
+        '단타마스터의 개발일지 — 프론트엔드부터 인프라·AI 도구까지, 만들다 막히고 고치면서 배운 것들의 기록.',
+      canonical: absUrl('/dev'),
+      ogImage: ogImageFor(),
+      ogType: 'website',
+      jsonLd: websiteJsonLd(),
     }
   }
 

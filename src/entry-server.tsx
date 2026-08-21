@@ -1,7 +1,7 @@
 import { renderToString } from 'react-dom/server'
 import { StaticRouter } from 'react-router-dom/server'
 import { AppRoutes } from '@/app/AppRoutes'
-import { posts } from '@/entities/post'
+import { posts, devPosts } from '@/entities/post'
 import { researchNotes } from '@/entities/research'
 import { getMeta, renderHeadTags } from '@/shared/seo/meta'
 
@@ -28,6 +28,7 @@ export function getStaticPaths(): string[] {
   return [
     '/',
     '/posts',
+    '/dev',
     '/about',
     '/books',
     '/prayer',
@@ -38,6 +39,7 @@ export function getStaticPaths(): string[] {
     '/research',
     ...researchNotes.map((n) => `/research/${n.num}`),
     ...posts.map((p) => `/posts/${p.slug}`),
+    ...devPosts.map((p) => `/dev/${p.slug}`),
   ]
 }
 
@@ -49,7 +51,11 @@ export interface OgCard {
 }
 
 export function getOgCards(): OgCard[] {
-  return posts.map((p) => ({ slug: p.slug, title: p.title, subtitle: p.subtitle, date: p.date }))
+  return [
+    ...posts.map((p) => ({ slug: p.slug, title: p.title, subtitle: p.subtitle, date: p.date })),
+    // 개발일지는 매매일지와 슬러그가 겹쳐도 되도록 dev- 접두사로 파일명을 분리
+    ...devPosts.map((p) => ({ slug: `dev-${p.slug}`, title: p.title, subtitle: p.subtitle, date: p.date })),
+  ]
 }
 
-export { posts, researchNotes }
+export { posts, devPosts, researchNotes }

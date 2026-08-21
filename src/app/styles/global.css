@@ -201,6 +201,31 @@ img {
   width: 4px;
   background: #fff;
 }
+/* 개발일지 = 터미널 모니터 (은색 본체 + 검정 화면 + 초록 프롬프트, flat 픽셀) */
+.dicon__img--dev {
+  position: relative;
+  background: var(--silver);
+  box-shadow: inset -1px -1px #000, inset 1px 1px #fff;
+}
+.dicon__img--dev::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 4px;
+  bottom: 8px;
+  background: #101810;
+}
+.dicon__img--dev::after {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 8px;
+  width: 7px;
+  height: 3px;
+  background: #22c55e;
+  box-shadow: 0 6px #22c55e;
+}
 /* 기도문 = 촛불 (크림 초 + 앰버 불꽃 — 발광 없는 하드 픽셀, home 지붕과 같은 삼각 기법) */
 .dicon__img--prayer {
   position: relative;
@@ -1334,6 +1359,13 @@ img {
   margin-top: 3px;
   color: var(--up);
   font-size: 11px;
+}
+
+.hts-empty {
+  padding: 34px 12px;
+  text-align: center;
+  color: #777;
+  border-bottom: 1px solid #ededed;
 }
 
 .tag {

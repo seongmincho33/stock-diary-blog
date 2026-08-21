@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import type { Post } from '../model/types'
+import { baseOf, type Post } from '../model/types'
 import { formatDate } from './PostMeta'
 
 interface PostCardProps {
@@ -10,7 +10,7 @@ interface PostCardProps {
 /** HTS 종목 리스트의 한 행 */
 export function PostCard({ post, no }: PostCardProps) {
   return (
-    <Link className="hts-row hts-row--post" to={`/posts/${post.slug}`}>
+    <Link className="hts-row hts-row--post" to={`${baseOf(post.kind)}/${post.slug}`}>
       <div className="hts-cell hts-cell--no font-mono">{no}</div>
       <div className="hts-cell hts-cell--date font-mono">{formatDate(post.date)}</div>
       <div className="hts-cell hts-cell--title">
