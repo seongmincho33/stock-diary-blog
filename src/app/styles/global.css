@@ -1589,6 +1589,22 @@ img {
   margin: 22px 0 12px;
   padding: 8px 11px;
 }
+/* h4/h5 — 개발일지처럼 단계가 깊은 글의 소소제목 (h3는 '오늘의 교훈' 박스 전용) */
+.prose h4 {
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: normal;
+  color: var(--navy);
+  margin: 20px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px dotted var(--gray);
+}
+.prose h5 {
+  font-size: 13px;
+  font-weight: bold;
+  color: #333;
+  margin: 16px 0 6px;
+}
 .prose ul,
 .prose ol {
   padding-left: 1.4rem;

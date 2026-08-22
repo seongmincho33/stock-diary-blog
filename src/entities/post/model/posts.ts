@@ -54,7 +54,8 @@ function buildPost(path: string, raw: string, kind: PostKind): Post {
 function collect(raws: Record<string, string>, kind: PostKind): Post[] {
   return Object.entries(raws)
     .map(([path, raw]) => buildPost(path, raw, kind))
-    .sort((a, b) => (a.date < b.date ? 1 : -1)) // 최신 글 먼저
+    // 최신 글 먼저. 같은 날짜면 슬러그 내림차순 → 같은 날 여러 편을 올릴 땐 슬러그에 ep02, ep03… 을 넣어 순서를 고정
+    .sort((a, b) => (a.date === b.date ? b.slug.localeCompare(a.slug) : a.date < b.date ? 1 : -1))
 }
 
 /** 매매일지 */
