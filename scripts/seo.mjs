@@ -1,5 +1,5 @@
 // sitemap.xml / robots.txt / rss.xml 생성
-import { writeFileSync } from 'node:fs'
+import { writeFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -14,11 +14,31 @@ const HOME = `${ORIGIN}${BASE}/`
 const abs = (p) => (p === '/' ? HOME : `${ORIGIN}${BASE}${p}`)
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
+/** dist/study/<slug>/**.html 을 훑어 sitemap 항목으로 */
+function studyPages() {
+  const root = join(dist, 'study')
+  const out = []
+  let slugs = []
+  try {
+    slugs = readdirSync(root).filter((d) => statSync(join(root, d)).isDirectory())
+  } catch {
+    return out
+  }
+  for (const slug of slugs) {
+    const files = readdirSync(join(root, slug)).filter((f) => f.endsWith('.html')).sort()
+    for (const f of files) {
+      out.push({ loc: abs(f === 'index.html' ? `/study/${slug}/` : `/study/${slug}/${f}`) })
+    }
+  }
+  return out
+}
+
 // ── sitemap.xml ──
 const urls = [
   { loc: HOME, lastmod: posts[0]?.date },
   { loc: abs('/posts'), lastmod: posts[0]?.date },
   { loc: abs('/dev'), lastmod: devPosts[0]?.date },
+  { loc: abs('/study') },
   { loc: abs('/about') },
   { loc: abs('/books') },
   { loc: abs('/prayer') },
@@ -29,6 +49,8 @@ const urls = [
   ...researchNotes.map((n) => ({ loc: abs(`/research/${n.num}`) })),
   ...posts.map((p) => ({ loc: abs(`/posts/${p.slug}`), lastmod: p.date })),
   ...devPosts.map((p) => ({ loc: abs(`/dev/${p.slug}`), lastmod: p.date })),
+  // 개발공부 정적 문서 묶음(public/study/<slug>/*.html) — index.html은 디렉터리 URL로
+  ...studyPages(),
 ]
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

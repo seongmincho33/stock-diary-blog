@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>manning-smia2 챕터 가이드</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <p class="kicker">Spring Microservices in Action, 2nd Edition</p>
+  <h1>manning-smia2 챕터 가이드</h1>
+  <p class="sub">스프링 마이크로서비스 코딩 공작소 개정2판 · 예제 코드 해설</p>
+  <p class="lead">
+    이 저장소는 <a href="https://github.com/ihuaylupo/manning-smia">ihuaylupo/manning-smia</a>를 포크한
+    <a href="https://github.com/klimtever/manning-smia2">klimtever/manning-smia2</a>로, 각 챕터 폴더가 책의 한 장(章)에 대응합니다.
+    가상의 회사 <b>O-stock(OptimaGrowth)</b>의 <b>라이선싱 서비스</b>와 <b>조직 서비스</b>를 1장의 Hello World에서 시작해
+    12장의 AWS EKS 배포까지 단계적으로 키워 나갑니다. 각 장은 <em>이전 장의 코드를 그대로 이어받아 기능을 하나씩 얹는</em> 구조라서,
+    "이 장에서 새로 생긴 것"만 보면 흐름을 따라가기 쉽습니다.
+  </p>
+  <ul class="badges">
+    <li>Java 11</li><li>Spring Boot 2.2.x</li><li>Spring Cloud Hoxton.SR1</li><li>Maven</li><li>Docker Compose</li><li>PostgreSQL</li>
+  </ul>
+</header>
+
+<main>
+<section>
+  <a class="card" href="tour.html" style="border-color:var(--accent);display:flex;gap:16px;align-items:center">
+    <div style="font-size:2rem">🎬</div>
+    <div><div class="num">처음이라면 여기부터</div><h3 style="margin:2px 0 4px">인터랙티브 투어 — 한 장씩 쌓아 보는 마이크로서비스</h3>
+    <p>챕터마다 애니메이션 다이어그램으로 "왜 필요한지 → 어떻게 해결하는지"를 단계별로 보여줍니다. 버튼으로 다음 장으로 넘어가세요.</p></div>
+  </a>
+</section>
+
+  <h2>챕터 목록</h2>
+  <div class="cards">
+    <a class="card" href="chapter01.html"><div class="num">CHAPTER 1</div><h3>스프링, 클라우드와 만나다</h3><p>파일 하나짜리 Spring Boot REST 앱. 마이크로서비스가 무엇인지 감 잡기.</p></a>
+    <a class="card" href="chapter02.html"><div class="num">CHAPTER 2</div><h3>스프링 클라우드와 마이크로서비스 세계</h3><p>licensing-service 뼈대 생성. 12 팩터 앱과 Spring Cloud 구성 요소 개관.</p></a>
+    <a class="card" href="chapter03.html"><div class="num">CHAPTER 3</div><h3>스프링 부트로 마이크로서비스 구축</h3><p>REST CRUD 컨트롤러, HATEOAS, 국제화(i18n), Actuator.</p></a>
+    <a class="card" href="chapter04.html"><div class="num">CHAPTER 4</div><h3>도커</h3><p>멀티스테이지 Dockerfile, dockerfile-maven-plugin, docker-compose 첫 등장.</p></a>
+    <a class="card" href="chapter05.html"><div class="num">CHAPTER 5</div><h3>스프링 클라우드 컨피그 서버</h3><p>구성 외부화, 프로파일, 암호화(<code>{cipher}</code>), PostgreSQL + JPA 도입.</p></a>
+    <a class="card" href="chapter06.html"><div class="num">CHAPTER 6</div><h3>서비스 디스커버리</h3><p>Eureka 서버, organization-service 등장, DiscoveryClient / RestTemplate / Feign 3종 호출.</p></a>
+    <a class="card" href="chapter07.html"><div class="num">CHAPTER 7</div><h3>회복성 패턴 (Resilience4j)</h3><p>서킷 브레이커, 재시도, 속도 제한, 벌크헤드, 폴백. ThreadLocal 컨텍스트 전파.</p></a>
+    <a class="card" href="chapter08.html"><div class="num">CHAPTER 8</div><h3>스프링 클라우드 게이트웨이</h3><p>단일 진입점, 라우팅 규칙, 상관관계 ID를 심는 전역 필터(pre/post).</p></a>
+    <a class="card" href="chapter09.html"><div class="num">CHAPTER 9</div><h3>마이크로서비스 보안</h3><p>Keycloak + OAuth2, 역할 기반 접근 제어(<code>@RolesAllowed</code>), 토큰 전파.</p></a>
+    <a class="card" href="chapter10.html"><div class="num">CHAPTER 10</div><h3>이벤트 기반 아키텍처</h3><p>Spring Cloud Stream + Kafka로 조직 변경 이벤트 발행/구독, Redis 캐시.</p></a>
+    <a class="card" href="chapter11.html"><div class="num">CHAPTER 11</div><h3>분산 추적 (Sleuth + Zipkin)</h3><p>Trace/Span ID 로그 삽입, ELK 로그 집계, Zipkin 시각화.</p></a>
+    <a class="card" href="chapter12.html"><div class="num">CHAPTER 12</div><h3>마이크로서비스 배포</h3><p>자체 OAuth2 인증 서비스, ECR 이미지 푸시, EKS 매니페스트, Jenkins 파이프라인.</p></a>
+    <a class="card" href="monitoring.html"><div class="num">APPENDIX</div><h3>Monitoring</h3><p>Micrometer + Prometheus + Grafana로 서비스 메트릭 수집·대시보드.</p></a>
+  </div>
+</section>
+
+<section>
+  <h2>구성 요소 × 챕터 매트릭스</h2>
+  <p>어느 장에서 무엇이 처음 등장하는지 한눈에. <span class="matrix add">★</span> = 이 장에서 처음 추가, <span class="matrix on">●</span> = 계속 사용.</p>
+  <div class="table-wrap">
+  <table class="matrix">
+    <thead><tr><th>구성 요소</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th><th>Mon</th></tr></thead>
+    <tbody>
+      <tr><td>simple-application</td><td class="add">★</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td></tr>
+      <tr><td>licensing-service</td><td class="off">·</td><td class="add">★</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td></tr>
+      <tr><td>organization-service</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="add">★</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td></tr>
+      <tr><td>configserver (Spring Cloud Config)</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="add">★</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td></tr>
+      <tr><td>eurekaserver (Service Discovery)</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="add">★</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td></tr>
+      <tr><td>gatewayserver (Spring Cloud Gateway)</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="add">★</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td></tr>
+      <tr><td>authentication-service (OAuth2/JWT)</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="add">★</td><td class="on">●</td></tr>
+      <tr><td>Docker / docker-compose</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="add">★</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td></tr>
+      <tr><td>PostgreSQL + JPA</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="add">★</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td></tr>
+      <tr><td>Resilience4j</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="add">★</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td></tr>
+      <tr><td>Keycloak</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="add">★</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td></tr>
+      <tr><td>Kafka + ZooKeeper (Cloud Stream)</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="add">★</td><td class="on">●</td><td class="on">●</td><td class="off">·</td></tr>
+      <tr><td>Redis</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="add">★</td><td class="on">●</td><td class="on">●</td><td class="off">·</td></tr>
+      <tr><td>Sleuth + Zipkin</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="add">★</td><td class="on">●</td><td class="off">·</td></tr>
+      <tr><td>ELK (Elasticsearch/Logstash/Kibana)</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="add">★</td><td class="on">●</td><td class="off">·</td></tr>
+      <tr><td>AWS (ECR / EKS / Jenkins)</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="add">★</td><td class="off">·</td></tr>
+      <tr><td>Prometheus + Grafana</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="off">·</td><td class="add">★</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>포트 맵</h2>
+  <p>docker-compose 기준 호스트 포트. 장마다 같은 번호를 유지하므로 외워두면 편합니다.</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>포트</th><th>서비스</th><th>등장</th><th>메모</th></tr></thead>
+    <tbody>
+      <tr><td><code>8080</code></td><td>licensing-service</td><td>2장~</td><td>9장만 호스트 <code>8180</code> (8080을 Keycloak이 사용)</td></tr>
+      <tr><td><code>8081</code></td><td>organization-service</td><td>6장~</td><td></td></tr>
+      <tr><td><code>8071</code></td><td>configserver</td><td>5장~</td><td><code>/licensing-service/dev</code> 로 구성 조회</td></tr>
+      <tr><td><code>8070</code></td><td>eurekaserver</td><td>6장~</td><td><code>/eureka/apps</code> 레지스트리 조회</td></tr>
+      <tr><td><code>8072</code></td><td>gatewayserver</td><td>8장~</td><td>8장부터는 모든 요청이 여기로</td></tr>
+      <tr><td><code>8082</code></td><td>authentication-service</td><td>12장, Monitoring</td><td><code>/oauth/token</code>, <code>/user</code></td></tr>
+      <tr><td><code>5432</code></td><td>PostgreSQL</td><td>5장~</td><td>postgres / postgres / ostock_dev</td></tr>
+      <tr><td><code>8080</code></td><td>Keycloak</td><td>9장</td><td>admin / admin, realm <code>spmia-realm</code></td></tr>
+      <tr><td><code>2181</code> / <code>9092</code></td><td>ZooKeeper / Kafka</td><td>10~12장</td><td>토픽 <code>orgChangeTopic</code></td></tr>
+      <tr><td><code>6379</code></td><td>Redis</td><td>10~12장</td><td>조직 정보 캐시</td></tr>
+      <tr><td><code>9200</code>/<code>9300</code>, <code>5601</code>, <code>5000</code></td><td>Elasticsearch, Kibana, Logstash</td><td>11~12장</td><td></td></tr>
+      <tr><td><code>9411</code></td><td>Zipkin</td><td>11~12장</td><td>저장소는 Elasticsearch</td></tr>
+      <tr><td><code>9090</code>, <code>3000</code></td><td>Prometheus, Grafana</td><td>Monitoring</td><td>Grafana admin / password</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>공통 실행 방법</h2>
+  <p>1~3장은 Maven만으로 실행하고, 4장부터는 Docker 이미지를 빌드해서 docker-compose로 올립니다.</p>
+<pre><code># 사전 준비: Java 11 + Maven + Docker Desktop
+mvn --version            # Java version: 11.x 확인
+
+# 1~3장: 단일 프로젝트
+cd chapter3/licensing-service
+mvn spring-boot:run
+
+# 5장 이후: 멀티 모듈 + docker-compose
+cd chapter7
+./build-for-m1.sh        # Apple Silicon → mvn clean package + docker build (각 모듈)
+#   또는 mvn clean package dockerfile:build   (Intel / spotify 플러그인이 동작할 때)
+docker-compose -f docker/docker-compose.yml up</code></pre>
+  <div class="warn">
+    <p><b>Apple Silicon 주의.</b> 원본은 <code>dockerfile-maven-plugin</code>(Spotify)으로 이미지를 만드는데 arm64에서 깨지는 경우가 있어,
+    포크 작성자가 각 장에 <code>build-for-m1.sh</code>를 추가했습니다. 내용은 <code>mvn clean package</code> 후 모듈마다 <code>docker build --build-arg JAR_FILE=...</code>을 수동 실행하는 것입니다.
+    Kafka·Keycloak 등 일부 이미지는 amd64/arm64 모두 지원하는 것으로 교체되어 있습니다.</p>
+  </div>
+  <p>API 테스트는 저장소 루트의 <code>Spring_Microservices_in_Action_2nd.postman_collection.json</code>(1~11장)과 <code>chapter6/chapter6.postman_collection.json</code>을 Postman에 가져오면 됩니다.</p>
+</section>
+
+<section>
+  <h2>원본 대비 포크(klimtever)의 변경 사항</h2>
+  <ul>
+    <li><b>Apple Silicon 대응</b> — 모든 장에 <code>build-for-m1.sh</code>, docker-compose 이미지를 arm64 호환으로 교체(2022-05~06).</li>
+    <li><b>README 한국어 안내</b> — Java 11 버전 확인 절차, M1 빌드 팁.</li>
+    <li><b>3장</b> — <code>messages_ko.properties</code> 추가.</li>
+    <li><b>5장</b> — <code>encrypt.enabled=false</code>, 암호화 키 변경, Vault 백엔드 설정 추가, git URI를 <code>klimtever/config</code>로.</li>
+    <li><b>7장</b> — 책의 코드 7-2(서킷 브레이커만 적용)용 애너테이션을 주석으로 병기.</li>
+    <li><b>10장</b> — 책과 맞추기 위해 <code>ActionEnum</code>(GET/CREATED/UPDATED/DELETED) 추가.</li>
+    <li><b>12장</b> — ECR 리전 <code>ap-northeast-2</code>, 이미지 태그 <code>:chapter12</code>, ECR 생성/태그/푸시 스크립트, Jenkinsfile 경로 수정.</li>
+    <li><b>Postman 컬렉션</b> — 조직 ID 수정, 8장까지 테스트 케이스 보강.</li>
+  </ul>
+</section>
+</main>
+
+<footer>
+  <p>생성일 2026-08-23 · 저장소 <code>manning-smia2</code> master(751132c) 기준으로 코드를 읽고 정리한 문서입니다. 책 본문이 아니라 <em>이 저장소의 코드</em>가 기준입니다.</p>
+</footer>
+</body>
+</html>

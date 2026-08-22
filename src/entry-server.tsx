@@ -29,6 +29,7 @@ export function getStaticPaths(): string[] {
     '/',
     '/posts',
     '/dev',
+    '/study',
     '/about',
     '/books',
     '/prayer',

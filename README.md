@@ -32,6 +32,12 @@ src/
    - 두 폴더 모두 파일을 넣기만 하면 목록·프리렌더·OG 카드·sitemap·RSS가 자동 반영된다.
 2. `git push` → Actions가 빌드/배포.
 
+## 개발공부 문서 묶음 올리기 (`/study`)
+자체 HTML/CSS/JS로 된 정적 문서 묶음은 React로 옮기지 않고 **그대로 서빙**한다.
+1. 폴더를 `public/study/<slug>/` 에 통째로 복사 (내부 링크는 상대경로여야 함)
+2. `src/widgets/study-list/model/studies.ts` 의 `studies` 배열에 항목 추가 (제목·설명·태그·목차)
+3. `npm run build` → `/study` 목록에 카드가 생기고, `dist/study/<slug>/*.html` 이 sitemap에 자동 포함된다.
+
 ## 디자인
 지금은 **중립 플레이스홀더**입니다. 디자인 토큰은 `src/app/styles/global.css` 상단 `:root`에 모여 있어,
 나중에 별도 디자인 레퍼런스가 오면 토큰/클래스만 교체하면 됩니다.

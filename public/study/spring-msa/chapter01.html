@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1장 스프링, 클라우드와 만나다 — manning-smia2</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="top"><a href="index.html">← 목차</a><span class="spacer"></span><a href="chapter02.html">2장 →</a></nav>
+<header>
+  <p class="kicker">Chapter 1 · chapter1/</p>
+  <h1>스프링, 클라우드와 만나다</h1>
+  <p class="sub">Welcome to the cloud, Spring</p>
+  <p class="lead">
+    마이크로서비스가 무엇이고 왜 Spring Boot/Spring Cloud로 만드는지를 소개하는 장입니다.
+    코드는 "Spring Boot로 REST 엔드포인트 하나 만드는 게 이만큼 간단하다"를 보여주는 <b>파일 한 개짜리 맛보기</b>뿐입니다.
+  </p>
+  <ul class="badges"><li>Spring Boot 2.2.2</li><li>Java 11</li><li>spring-boot-starter-web</li></ul>
+</header>
+
+<main>
+<section>
+  <h2>이 장의 목표</h2>
+  <ul>
+    <li>모놀리스 vs 마이크로서비스, 클라우드 배포 모델(IaaS/PaaS/SaaS/FaaS/CaaS) 개념 정리</li>
+    <li>Spring Boot가 마이크로서비스에 적합한 이유 — 최소 설정으로 독립 실행 가능한 JAR</li>
+    <li>책 전체에서 다룰 패턴(핵심 개발·라우팅·클라이언트 회복성·보안·로깅/추적·빌드/배포)을 지도처럼 훑기</li>
+  </ul>
+</section>
+
+<section>
+  <h2>코드 구성</h2>
+<pre><code>chapter1/
+└── simple-application/
+    ├── pom.xml                         # spring-boot-starter-web, starter-test 뿐
+    └── src/main/java/com/huaylupo/spmia/ch01/
+        └── Application.java            # @SpringBootApplication + @RestController 한 파일</code></pre>
+  <p><code>application.properties</code>는 비어 있고, DB·Docker·Spring Cloud는 전혀 없습니다.</p>
+</section>
+
+<section>
+  <h2>핵심 코드</h2>
+  <p><code>Application.java</code> 한 클래스가 부트스트랩 클래스이자 컨트롤러입니다. 같은 파일 아래에 요청 DTO <code>HelloRequest</code>가 패키지-프라이빗 클래스로 들어 있습니다.</p>
+<pre><code>@SpringBootApplication
+@RestController
+@RequestMapping(value="hello")
+public class Application {
+
+    @GetMapping(value="/{firstName}")
+    public String helloGET(@PathVariable("firstName") String firstName,
+                           @RequestParam("lastName") String lastName) {
+        return String.format("{\"message\":\"Hello %s %s\"}", firstName, lastName);
+    }
+
+    @PostMapping
+    public String helloPOST(@RequestBody HelloRequest request) {
+        return String.format("{\"message\":\"Hello %s %s\"}",
+                request.getFirstName(), request.getLastName());
+    }
+}</code></pre>
+  <div class="table-wrap"><table>
+    <thead><tr><th>메서드</th><th>경로</th><th>입력</th><th>응답</th></tr></thead>
+    <tbody>
+      <tr><td>GET</td><td><code>/hello/{firstName}?lastName=…</code></td><td>경로 변수 + 쿼리</td><td><code>{"message":"Hello 길동 홍"}</code></td></tr>
+      <tr><td>POST</td><td><code>/hello</code></td><td>JSON <code>{"firstName":"…","lastName":"…"}</code></td><td>동일</td></tr>
+    </tbody>
+  </table></div>
+  <p>응답 JSON을 직접 문자열로 조립하는데, 3장부터는 객체를 반환해 Jackson이 직렬화하도록 바뀝니다.</p>
+</section>
+
+<section>
+  <h2>실행</h2>
+<pre><code>cd chapter1/simple-application
+mvn spring-boot:run
+#   또는 mvn install && java -jar target/SimpleApplication-0.0.1-SNAPSHOT.jar
+
+curl "http://localhost:8080/hello/Illary?lastName=Huaylupo"
+curl -X POST http://localhost:8080/hello -H 'Content-Type: application/json' \
+     -d '{"firstName":"Illary","lastName":"Huaylupo"}'</code></pre>
+</section>
+
+<section>
+  <h2>메모</h2>
+  <ul>
+    <li>Spring Boot <b>2.2.2</b>(다른 장은 2.2.3). Java 17 이상에서는 Spring Boot 2.2가 제대로 돌지 않으니 Java 11을 쓰세요.</li>
+    <li>테스트는 <code>contextLoads()</code> 빈 테스트 하나. JUnit 5(vintage 엔진 제외).</li>
+    <li>Postman 컬렉션 "Chapter-1 GET Hello" 항목이 이 엔드포인트입니다.</li>
+  </ul>
+</section>
+</main>
+<footer><nav><a href="index.html">목차</a><span class="spacer"></span><a href="chapter02.html">다음: 2장 스프링 클라우드와 마이크로서비스 세계 →</a></nav></footer>
+</body>
+</html>

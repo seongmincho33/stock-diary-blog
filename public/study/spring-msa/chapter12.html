@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12장 마이크로서비스 배포 — manning-smia2</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="top"><a href="index.html">← 목차</a><a class="dim" href="chapter11.html">← 11장</a><span class="spacer"></span><a href="monitoring.html">Monitoring →</a></nav>
+<header>
+  <p class="kicker">Chapter 12 · chapter12/</p>
+  <h1>마이크로서비스 배포</h1>
+  <p class="sub">Deploying your microservices</p>
+  <p class="lead">
+    지금까지 만든 6개 서비스를 <b>AWS에 배포</b>하는 장입니다. 이미지를 ECR에 올리고, <b>EKS(Kubernetes)</b> 매니페스트로 띄우며,
+    <b>Jenkins</b> 파이프라인으로 빌드→이미지→배포를 자동화합니다. 구성 서버는 로컬 파일 대신 <b>Git 저장소</b>에서 설정을 읽고,
+    인증은 Keycloak 대신 자체 <b>authentication-service</b>(Spring Security OAuth2 + JWT)를 씁니다.
+  </p>
+  <ul class="badges"><li>AWS ECR / EKS / RDS·ElastiCache(책)</li><li>kubectl · kompose · Helm</li><li>Jenkins Pipeline</li><li>Spring Security OAuth2 (JWT)</li><li>이미지 태그 :chapter12</li></ul>
+</header>
+
+<main>
+<section>
+  <h2>이 장의 목표</h2>
+  <ul>
+    <li>빌드/배포 파이프라인의 원칙 — 자동화, 불변 서버(이미지), 환경별 설정 외부화</li>
+    <li>AWS 인프라 준비: RDS(PostgreSQL), ElastiCache(Redis), EKS 클러스터, ECR 저장소</li>
+    <li>docker-compose → Kubernetes 매니페스트 변환(kompose), Deployment/Service(NodePort)로 배포</li>
+    <li>Jenkins 서버 구축(EC2)과 <code>Jenkinsfile</code>로 GitHub → Maven → Docker → ECR → EKS 자동화</li>
+    <li>ELK + Zipkin은 별도 EC2에 compose로 운영</li>
+  </ul>
+</section>
+
+<section>
+  <h2>이전 장에서 달라진 것</h2>
+<pre><code>chapter12/
+├── authentication-service/                         <span class="tag">NEW</span> OAuth2 인증 서버 (:8082)
+│   └── src/main/java/com/optimagrowth/authentication/
+│       ├── AuthenticationServiceApplication.java    # @EnableAuthorizationServer @EnableResourceServer, GET /user
+│       ├── security/WebSecurityConfigurer.java      # 인메모리 사용자 john.carnell / illary.huaylupo
+│       ├── security/JWTOAuth2Config.java            # 클라이언트 ostock / thisissecret, grant: password, client_credentials, refresh_token
+│       ├── security/JWTTokenStoreConfig.java        # JwtTokenStore, signing.key
+│       └── security/JWTTokenEnhancer.java           # 토큰에 authentication_name 클레임 추가
+├── licensing-service/…/security/{JWTTokenStoreConfig,ResourceServerConfiguration}.java   <span class="tag">NEW</span>
+├── organization-service/…/security/{JWTTokenStoreConfig,ResourceServerConfiguration}.java <span class="tag">NEW</span>
+├── configserver/src/main/resources/bootstrap.yml    # profiles.active: git → https://github.com/ihuaylupo/config.git
+│                                                    # (config/*.properties 파일 전부 삭제됨)
+├── */src/main/resources/logback-delayed.xml         <span class="tag">NEW</span> logstash 주소를 속성(logstash.host)으로
+├── docker/docker-compose.yml                        # 이미지 태그 :chapter12, + authenticationservice
+├── AWS/
+│   ├── jenkins_Setup.md                             <span class="tag">NEW</span> EC2에 Jenkins+Java+Maven+Docker+kubectl 설치 절차
+│   ├── EC2/docker-compose.yml, config/logstash.conf <span class="tag">NEW</span> ELK + Zipkin 전용 인스턴스
+│   └── EKS/*-deployment.yaml, *-service.yaml, postgres.yaml   <span class="tag">NEW</span> kompose 변환 매니페스트
+├── Jenkinsfile                                      <span class="tag">NEW</span> 파이프라인 정의
+├── ecr-create-repo.sh  tag-services.sh  push-services.sh       <span class="tag">NEW</span> ← 포크 추가
+├── get_helm.sh                                      <span class="tag">NEW</span> Helm 설치 스크립트
+└── pom.xml                                          # 모듈 6개, 버전 chapter12</code></pre>
+</section>
+
+<section>
+  <h2>핵심 코드</h2>
+  <h3>authentication-service — JWT 발급</h3>
+<pre><code>// JWTOAuth2Config
+clients.inMemory()
+    .withClient("ostock").secret("{noop}thisissecret")
+    .authorizedGrantTypes("refresh_token", "password", "client_credentials")
+    .scopes("webclient", "mobileclient");
+
+endpoints.tokenStore(tokenStore)                          // JwtTokenStore
+        .accessTokenConverter(jwtAccessTokenConverter)    // signing.key 로 서명
+        .tokenEnhancer(tokenEnhancerChain)                // + authentication_name 클레임
+        .authenticationManager(authenticationManager)
+        .userDetailsService(userDetailsService);
+
+// WebSecurityConfigurer
+auth.inMemoryAuthentication()
+    .withUser("john.carnell").password("{noop}password2").roles("USER").and()
+    .withUser("illary.huaylupo").password("{noop}password1").roles("USER", "ADMIN");</code></pre>
+
+  <h3>리소스 서버 — organization-service</h3>
+<pre><code>@Configuration
+public class ResourceServerConfiguration extends ResourceServerConfigurerAdapter {
+    public void configure(HttpSecurity http) throws Exception {
+        http.authorizeRequests()
+            .antMatchers(HttpMethod.DELETE, "/v1/organization/**").hasRole("ADMIN")
+            .anyRequest().authenticated();
+    }
+}
+# 속성 (Git 저장소의 *.properties)
+security.oauth2.resource.userInfoUri = http://authenticationservice:8082/user
+signing.key = 345345fsdfsf5345</code></pre>
+
+  <h3>Jenkinsfile — 파이프라인 5단계</h3>
+<pre><code>node {
+  stage('Preparation') { git 'https://github.com/klimtever/smia2-configserver-jenkins.git'; mvnHome = tool 'M2_HOME' }
+  stage('Build')       { sh "'${mvnHome}/bin/mvn' -Dmaven.test.failure.ignore clean package" }
+  stage('Results')     { junit '**/target/surefire-reports/TEST-*.xml'; archiveArtifacts 'configserver/target/*.jar' }
+  stage('Build image') { sh "mvn -Ddocker.image.prefix=758417428849.dkr.ecr.ap-northeast-2.amazonaws.com/ostock \
+                              -Dproject.artifactId=configserver -Ddocker.image.version=chapter12 dockerfile:build" }
+  stage('Push image')  { docker.withRegistry('https://758417428849.dkr.ecr.ap-northeast-2.amazonaws.com', 'ecr:ap-northeast-2:ecr-user') {
+                           sh "docker push …/ostock/configserver:chapter12" } }
+  stage('Kubernetes deploy') { kubernetesDeploy configs: 'configserver-deployment.yaml', kubeconfigId: 'kubeconfig' }
+}</code></pre>
+
+  <h3>EKS 매니페스트 (예: licensingservice-deployment.yaml)</h3>
+<pre><code>kind: Deployment
+spec:
+  replicas: 1
+  template.spec.containers:
+  - name: licensing-service
+    image: 758417428849.dkr.ecr.ap-northeast-2.amazonaws.com/ostock/licensing-service:chapter12
+    ports: [{ containerPort: 8080 }]
+    env: [ CONFIGSERVER_URI=http://configserver:8071, DATABASESERVER_PORT=5432, ENCRYPT_KEY=IMSYMMETRIC, PROFILE=dev ]
+---
+# *-service.yaml 은 전부 type: NodePort</code></pre>
+</section>
+
+<section>
+  <h2>실행 (로컬) 및 배포 순서</h2>
+<pre><code># 로컬에서 전체 기동 (Keycloak 없이 authentication-service 사용)
+cd chapter12
+./build-for-m1.sh                       # 이미지 태그 :chapter12
+docker-compose -f docker/docker-compose.yml up
+
+# 토큰 발급 (password grant)
+curl -X POST http://localhost:8082/oauth/token -u ostock:thisissecret \
+     -d 'grant_type=password&amp;username=illary.huaylupo&amp;password=password1&amp;scope=webclient'
+# 토큰으로 호출
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8072/organization/v1/organization/e839ee96-28de-4f67-bb79-870ca89743a0</code></pre>
+<pre><code># AWS 배포 (포크 스크립트 기준, 리전 ap-northeast-2)
+aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin &lt;ACCOUNT&gt;.dkr.ecr.ap-northeast-2.amazonaws.com
+./ecr-create-repo.sh                    # ostock/{configserver,gatewayserver,eurekaserver,authentication-service,licensing-service,organization-service}
+./tag-services.sh  &lt;ACCOUNT_ID&gt;         # ostock/x:chapter12 → &lt;ACCOUNT&gt;.dkr.ecr…/ostock/x:chapter12
+./push-services.sh &lt;ACCOUNT_ID&gt;
+
+eksctl create cluster --name ostock-dev-cluster --region ap-northeast-2 …   # (책 12.2절)
+aws eks update-kubeconfig --name ostock-dev-cluster
+kubectl apply -f AWS/EKS/postgres.yaml
+kubectl apply -f AWS/EKS/                # deployment + service 전부
+kubectl get svc                          # NodePort 확인</code></pre>
+  <div class="warn">
+    <p><b>이 장은 그대로 실행되지 않는 부분이 많습니다.</b> 매니페스트·Jenkinsfile에 박힌 AWS 계정 ID(<code>758417428849</code>)와 ECR 주소는 포크 작성자의 것이고,
+    구성 서버가 가리키는 <code>ihuaylupo/config</code> Git 저장소의 내용(RDS/ElastiCache 엔드포인트 등)도 본인 환경으로 바꿔야 합니다.
+    EKS는 시간당 과금되니 실습 후 <code>eksctl delete cluster</code>를 잊지 마세요.</p>
+  </div>
+</section>
+
+<section>
+  <h2>메모</h2>
+  <ul>
+    <li><span class="tag">FORK</span> 리전 <code>us-east-2 → ap-northeast-2</code>, 태그 <code>:latest → :chapter12</code>, ECR URI에 https 추가, 생성/태그/푸시 스크립트 추가(2022-04).</li>
+    <li>README에 "Java 12"라고 적혀 있지만 <code>pom.xml</code>은 여전히 Java 11입니다(오타).</li>
+    <li>authentication-service는 1판 스타일의 <code>spring-security-oauth2</code>(deprecated) 기반입니다. 9장의 Keycloak과 둘 다 경험해 보는 셈.</li>
+    <li>로깅은 <code>logback-delayed.xml</code>로 바뀌어 Logstash 주소를 <code>logstash.host</code> 속성(Git 구성)에서 읽습니다 — ELK가 별도 EC2에 있기 때문.</li>
+    <li><code>AWS/EC2/docker-compose.yml</code>은 Elasticsearch/Kibana/Logstash 7.7.0 + Zipkin만 있는 모니터링 전용 스택입니다.</li>
+  </ul>
+</section>
+</main>
+<footer><nav><a href="chapter11.html">← 11장</a><span class="spacer"></span><a href="monitoring.html">다음: Monitoring (Prometheus + Grafana) →</a></nav></footer>
+</body>
+</html>

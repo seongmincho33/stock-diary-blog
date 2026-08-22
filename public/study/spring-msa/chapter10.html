@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10장 이벤트 기반 아키텍처 — manning-smia2</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="top"><a href="index.html">← 목차</a><a class="dim" href="chapter09.html">← 9장</a><span class="spacer"></span><a href="chapter11.html">11장 →</a></nav>
+<header>
+  <p class="kicker">Chapter 10 · chapter10/</p>
+  <h1>스프링 클라우드 스트림을 사용한 이벤트 기반 아키텍처</h1>
+  <p class="sub">Event-driven architecture with Spring Cloud Stream</p>
+  <p class="lead">
+    조직 정보가 바뀌면 조직 서비스가 <b>Kafka 토픽에 이벤트를 발행</b>하고, 라이선싱 서비스가 그 이벤트를 <b>구독</b>합니다.
+    라이선싱 서비스는 조직 정보를 <b>Redis에 캐시</b>해 두고 매번 REST 호출하지 않도록 바뀝니다.
+    동기 호출 의존을 줄이는 "메시지 기반 느슨한 결합"이 주제입니다.
+  </p>
+  <ul class="badges"><li>Spring Cloud Stream</li><li>Kafka + ZooKeeper</li><li>@EnableBinding / Source / @StreamListener</li><li>Spring Data Redis (Jedis)</li><li>@RedisHash</li></ul>
+</header>
+
+<main>
+<section>
+  <h2>이 장의 목표</h2>
+  <ul>
+    <li>동기 REST 호출 vs 메시징 — 결합도, 내구성, 확장성, 유연성 관점 비교와 주의점(순서·의미 불명확성)</li>
+    <li>Spring Cloud Stream 개념: Source / Channel / Binder / Sink</li>
+    <li>발행자(organization-service)와 소비자(licensing-service) 작성, 사용자 정의 채널</li>
+    <li>Redis를 분산 캐시로 사용하고, 변경 이벤트로 캐시를 무효화하는 패턴</li>
+  </ul>
+</section>
+
+<section>
+  <h2>구성 요소</h2>
+  <div class="arch">
+    <div class="box"><b>organization-service</b><small>발행: orgChangeTopic</small></div>
+    <div class="box infra new"><b>Kafka</b><small>:9092 (+ ZooKeeper :2181)</small></div>
+    <div class="box"><b>licensing-service</b><small>구독: inboundOrgChanges</small></div>
+    <div class="box infra new"><b>Redis</b><small>:6379 · 조직 캐시</small></div>
+    <div class="box"><b>gateway / eureka / config</b><small>:8072 / :8070 / :8071</small></div>
+    <div class="box infra"><b>PostgreSQL</b><small>:5432</small></div>
+  </div>
+<pre><code>chapter10/
+├── docker/docker-compose.yml                       # + zookeeper:3.7.0, wurstmeister/kafka, redis:alpine
+├── organization-service/src/main/java/…/
+│   ├── OrganizationServiceApplication.java          # @EnableBinding(Source.class)
+│   ├── events/model/OrganizationChangeModel.java   <span class="tag">NEW</span> type, action, organizationId, correlationId
+│   ├── events/source/SimpleSourceBean.java         <span class="tag">NEW</span> 메시지 발행
+│   ├── utils/ActionEnum.java                       <span class="tag">NEW</span> GET/CREATED/UPDATED/DELETED ← 포크 추가
+│   └── service/OrganizationService.java            # CRUD 마다 publishOrganizationChange()
+├── licensing-service/src/main/java/…/
+│   ├── LicenseServiceApplication.java               # + JedisConnectionFactory, RedisTemplate 빈
+│   ├── events/CustomChannels.java                  <span class="tag">NEW</span> @Input("inboundOrgChanges")
+│   ├── events/handler/OrganizationChangeHandler.java <span class="tag">NEW</span> @StreamListener
+│   ├── events/model/OrganizationChangeModel.java   <span class="tag">NEW</span>
+│   ├── model/Organization.java                      # @RedisHash("organization")
+│   ├── repository/OrganizationRedisRepository.java <span class="tag">NEW</span> CrudRepository
+│   └── service/client/OrganizationRestTemplateClient.java   # Redis 먼저 → 없으면 게이트웨이 경유 REST
+└── (SecurityConfig, realm-export.json 제거됨 — 9장 보안은 잠시 OFF)</code></pre>
+</section>
+
+<section>
+  <h2>핵심 코드</h2>
+  <h3>발행자 — organization-service</h3>
+<pre><code>@SpringBootApplication @RefreshScope
+@EnableBinding(Source.class)                 // 기본 "output" 채널 바인딩
+public class OrganizationServiceApplication { … }
+
+@Component
+public class SimpleSourceBean {
+    @Autowired public SimpleSourceBean(Source source) { this.source = source; }
+
+    public void publishOrganizationChange(ActionEnum action, String organizationId) {
+        OrganizationChangeModel change = new OrganizationChangeModel(
+            OrganizationChangeModel.class.getTypeName(), action.toString(),
+            organizationId, UserContext.getCorrelationId());        // 8장의 상관관계 ID를 메시지에도
+        source.output().send(MessageBuilder.withPayload(change).build());
+    }
+}
+
+// OrganizationService
+public Organization create(Organization org) {
+    org = repository.save(org);
+    simpleSourceBean.publishOrganizationChange(ActionEnum.CREATED, org.getId());
+    return org;
+}</code></pre>
+<pre><code># config/organization-service.properties
+spring.cloud.stream.bindings.output.destination = orgChangeTopic
+spring.cloud.stream.bindings.output.content-type = application/json
+spring.cloud.stream.kafka.binder.zkNodes = kafka
+spring.cloud.stream.kafka.binder.brokers = kafka</code></pre>
+
+  <h3>소비자 — licensing-service</h3>
+<pre><code>public interface CustomChannels {
+    @Input("inboundOrgChanges")
+    SubscribableChannel orgs();
+}
+
+@EnableBinding(CustomChannels.class)
+public class OrganizationChangeHandler {
+    @StreamListener("inboundOrgChanges")
+    public void loggerSink(OrganizationChangeModel organization) {
+        switch (organization.getAction()) {
+            case "GET":    …  case "SAVE": …  case "UPDATE": …  case "DELETE": …
+            default: logger.error("Received an UNKNOWN event …");
+        }
+    }
+}</code></pre>
+<pre><code># config/licensing-service.properties
+spring.cloud.stream.bindings.inboundOrgChanges.destination = orgChangeTopic
+spring.cloud.stream.bindings.inboundOrgChanges.content-type = application/json
+spring.cloud.stream.bindings.inboundOrgChanges.group = licensingGroup     # 컨슈머 그룹: 인스턴스가 여러 개여도 한 번만 처리
+redis.server = redis
+redis.port = 6379</code></pre>
+
+  <h3>Redis 캐시 — OrganizationRestTemplateClient</h3>
+<pre><code>public Organization getOrganization(String organizationId) {
+    Organization organization = checkRedisCache(organizationId);          // 1. 캐시
+    if (organization != null) return organization;
+
+    ResponseEntity&lt;Organization&gt; r = restTemplate.exchange(              // 2. 게이트웨이 경유 REST
+        "http://gateway:8072/organization/v1/organization/{organizationId}",
+        HttpMethod.GET, null, Organization.class, organizationId);
+
+    organization = r.getBody();
+    if (organization != null) cacheOrganizationObject(organization);       // 3. 캐시에 저장
+    return organization;
+}
+
+@RedisHash("organization")
+public class Organization extends RepresentationModel&lt;Organization&gt; { @Id String id; … }
+public interface OrganizationRedisRepository extends CrudRepository&lt;Organization, String&gt; {}</code></pre>
+</section>
+
+<section>
+  <h2>실행 및 확인</h2>
+<pre><code>cd chapter10
+./build-for-m1.sh
+docker-compose -f docker/docker-compose.yml up
+# Kafka 준비 전에 서비스가 뜨면 바인더 연결 에러가 잠깐 찍힐 수 있음 — 재시도 후 정상화
+
+# 조직 생성 → organization-service 로그에 "Sending Kafka message CREATED …",
+#            licensing-service 로그에 "Received a message of type …" (action 은 CREATED 이므로 switch 의 default 로 빠짐)
+curl -X POST http://localhost:8072/organization/v1/organization/ -H 'Content-Type: application/json' \
+     -d '{"name":"Ostock","contactName":"Illary","contactEmail":"x@y.com","contactPhone":"1"}'
+
+# 라이선스 조회 두 번 → 두 번째는 "successfully retrieved an organization … from the redis cache"
+curl http://localhost:8072/license/v1/organization/e839ee96-28de-4f67-bb79-870ca89743a0/license/279709ff-e6d5-4a54-8b55-a5c37542025b
+
+# Redis 안 들여다보기
+docker exec -it $(docker ps -qf name=redis) redis-cli KEYS '*'</code></pre>
+</section>
+
+<section>
+  <h2>메모</h2>
+  <ul>
+    <li><span class="tag">FORK</span> <code>ActionEnum</code>(GET/CREATED/UPDATED/DELETED)은 책 본문과 맞추려고 추가된 것인데, 소비자 쪽 <code>switch</code>는 여전히 "SAVE"/"UPDATE"/"DELETE" 문자열을 비교합니다. 그래서 GET 외에는 <b>default 분기(UNKNOWN 로그)</b>로 빠집니다. 책처럼 캐시 무효화(<code>redisRepository.deleteById</code>)를 구현하려면 이 불일치부터 고쳐야 합니다 — 좋은 실습 거리.</li>
+    <li>이 장에서는 9장의 Keycloak/SecurityConfig가 빠져 있습니다. Kafka·Redis 실습에 집중하기 위한 구성이며 11장도 같습니다.</li>
+    <li><code>wurstmeister/kafka</code> 이미지는 <code>KAFKA_CREATE_TOPICS=dresses:1:1,ratings:1:1</code>처럼 무관한 토픽 예시를 만들지만 <code>orgChangeTopic</code>은 바인더가 자동 생성합니다.</li>
+    <li>Spring Cloud Stream 3.x의 함수형 스타일(<code>Supplier/Consumer</code> 빈)이 아니라 애너테이션 스타일(<code>@EnableBinding</code>)입니다. 최신 버전에서는 deprecated.</li>
+  </ul>
+</section>
+</main>
+<footer><nav><a href="chapter09.html">← 9장</a><span class="spacer"></span><a href="chapter11.html">다음: 11장 분산 추적 →</a></nav></footer>
+</body>
+</html>

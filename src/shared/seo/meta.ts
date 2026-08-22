@@ -119,6 +119,18 @@ export function getMeta(path: string): PageMeta {
     }
   }
 
+  if (path === '/study') {
+    return {
+      title: `개발공부 · ${site.title}`,
+      description:
+        '단타마스터의 개발공부 — 스프링 마이크로서비스(Spring Microservices in Action 2판 예제 코드 해설) 등 테마별로 정리한 학습 문서 모음.',
+      canonical: absUrl('/study'),
+      ogImage: ogImageFor(),
+      ogType: 'website',
+      jsonLd: websiteJsonLd(),
+    }
+  }
+
   if (path === '/posts') {
     return {
       title: `매매일지 · ${site.title}`,

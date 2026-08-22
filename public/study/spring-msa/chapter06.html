@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>6장 서비스 디스커버리 — manning-smia2</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="top"><a href="index.html">← 목차</a><a class="dim" href="chapter05.html">← 5장</a><span class="spacer"></span><a href="chapter07.html">7장 →</a></nav>
+<header>
+  <p class="kicker">Chapter 6 · chapter6/Initial, chapter6/Final</p>
+  <h1>서비스 디스커버리</h1>
+  <p class="sub">On service discovery</p>
+  <p class="lead">
+    두 번째 서비스 <b>organization-service</b>가 등장하고, 라이선싱 서비스가 조직 서비스를 호출해야 하는 상황이 생깁니다.
+    IP를 하드코딩하는 대신 <b>Eureka</b>에 서비스가 스스로 등록하고, 클라이언트는 이름(<code>organization-service</code>)으로 찾아 호출합니다.
+    <code>Initial</code>(Eureka 없음)과 <code>Final</code>(Eureka 적용) 두 버전이 있습니다.
+  </p>
+  <ul class="badges"><li>Netflix Eureka</li><li>Spring Cloud LoadBalancer</li><li>OpenFeign</li><li>@LoadBalanced RestTemplate</li><li>DiscoveryClient</li></ul>
+</header>
+
+<main>
+<section>
+  <h2>이 장의 목표</h2>
+  <ul>
+    <li>서비스 디스커버리가 필요한 이유 — 수평 확장, 인스턴스 IP 변동, 클라이언트 측 로드밸런싱</li>
+    <li>Eureka 서버 띄우기(<code>@EnableEurekaServer</code>)와 서비스 등록(<code>@EnableDiscoveryClient</code>)</li>
+    <li>세 가지 호출 방식 비교:
+      <ol>
+        <li><b>DiscoveryClient</b> — 인스턴스 목록을 직접 받아 URL 조립 (저수준, 로드밸런싱 없음)</li>
+        <li><b>@LoadBalanced RestTemplate</b> — <code>http://organization-service/…</code> 처럼 서비스 이름으로 호출</li>
+        <li><b>Feign</b> — 인터페이스에 애너테이션만 붙이면 구현체 자동 생성</li>
+      </ol>
+    </li>
+  </ul>
+</section>
+
+<section>
+  <h2>Initial vs Final</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th></th><th>Initial</th><th>Final</th></tr></thead>
+    <tbody>
+      <tr><td>모듈</td><td>configserver, licensing-service, organization-service</td><td>+ <b>eurekaserver</b></td></tr>
+      <tr><td>licensing-service 의존성</td><td>config, openfeign, netflix-ribbon</td><td>config, <b>eureka-client</b>, <b>loadbalancer</b>, openfeign (ribbon 제외)</td></tr>
+      <tr><td>LicenseServiceApplication</td><td colspan="2">둘 다 <code>@EnableDiscoveryClient @EnableFeignClients</code> + <code>@LoadBalanced RestTemplate</code> — Initial은 등록할 레지스트리가 없어 호출이 실패하는 "출발점"</td></tr>
+      <tr><td>configserver/config</td><td>licensing/organization 속성</td><td>+ <code>eureka-server.yml</code>, 각 서비스 속성에 eureka.client.* 추가</td></tr>
+      <tr><td>docker-compose</td><td>database, configserver, licensing, organization</td><td>+ eurekaserver(:8070)</td></tr>
+    </tbody>
+  </table></div>
+  <p>책을 따라가며 직접 Eureka를 붙여보려면 <code>Initial</code>에서 시작하고, 결과만 보려면 <code>Final</code>을 실행하세요.</p>
+</section>
+
+<section>
+  <h2>구성 요소 (Final)</h2>
+  <div class="arch">
+    <div class="box new"><b>eurekaserver</b><small>:8070 · 레지스트리</small></div>
+    <div class="box"><b>configserver</b><small>:8071</small></div>
+    <div class="box"><b>licensing-service</b><small>:8080 · 0.0.3-SNAPSHOT</small></div>
+    <div class="box new"><b>organization-service</b><small>:8081 · CRUD</small></div>
+    <div class="box infra"><b>PostgreSQL</b><small>:5432</small></div>
+  </div>
+<pre><code>chapter6/Final/
+├── eurekaserver/                                     <span class="tag">NEW</span>
+│   └── src/main/java/…/EurekaServerApplication.java   # @EnableEurekaServer
+├── configserver/src/main/resources/config/
+│   ├── eureka-server.yml                             <span class="tag">NEW</span>
+│   ├── organization-service.properties               <span class="tag">NEW</span>
+│   └── organization-service-dev.properties           <span class="tag">NEW</span>
+├── organization-service/                             <span class="tag">NEW</span>
+│   └── …/controller/OrganizationController.java       # GET/PUT/POST/DELETE /v1/organization
+└── licensing-service/src/main/java/…/service/client/
+    ├── OrganizationDiscoveryClient.java              <span class="tag">NEW</span>
+    ├── OrganizationRestTemplateClient.java           <span class="tag">NEW</span>
+    └── OrganizationFeignClient.java                  <span class="tag">NEW</span></code></pre>
+</section>
+
+<section>
+  <h2>핵심 코드</h2>
+  <h3>Eureka 서버 설정 (config/eureka-server.yml)</h3>
+<pre><code>server.port: 8070
+eureka:
+  instance.hostname: eurekaserver
+  client:
+    registerWithEureka: false      # 자기 자신은 등록 안 함
+    fetchRegistry: false
+    serviceUrl.defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+  server.waitTimeInMsWhenSyncEmpty: 5</code></pre>
+
+  <h3>클라이언트 등록 (config/licensing-service.properties)</h3>
+<pre><code>eureka.instance.preferIpAddress = true
+eureka.client.registerWithEureka = true
+eureka.client.fetchRegistry = true
+eureka.client.serviceUrl.defaultZone = http://eurekaserver:8070/eureka/</code></pre>
+
+  <h3>세 가지 클라이언트</h3>
+<pre><code>// 1) DiscoveryClient — 인스턴스 목록을 받아 직접 URL 생성
+List&lt;ServiceInstance&gt; instances = discoveryClient.getInstances("organization-service");
+String uri = String.format("%s/v1/organization/%s", instances.get(0).getUri(), organizationId);
+
+// 2) @LoadBalanced RestTemplate — 호스트 자리에 서비스 이름
+restTemplate.exchange("http://organization-service/v1/organization/{organizationId}",
+                      HttpMethod.GET, null, Organization.class, organizationId);
+
+// 3) Feign — 인터페이스만 선언
+@FeignClient("organization-service")
+public interface OrganizationFeignClient {
+    @RequestMapping(method = GET, value = "/v1/organization/{organizationId}", consumes = "application/json")
+    Organization getOrganization(@PathVariable("organizationId") String organizationId);
+}</code></pre>
+  <p><code>LicenseService.retrieveOrganizationInfo()</code>가 <code>clientType</code>(feign / rest / discovery) 문자열로 셋 중 하나를 고릅니다. 컨트롤러에 <code>GET …/license/{licenseId}/{clientType}</code> 엔드포인트가 추가된 이유입니다.</p>
+</section>
+
+<section>
+  <h2>실행 및 확인</h2>
+<pre><code>cd chapter6/Final
+./build-for-m1.sh
+docker-compose -f docker/docker-compose.yml up
+
+# Eureka 대시보드 / REST
+open http://localhost:8070
+curl http://localhost:8070/eureka/apps/organization-service
+
+# 조직 서비스 직접
+curl http://localhost:8081/v1/organization/e839ee96-28de-4f67-bb79-870ca89743a0
+
+# 라이선스 + 조직 정보 (클라이언트 타입별)
+B=http://localhost:8080/v1/organization/e839ee96-28de-4f67-bb79-870ca89743a0/license/279709ff-e6d5-4a54-8b55-a5c37542025b
+curl $B/feign
+curl $B/rest
+curl $B/discovery</code></pre>
+  <p>서비스가 Eureka에 등록되기까지 30초 정도 걸립니다. 바로 호출하면 <code>organization-service</code>를 못 찾는 에러가 나니 잠시 기다리세요. <code>chapter6/chapter6.postman_collection.json</code>이 이 장 전용 컬렉션입니다.</p>
+</section>
+
+<section>
+  <h2>메모</h2>
+  <ul>
+    <li>원본 저장소 이력: 2020-08에 Ribbon과 Hystrix를 제거하고 Spring Cloud LoadBalancer로 교체. 그래서 <code>spring.cloud.loadbalancer.ribbon.enabled=false</code>가 곳곳에 있습니다.</li>
+    <li><code>OrganizationController.deleteOrganization</code>은 <code>@PathVariable("id")</code>인데 경로는 <code>{organizationId}</code>라 DELETE는 실제로 동작하지 않습니다(원본 버그, 9장에서 수정됨).</li>
+    <li>응답 <code>comment</code> 필드는 여전히 <code>example.property</code> 값입니다(5장 참고).</li>
+  </ul>
+</section>
+</main>
+<footer><nav><a href="chapter05.html">← 5장</a><span class="spacer"></span><a href="chapter07.html">다음: 7장 회복성 패턴 →</a></nav></footer>
+</body>
+</html>

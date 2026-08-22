@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11장 분산 추적 (Sleuth + Zipkin) — manning-smia2</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="top"><a href="index.html">← 목차</a><a class="dim" href="chapter10.html">← 10장</a><span class="spacer"></span><a href="chapter12.html">12장 →</a></nav>
+<header>
+  <p class="kicker">Chapter 11 · chapter11/</p>
+  <h1>스프링 클라우드 슬루스와 집킨을 이용한 분산 추적</h1>
+  <p class="sub">Distributed tracing with Spring Cloud Sleuth and Zipkin</p>
+  <p class="lead">
+    요청 하나가 게이트웨이 → 라이선싱 → 조직 서비스를 거칠 때, 흩어진 로그를 <b>하나의 Trace ID</b>로 묶어 보는 장입니다.
+    Sleuth가 로그에 trace/span ID를 자동으로 찍고, 로그는 <b>Logstash → Elasticsearch → Kibana</b>로 모으며,
+    호출 구간별 소요 시간은 <b>Zipkin</b>에서 시각화합니다.
+  </p>
+  <ul class="badges"><li>Spring Cloud Sleuth</li><li>Zipkin</li><li>Brave Tracer</li><li>logstash-logback-encoder</li><li>Elasticsearch 7.11 / Logstash 7.12 / Kibana 7.13</li></ul>
+</header>
+
+<main>
+<section>
+  <h2>이 장의 목표</h2>
+  <ul>
+    <li>Sleuth로 상관관계 ID(trace id) 자동 생성·전파 — 8장에서 손으로 만든 것을 프레임워크가 대신</li>
+    <li>로그를 JSON으로 직렬화해 Logstash로 전송(TCP 5000), Kibana에서 trace id로 검색</li>
+    <li>Zipkin 서버로 span 전송, 샘플링 비율 조정, 커스텀 span</li>
+    <li>게이트웨이 응답 헤더에 Sleuth trace id 싣기</li>
+  </ul>
+</section>
+
+<section>
+  <h2>구성 요소</h2>
+  <div class="arch">
+    <div class="box infra new"><b>Logstash</b><small>:5000 (TCP, json_lines)</small></div>
+    <div class="box infra new"><b>Elasticsearch</b><small>:9200 / :9300</small></div>
+    <div class="box infra new"><b>Kibana</b><small>:5601</small></div>
+    <div class="box infra new"><b>Zipkin</b><small>:9411 · 저장소 = ES</small></div>
+    <div class="box"><b>gateway / licensing / organization</b><small>:8072 / :8080 / :8081</small></div>
+    <div class="box"><b>eureka / config</b><small>:8070 / :8071</small></div>
+    <div class="box infra"><b>Kafka / Redis / PostgreSQL</b><small>10장 그대로</small></div>
+  </div>
+<pre><code>chapter11/
+├── docker/
+│   ├── docker-compose.yml                  # + elasticsearch, kibana, logstash, zipkin (container_name 지정)
+│   └── config/logstash.conf               <span class="tag">NEW</span>
+├── gatewayserver/src/main/
+│   ├── java/…/filters/ResponseFilter.java  # Brave Tracer 의 traceId 를 응답 헤더로
+│   └── resources/logback-spring.xml       <span class="tag">NEW</span>
+├── licensing-service/src/main/
+│   ├── resources/logback-spring.xml       <span class="tag">NEW</span> LogstashTcpSocketAppender
+│   └── pom.xml                             # + spring-cloud-starter-sleuth, spring-cloud-sleuth-zipkin, logstash-logback-encoder
+└── organization-service/src/main/resources/logback-spring.xml   <span class="tag">NEW</span></code></pre>
+</section>
+
+<section>
+  <h2>핵심 코드</h2>
+  <h3>의존성만 넣으면 로그 포맷이 바뀐다</h3>
+<pre><code>&lt;dependency&gt;&lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;&lt;artifactId&gt;spring-cloud-starter-sleuth&lt;/artifactId&gt;&lt;/dependency&gt;
+&lt;dependency&gt;&lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;&lt;artifactId&gt;spring-cloud-sleuth-zipkin&lt;/artifactId&gt;&lt;/dependency&gt;
+&lt;dependency&gt;&lt;groupId&gt;net.logstash.logback&lt;/groupId&gt;&lt;artifactId&gt;logstash-logback-encoder&lt;/artifactId&gt;&lt;/dependency&gt;
+
+# 로그 한 줄:  INFO [licensing-service,3ff985c3d2dc8a0f,3ff985c3d2dc8a0f,true] …
+#                        └ app name      └ trace id         └ span id       └ Zipkin 전송 여부</code></pre>
+
+  <h3>logback-spring.xml — Logstash로 JSON 전송</h3>
+<pre><code>&lt;configuration&gt;
+  &lt;include resource="org/springframework/boot/logging/logback/base.xml"/&gt;
+  &lt;springProperty scope="context" name="application_name" source="spring.application.name"/&gt;
+  &lt;appender name="logstash" class="net.logstash.logback.appender.LogstashTcpSocketAppender"&gt;
+    &lt;destination&gt;logstash:5000&lt;/destination&gt;
+    &lt;encoder class="net.logstash.logback.encoder.LogstashEncoder"/&gt;
+  &lt;/appender&gt;
+  &lt;root level="INFO"&gt;
+    &lt;appender-ref ref="logstash"/&gt;
+    &lt;appender-ref ref="CONSOLE"/&gt;
+  &lt;/root&gt;
+  &lt;logger name="com.optimagrowth" level="DEBUG"/&gt;
+&lt;/configuration&gt;</code></pre>
+
+  <h3>logstash.conf</h3>
+<pre><code>input  { tcp { port =&gt; 5000  codec =&gt; json_lines } }
+filter { mutate { add_tag =&gt; [ "manningPublications" ] } }
+output { elasticsearch { hosts =&gt; "elasticsearch:9200" } }</code></pre>
+
+  <h3>Zipkin 설정 (config/licensing-service.properties 등)</h3>
+<pre><code>spring.zipkin.baseUrl: http://zipkin:9411
+spring.sleuth.sampler.percentage: 1        # 100% 샘플링 (운영에선 낮추기)</code></pre>
+
+  <h3>게이트웨이 — 상관관계 ID를 Sleuth trace id로</h3>
+<pre><code>@Autowired Tracer tracer;                                   // brave.Tracer
+
+@Bean public GlobalFilter postGlobalFilter() {
+    return (exchange, chain) -&gt; chain.filter(exchange).then(Mono.fromRunnable(() -&gt; {
+        String traceId = tracer.currentSpan().context().traceIdString();
+        exchange.getResponse().getHeaders().add(FilterUtils.CORRELATION_ID, traceId);
+    }));
+}</code></pre>
+  <p>8장에서 UUID를 직접 만들던 부분이 Sleuth trace id로 교체되었습니다. 클라이언트는 응답 헤더 <code>tmx-correlation-id</code>로 받은 값을 Kibana/Zipkin에서 그대로 검색하면 됩니다.</p>
+</section>
+
+<section>
+  <h2>실행 및 확인</h2>
+<pre><code>cd chapter11
+./build-for-m1.sh
+docker-compose -f docker/docker-compose.yml up
+# Elasticsearch 가 메모리를 꽤 씀 (ES_JAVA_OPTS=-Xms512m -Xmx512m). Docker Desktop 메모리 4GB 이상 권장.
+
+curl -i http://localhost:8072/organization/v1/organization/e839ee96-28de-4f67-bb79-870ca89743a0
+curl -i http://localhost:8072/license/v1/organization/d898a142-de44-466c-8c88-9ceb2c2429d3/license/f2a9c9d4-d2c0-44fa-97fe-724d77173c62
+#   응답 헤더 tmx-correlation-id 값을 복사
+
+open http://localhost:5601     # Kibana: 인덱스 패턴 logstash-* 생성 → Discover 에서 traceId 로 검색
+open http://localhost:9411     # Zipkin: 서비스별 span, 구간 소요 시간</code></pre>
+</section>
+
+<section>
+  <h2>메모</h2>
+  <ul>
+    <li>licensing-service의 <code>service/OrganizationService.java</code>가 이 장에서 삭제되었습니다(6장 이후 사용되지 않던 파일).</li>
+    <li><code>licensing-service/src/main/resources/.xml</code>이라는 이름 없는 파일이 있습니다 — JSON 콘솔 appender 설정 예시이며 Spring이 읽지 않는 잔재입니다.</li>
+    <li>Kibana 환경변수가 <code>ELASTICSEARCH_URL=http://elasticsearch:9300</code>으로 돼 있는데 9300은 transport 포트입니다. Kibana 7.x는 <code>ELASTICSEARCH_HOSTS</code>를 쓰고 기본값 <code>http://elasticsearch:9200</code>으로 접속하므로 보통은 그냥 동작하지만, 연결 문제가 생기면 9200으로 바꿔보세요.</li>
+    <li>Spring Cloud Sleuth는 2022년 이후 Micrometer Tracing으로 대체되었습니다. 개념(trace/span/baggage)은 동일.</li>
+  </ul>
+</section>
+</main>
+<footer><nav><a href="chapter10.html">← 10장</a><span class="spacer"></span><a href="chapter12.html">다음: 12장 마이크로서비스 배포 →</a></nav></footer>
+</body>
+</html>

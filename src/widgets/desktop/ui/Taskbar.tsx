@@ -18,6 +18,7 @@ const START_ITEMS = [
   { label: '홈', to: '/', ic: '#1186d6' },
   { label: '매매일지', to: '/posts', ic: '#ffd54a' },
   { label: '개발일지', to: '/dev', ic: '#0b7285' },
+  { label: '개발공부', to: '/study', ic: '#0b6e4f' },
   { label: '추천도서', to: '/books', ic: '#b58900' },
   { label: '기도문', to: '/prayer', ic: '#d98a2b' },
   { label: '원칙', to: '/principles', ic: '#1a3ea8' },

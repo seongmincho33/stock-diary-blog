@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MSA 투어 — 한 장씩 쌓아 보는 마이크로서비스</title>
+<style>
+:root{
+  --bg:#f6f7f5; --surface:#ffffff; --text:#1f2328; --muted:#5d6670; --line:#e1e4e0;
+  --accent:#0b6e4f; --accent-soft:#dff3ea; --new:#d9480f; --new-soft:#fff0e6;
+  --note:#fff7d6; --note-line:#e6c85a; --infra:#eef0ee; --user:#e8f0fe;
+  --packet:#1f6feb; --dim:.28; --code:#eef0ed;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#111412; --surface:#1a1e1c; --text:#e7eae6; --muted:#98a29c; --line:#2b312e;
+    --accent:#5fd0a2; --accent-soft:#16302a; --new:#ff9a6c; --new-soft:#3a2418;
+    --note:#3a351c; --note-line:#8a7a2a; --infra:#232826; --user:#1c2740;
+    --packet:#6ea8ff; --code:#23282580;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;font-size:24px}  /* 16px의 150% */
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",Pretendard,"Noto Sans KR","Segoe UI",sans-serif;line-height:1.6;word-break:keep-all}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.88em;background:var(--code);padding:.05em .35em;border-radius:0.25rem}
+button{font:inherit;cursor:pointer}
+
+.wrap{max-width:73.75rem;margin:0 auto;padding:1rem 1.25rem 2.5rem}
+.topbar{display:flex;align-items:center;gap:0.875rem;flex-wrap:wrap;margin-bottom:0.625rem}
+.topbar .brand{font-weight:700;font-size:.95rem}
+.topbar .brand small{color:var(--muted);font-weight:400;margin-left:0.5rem}
+.topbar .spacer{flex:1}
+.topbar a.small{font-size:.85rem;color:var(--muted)}
+.dots{display:flex;gap:0.375rem;flex-wrap:wrap}
+.dots button{width:1.875rem;height:1.875rem;border-radius:50%;border:0.0625rem solid var(--line);background:var(--surface);color:var(--muted);font-size:.75rem;font-weight:700;padding:0}
+.dots button.cur{background:var(--accent);border-color:var(--accent);color:#fff}
+.dots button.done{border-color:var(--accent);color:var(--accent)}
+
+.chap-head{display:flex;align-items:flex-end;gap:1rem;flex-wrap:wrap;margin:0.875rem 0 0.625rem}
+.chap-head .num{font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.chap-head h1{margin:0.125rem 0 0;font-size:1.65rem;line-height:1.25}
+.chap-head .en{color:var(--muted);font-size:.95rem}
+.oneliner{font-size:1.05rem;margin:0 0 0.875rem;padding:0.75rem 1rem;background:var(--accent-soft);border-radius:0.625rem;border-left:0.25rem solid var(--accent)}
+
+.sys{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin-bottom:0.875rem}
+.sys .chip{padding:0.125rem 0.625rem;border-radius:62.4375rem;border:0.0625rem solid var(--line);background:var(--surface);color:var(--text)}
+.sys .chip.new{border-color:var(--new);background:var(--new-soft);color:var(--new);font-weight:700}
+.sys .chip.new::before{content:"+ "}
+
+.stage{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(18.75rem,1fr);gap:1.125rem;align-items:start}
+@media (max-width:1350px){.stage{grid-template-columns:1fr}}  /* 900px × 1.5 — 미디어쿼리의 rem은 24px가 아닌 16px 기준이라 px로 명시 */
+.viz{background:var(--surface);border:0.0625rem solid var(--line);border-radius:0.875rem;overflow:hidden}
+.viz svg{display:block;width:100%;height:auto;background:var(--surface)}
+.caption{padding:0.75rem 1rem;border-top:0.0625rem solid var(--line);min-height:4.625rem;display:flex;gap:0.75rem;align-items:flex-start}
+.caption .idx{flex:none;width:1.875rem;height:1.875rem;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:.85rem;margin-top:0.125rem}
+.caption p{margin:0;font-size:1rem}
+.controls{display:flex;gap:0.5rem;padding:0.625rem 1rem 0.875rem;flex-wrap:wrap;align-items:center}
+.controls button{border:0.0625rem solid var(--line);background:var(--surface);color:var(--text);padding:0.4375rem 0.875rem;border-radius:0.5rem;font-size:.9rem}
+.controls button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.controls button:disabled{opacity:.45;cursor:default}
+.controls .hint{margin-left:auto;font-size:.78rem;color:var(--muted)}
+
+.panel{display:flex;flex-direction:column;gap:0.75rem}
+.card{background:var(--surface);border:0.0625rem solid var(--line);border-radius:0.75rem;padding:0.875rem 1rem}
+.card h3{margin:0 0 0.5rem;font-size:.95rem;color:var(--muted);letter-spacing:.02em}
+.card p{margin:0 0 0.5rem}.card p:last-child{margin-bottom:0}
+.card ul{margin:0;padding-left:1.2em}.card li{margin:0.1875rem 0}
+.steps{list-style:none;padding:0;margin:0}
+.steps li{padding:0.4375rem 0.625rem;border-radius:0.5rem;cursor:pointer;display:flex;gap:0.625rem;font-size:.92rem;border:0.0625rem solid transparent}
+.steps li:hover{background:var(--code)}
+.steps li.cur{background:var(--accent-soft);border-color:var(--accent)}
+.steps li .n{flex:none;width:1.375rem;height:1.375rem;border-radius:50%;border:0.0625rem solid var(--line);font-size:.75rem;display:flex;align-items:center;justify-content:center;margin-top:0.125rem;color:var(--muted)}
+.steps li.cur .n{background:var(--accent);color:#fff;border-color:var(--accent)}
+.look code{display:inline-block;margin:0.125rem 0}
+
+.nav{display:flex;gap:0.75rem;align-items:center;margin-top:1.375rem}
+.nav button{flex:1;padding:0.875rem 1rem;border-radius:0.75rem;border:0.0625rem solid var(--line);background:var(--surface);color:var(--text);font-size:1rem;text-align:left}
+.nav button.next{text-align:right;background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.nav button:disabled{opacity:.4;cursor:default}
+.nav button small{display:block;font-size:.75rem;opacity:.75;font-weight:400}
+.nav .count{color:var(--muted);font-size:.9rem;white-space:nowrap}
+
+/* SVG */
+.node rect{stroke-width:1.5;transition:opacity .35s, stroke-width .2s}
+.node text{font-family:inherit;transition:opacity .35s}
+.node .lbl{font-size:14px;font-weight:700;fill:var(--text)}
+.node .sub{font-size:11px;fill:var(--muted)}
+.node.service rect{fill:var(--accent-soft);stroke:var(--accent)}
+.node.infra rect{fill:var(--infra);stroke:var(--muted);stroke-dasharray:5 4}
+.node.user rect{fill:var(--user);stroke:#5b8def}
+.node.note rect{fill:var(--note);stroke:var(--note-line)}
+.node.state rect{fill:var(--surface);stroke:var(--text);rx:29}
+.node.isnew rect{stroke:var(--new);stroke-width:2.5}
+.node .badge{font-size:9px;font-weight:800;fill:#fff}
+.node .badgebg{fill:var(--new);stroke:none!important}
+.node.focus rect{stroke-width:3}
+.node.focus.service rect{fill:var(--accent);}
+.node.focus.service .lbl,.node.focus.service .sub{fill:#fff}
+.node.focus.state rect{fill:var(--accent);stroke:var(--accent)}
+.node.focus.state .lbl,.node.focus.state .sub{fill:#fff}
+.node.focus.infra rect{fill:var(--surface);stroke:var(--text);stroke-dasharray:none}
+.node.focus.user rect{stroke-width:3}
+.node.focus.note rect{stroke:var(--new);stroke-width:3}
+.dimmed{opacity:var(--dim)}
+.edge path{fill:none;stroke:var(--muted);stroke-width:1.6;transition:opacity .35s, stroke .2s}
+.edge.dashed path{stroke-dasharray:5 4}
+.edge.active path{stroke:var(--packet);stroke-width:2.6}
+.edge text{font-size:10.5px;fill:var(--muted);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round}
+.edge.active text{fill:var(--packet);font-weight:700}
+.group rect{fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:6 5;rx:12}
+.group text{font-size:11.5px;fill:var(--muted);font-weight:700}
+.packet{fill:var(--packet);stroke:var(--surface);stroke-width:2.5;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
+.legend{font-size:10px;fill:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">MSA 투어 <small>Spring Microservices in Action 2판 · 한 장씩 쌓아 보기</small></div>
+    <div class="spacer"></div>
+    <div class="dots" id="dots"></div>
+    <a class="small" href="index.html">상세 문서 ↗</a>
+  </div>
+
+  <div class="chap-head">
+    <div><div class="num" id="cNum"></div><h1 id="cTitle"></h1></div>
+    <div class="en" id="cEn"></div>
+  </div>
+  <p class="oneliner" id="cOne"></p>
+  <div class="sys" id="cSys"></div>
+
+  <div class="stage">
+    <div class="viz">
+      <svg id="svg" viewBox="0 0 900 492" xmlns="http://www.w3.org/2000/svg" aria-label="chapter diagram"></svg>
+      <div class="caption"><div class="idx" id="capIdx">1</div><p id="capText"></p></div>
+      <div class="controls">
+        <button class="primary" id="btnPlay">⏸ 일시정지</button>
+        <button id="btnPrevStep">‹ 이전 단계</button>
+        <button id="btnNextStep">다음 단계 ›</button>
+        <button id="btnRestart">↺ 처음부터</button>
+        <span class="hint">키보드 ← → : 챕터 이동 · Space : 재생/정지</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="card"><h3>왜 필요할까?</h3><div id="cWhy"></div></div>
+      <div class="card"><h3>어떻게 해결할까?</h3><div id="cHow"></div></div>
+      <div class="card"><h3>단계별로 보기 (클릭하면 이동)</h3><ol class="steps" id="cSteps"></ol></div>
+      <div class="card look"><h3>코드에서 볼 곳</h3><ul id="cLook"></ul><p style="margin-top:8px"><a id="cLink" href="#">이 장 상세 문서 보기 →</a></p></div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button id="btnPrev"><small>이전 장</small><span id="prevLabel"></span></button>
+    <span class="count" id="count"></span>
+    <button id="btnNext" class="next"><small>다음 장</small><span id="nextLabel"></span></button>
+  </div>
+</div>
+
+<script>
+// ───────────────────────────── 데이터 ─────────────────────────────
+const COMP = {hello:'Hello 앱',ls:'라이선싱 서비스',org:'조직 서비스',cfg:'Config 서버',eur:'Eureka',gw:'Gateway',auth:'인증 서비스',
+  dk:'Docker',pg:'PostgreSQL',r4j:'Resilience4j',kc:'Keycloak',kf:'Kafka',rd:'Redis',elk:'ELK',zp:'Zipkin',pm:'Prometheus/Grafana',aws:'AWS EKS'};
+
+// 노드 헬퍼: N(id, x, y, label, {sub, kind, new, w, h})
+const N=(id,x,y,label,o={})=>({id,x,y,label,sub:o.sub||'',kind:o.kind||'service',isNew:!!o.new,w:o.w||150,h:o.h||58});
+// 엣지: E(from, to, {label, dashed, arrow:false, bend})
+const E=(f,t,o={})=>({f,t,label:o.label||'',dashed:!!o.dashed,arrow:o.arrow!==false,bend:o.bend||0});
+
+const CH = [
+{
+ num:'1장', title:'스프링, 클라우드와 만나다', en:'Welcome to the cloud, Spring', page:'chapter01.html',
+ one:'큰 앱 하나를 작은 앱 여러 개로 쪼개는 것이 마이크로서비스. 그 "작은 앱"을 Spring Boot로 만들면 파일 하나면 충분해요.',
+ why:'<p>기능이 전부 한 프로그램에 들어 있으면(모놀리스) 한 줄만 고쳐도 전체를 다시 빌드·배포해야 하고, 팀이 커질수록 서로 발을 밟아요. 많이 쓰이는 기능만 늘리고 싶어도 통째로 늘려야 합니다.</p>',
+ how:'<p>기능별로 독립된 작은 앱(서비스)으로 나누고, 각자 REST API(URL로 요청, JSON으로 응답)로 대화하게 합니다. Spring Boot는 내장 톰캣 덕분에 <code>java -jar</code> 한 번으로 서비스가 뜹니다.</p>',
+ look:['<code>chapter1/simple-application/…/Application.java</code> — 컨트롤러 겸 시작 클래스','<code>pom.xml</code> — 의존성은 <code>spring-boot-starter-web</code> 하나'],
+ sys:{have:[],new:['hello']},
+ groups:[{x:30,y:28,w:400,h:150,label:'모놀리스 — 한 덩어리 앱'},{x:470,y:28,w:400,h:150,label:'마이크로서비스 — 기능별 작은 앱들'}],
+ nodes:[N('m1',100,115,'🖥️ 화면',{w:110,h:48}),N('m2',230,115,'📄 라이선스',{w:110,h:48}),N('m3',360,115,'🏢 조직',{w:110,h:48}),
+        N('s1',560,115,'📄 라이선스 서비스',{w:160,h:48,new:true}),N('s2',745,115,'🏢 조직 서비스',{w:160,h:48,new:true}),
+        N('user',90,315,'👤 사용자',{kind:'user',w:120}),N('app',400,315,'Spring Boot 앱',{sub:'Application.java · 내장 톰캣 :8080',new:true,w:230}),
+        N('resp',720,315,'{"message":"Hello 길동 홍"}',{kind:'note',sub:'JSON 응답',w:240})],
+ edges:[E('m3','s1',{label:'쪼갠다',dashed:true}),E('user','app',{label:'GET /hello/길동?lastName=홍'}),E('app','resp',{label:'응답'})],
+ steps:[
+  {say:'지금까지 흔한 방식: 화면·라이선스·조직 기능이 전부 한 프로그램(모놀리스)에 들어 있어요. 한 군데만 고쳐도 전체를 다시 배포해야 하죠.',focus:['m1','m2','m3']},
+  {say:'마이크로서비스는 기능별로 작은 앱으로 쪼개요. 각자 따로 만들고, 따로 배포하고, 많이 쓰이는 것만 따로 늘릴 수 있어요.',focus:['s1','s2'],move:[['m3','s1']]},
+  {say:'그 "작은 앱"을 만드는 도구가 Spring Boot. 1장은 가장 작은 앱 하나를 띄워 봅니다 — 자바 파일 한 개, 설정 0줄.',focus:['app']},
+  {say:'사용자가 브라우저(또는 curl)로 GET /hello/길동?lastName=홍 을 보내면…',focus:['user','app'],move:[['user','app']]},
+  {say:'앱이 JSON으로 답해요. "URL로 요청하고 JSON으로 답한다" — 이게 REST API이고, 앞으로 모든 서비스가 이렇게 대화합니다.',focus:['app','resp'],move:[['app','resp']]}]
+},
+{
+ num:'2장', title:'스프링 클라우드와 마이크로서비스 세계', en:'Exploring the microservices world with Spring Cloud', page:'chapter02.html',
+ one:'이 장은 지도예요. 빈 프로젝트(licensing-service)를 만들고, 앞으로 어떤 부품이 하나씩 붙을지 미리 둘러봅니다.',
+ why:'<p>서비스를 여러 개로 쪼개는 순간 새 고민이 생겨요. "설정은 어디에?", "서로 주소를 어떻게 알지?", "하나가 죽으면?", "로그인은?" — 모놀리스에선 없던 문제들입니다.</p>',
+ how:'<p>Spring Cloud는 이런 고민마다 준비된 부품을 줍니다. 2장에서는 Spring Initializr로 뼈대만 만들고, 부품은 5장부터 하나씩 붙여요. 설계 원칙으로 <b>12 팩터 앱</b>(설정 분리, 로그는 스트림으로, 무상태 등)을 소개합니다.</p>',
+ look:['<code>chapter2/licensing-service/…/LicenseServiceApplication.java</code> — <code>@SpringBootApplication</code> 하나뿐','<code>pom.xml</code> — web, actuator, lombok'],
+ sys:{have:[],new:['ls']},
+ groups:[],
+ nodes:[N('ls',450,235,'라이선싱 서비스 (뼈대)',{sub:'licensing-service · 아직 텅 빔',new:true,w:210}),
+        N('cfg',170,90,'⚙️ Config 서버',{sub:'설정 한곳에 · 5장',kind:'infra'}),N('eur',450,70,'📒 Eureka',{sub:'서비스 주소록 · 6장',kind:'infra'}),N('r4j',730,90,'🛡️ Resilience4j',{sub:'장애 버티기 · 7장',kind:'infra'}),
+        N('gw',110,235,'🚪 Gateway',{sub:'하나의 입구 · 8장',kind:'infra'}),N('sec',790,235,'🔐 보안',{sub:'로그인·토큰 · 9장',kind:'infra'}),
+        N('msg',170,390,'📨 Kafka',{sub:'이벤트 전달 · 10장',kind:'infra'}),N('trc',450,410,'🔍 Sleuth / Zipkin',{sub:'로그 추적 · 11장',kind:'infra',w:170}),N('dep',730,390,'☁️ 배포',{sub:'Docker · K8s · 4·12장',kind:'infra'})],
+ edges:['cfg','eur','r4j','gw','sec','msg','trc','dep'].map(t=>E('ls',t,{dashed:true,arrow:false})),
+ steps:[
+  {say:'2장은 지도를 펼치는 장. Spring Initializr로 빈 프로젝트 licensing-service 를 만들어요. 아직 엔드포인트가 하나도 없습니다.',focus:['ls']},
+  {say:'서비스가 늘면 설정 파일도 늘어요. 한곳에서 나눠주는 Config 서버 → 5장.',focus:['ls','cfg'],move:[['ls','cfg']]},
+  {say:'서비스가 어디(IP:포트)에 떠 있는지 적어두는 주소록, Eureka → 6장.',focus:['ls','eur'],move:[['ls','eur']]},
+  {say:'옆 서비스가 느려져도 나까지 죽지 않게 버티는 Resilience4j → 7장.',focus:['ls','r4j'],move:[['ls','r4j']]},
+  {say:'사용자는 입구 하나만 알면 되게 하는 Gateway → 8장.',focus:['ls','gw'],move:[['ls','gw']]},
+  {say:'로그인과 권한을 토큰으로 처리하는 보안(Keycloak/OAuth2) → 9장.',focus:['ls','sec'],move:[['ls','sec']]},
+  {say:'서비스끼리 직접 부르지 않고 메시지로 알리는 Kafka → 10장.',focus:['ls','msg'],move:[['ls','msg']]},
+  {say:'요청 하나가 여러 서비스를 지날 때 한 줄로 추적하는 Sleuth/Zipkin/ELK → 11장.',focus:['ls','trc'],move:[['ls','trc']]},
+  {say:'Docker(4장)로 포장해서 AWS 쿠버네티스에 올리는 배포 → 12장. 이제 한 장씩 쌓아 봅시다!',focus:['ls','dep'],move:[['ls','dep']]}]
+},
+{
+ num:'3장', title:'스프링 부트로 마이크로서비스 구축하기', en:'Building microservices with Spring Boot', page:'chapter03.html',
+ one:'컨트롤러 → 서비스 → 모델, 세 층으로 나눠 진짜 REST API를 만듭니다. 아직 DB는 없어요.',
+ why:'<p>한 클래스에 전부 넣으면 금방 꼬여요. "요청을 받는 일", "실제 업무", "데이터 모양"을 층으로 나누면 각자 따로 고치고 테스트할 수 있습니다.</p>',
+ how:'<p><code>@RestController</code>가 URL을 메서드에 연결하고, <code>@Service</code>가 로직을, 모델 클래스가 데이터를 담아요. 응답엔 HATEOAS 링크를 넣고, <code>Accept-Language</code> 헤더에 따라 메시지 언어를 바꾸며, <code>/actuator/health</code>로 상태를 알립니다.</p>',
+ look:['<code>controller/LicenseController.java</code> — <code>/v1/organization/{orgId}/license/{id}</code> CRUD','<code>service/LicenseService.java</code> — 더미 데이터 반환','<code>resources/messages_ko.properties</code> — 포크가 추가한 한국어 번들'],
+ sys:{have:['ls'],new:[]},
+ groups:[],
+ nodes:[N('user',80,200,'👤',{kind:'user',w:80}),N('ctl',290,200,'LicenseController',{sub:'URL 해석 · @RestController',new:true,w:210}),
+        N('svc',540,200,'LicenseService',{sub:'실제 일 (업무 로직)',new:true,w:180}),N('mdl',770,200,'License (모델)',{sub:'데이터의 모양',new:true,w:170}),
+        N('links',290,380,'HATEOAS 링크',{sub:'응답에 "다음에 할 수 있는 일" URL',kind:'note',w:230}),N('i18n',540,380,'messages_ko / en / es',{sub:'Accept-Language 따라 문구 선택',kind:'infra',w:230}),
+        N('act',770,380,'/actuator/health',{sub:'"살아있니?" → {"status":"UP"}',kind:'infra',w:200})],
+ edges:[E('user','ctl',{label:'GET /v1/organization/{org}/license/{id}'}),E('ctl','svc'),E('svc','mdl'),E('ctl','links',{dashed:true,arrow:false}),E('svc','i18n',{dashed:true,arrow:false})],
+ steps:[
+  {say:'요청이 들어오면 컨트롤러가 URL을 보고 "아, 라이선스 조회구나" 하고 맞는 메서드를 호출해요.',focus:['user','ctl'],move:[['user','ctl']]},
+  {say:'컨트롤러는 얇게, 진짜 일은 서비스에게 넘겨요. 층을 나누면 테스트하고 고치기가 쉬워집니다.',focus:['ctl','svc'],move:[['ctl','svc']]},
+  {say:'서비스가 License 객체(모델)를 만들어 값을 채워요. 3장은 DB가 없어서 그냥 하드코딩한 값입니다.',focus:['svc','mdl'],move:[['svc','mdl']]},
+  {say:'객체가 거꾸로 돌아가며 자동으로 JSON이 되어 사용자에게 갑니다. 1장처럼 문자열을 직접 만들지 않아요.',focus:['mdl','svc','ctl','user'],move:[['mdl','svc'],['svc','ctl'],['ctl','user']]},
+  {say:'HATEOAS: 응답 안에 수정·삭제 URL(_links)까지 넣어줘요. 클라이언트가 주소를 외울 필요가 없죠.',focus:['ctl','links']},
+  {say:'Accept-Language: ko 헤더를 보내면 한국어 메시지 파일을 골라요. 포크에서 ko 파일을 추가해 두었습니다.',focus:['svc','i18n']},
+  {say:'/actuator/health — 운영 도구가 "살아있니?" 물어보는 창구. 앞으로 나올 모든 서비스가 갖고 있어요.',focus:['act']}]
+},
+{
+ num:'4장', title:'도커', en:'Welcome to Docker', page:'chapter04.html',
+ one:'"내 컴퓨터에선 되는데…"를 없애는 기술. 앱과 실행 환경을 통째로 이미지로 찍어, 어디서나 똑같이 띄웁니다.',
+ why:'<p>서비스가 6개가 되면 각자 Java 버전, 환경변수, 포트가 달라요. 동료 PC·서버마다 손으로 맞추면 반드시 어긋납니다.</p>',
+ how:'<p><code>Dockerfile</code>(레시피)로 JAR를 담은 <b>이미지</b>를 만들고, 이미지에서 <b>컨테이너</b>(실행 중인 프로세스)를 띄워요. 여러 컨테이너를 한꺼번에 띄우는 설명서가 <code>docker-compose.yml</code>. Maven 플러그인이 빌드 중에 이미지까지 만들어 줍니다.</p>',
+ look:['<code>chapter4/licensing-service/Dockerfile</code> — 2단계(멀티스테이지) 빌드','<code>docker-compose.yml</code> — 포트 8080, <code>SPRING_PROFILES_ACTIVE=dev</code>','<code>build-for-m1.sh</code> — Apple Silicon용 빌드 스크립트(포크)'],
+ sys:{have:['ls'],new:['dk']},
+ groups:[],
+ nodes:[N('src',110,105,'📄 소스 코드',{sub:'mvn clean package',kind:'infra',w:190}),N('jar',110,250,'☕ licensing-service.jar',{sub:'실행 가능한 파일 하나',kind:'infra',w:210}),
+        N('df',110,395,'📝 Dockerfile',{sub:'JAR를 어떻게 담을지 레시피',new:true,w:210}),
+        N('img',450,250,'📦 Docker 이미지',{sub:'ostock/licensing-service:0.0.1',new:true,w:220}),
+        N('ctn',760,250,'🚢 컨테이너',{sub:'이미지를 실제로 실행 · :8080',new:true,w:210}),
+        N('compose',450,420,'docker-compose.yml',{sub:'무슨 컨테이너를 어떤 포트·환경변수로',kind:'note',w:250}),N('user',760,420,'👤 사용자',{kind:'user',w:120})],
+ edges:[E('src','jar'),E('jar','img',{label:'docker build'}),E('df','img'),E('img','ctn',{label:'docker-compose up'}),E('compose','ctn',{dashed:true,arrow:false}),E('user','ctn',{label:'localhost:8080'})],
+ steps:[
+  {say:'Maven이 코드를 컴파일해 JAR 한 파일로 묶어요. 여기까지는 3장과 같아요.',focus:['src','jar'],move:[['src','jar']]},
+  {say:'문제: Java 버전·OS가 다르면 이 JAR가 안 돌 수 있어요. Dockerfile은 "Java 11 깔린 리눅스에 이 JAR 넣고 이렇게 실행해"라는 레시피입니다.',focus:['df']},
+  {say:'docker build: 레시피대로 만든 결과물이 이미지. 앱 + 실행 환경을 통째로 찍은 사진이라 어느 컴퓨터에서나 똑같이 돌아요.',focus:['jar','df','img'],move:[['jar','img'],['df','img']]},
+  {say:'docker-compose up: 이미지로 컨테이너(실행 중인 프로세스)를 띄워요. compose 파일에 포트(8080)와 환경변수(dev 프로파일)를 적어둡니다.',focus:['img','compose','ctn'],move:[['img','ctn']]},
+  {say:'사용자는 컨테이너 안의 앱을 localhost:8080 으로 호출. 5장부터는 이 방식으로 DB·서비스 여러 개를 한 번에 띄워요.',focus:['user','ctn'],move:[['user','ctn']]}]
+},
+{
+ num:'5장', title:'스프링 클라우드 컨피그 서버로 구성 관리', en:'Controlling your configuration with the Spring Cloud Configuration Server', page:'chapter05.html',
+ one:'DB 주소·비밀번호 같은 설정을 앱 밖으로 빼서 Config 서버가 나눠줍니다. 이 장부터 진짜 DB(PostgreSQL)도 씁니다.',
+ why:'<p>설정이 JAR 안에 있으면 값 하나 바꿀 때마다 다시 빌드해야 하고, 서비스 10개면 10군데를 고쳐야 해요. 비밀번호가 소스에 박혀 있는 것도 위험합니다.</p>',
+ how:'<p>서비스는 시작할 때 "내 이름은 licensing-service, 프로파일은 dev"라고만 말하고(<code>bootstrap.yml</code>), Config 서버가 맞는 파일을 찾아 내려줍니다. 비밀번호는 <code>{cipher}…</code>로 암호화해 두고 키를 가진 서비스만 풀어요. <code>POST /actuator/refresh</code>로 재시작 없이 갱신.</p>',
+ look:['<code>configserver/…/bootstrap.yml</code> — native(클래스패스) / git / vault 백엔드','<code>configserver/…/config/licensing-service-dev.properties</code> — DB 주소, 암호화된 비밀번호','<code>licensing-service/…/config/ServiceConfig.java</code> — <code>@ConfigurationProperties</code>','<code>docker/init.sql, data.sql</code> — 테이블과 샘플 데이터'],
+ sys:{have:['ls','dk'],new:['cfg','pg']},
+ groups:[],
+ nodes:[N('repo',150,100,'📁 설정 파일 보관소',{sub:'classpath:/config · Git · Vault',kind:'infra',w:220}),N('cfg',470,100,'⚙️ Config 서버',{sub:':8071',new:true,w:170}),
+        N('prof',780,100,'프로파일별 파일',{sub:'licensing-service-dev.properties',kind:'note',w:220}),
+        N('user',150,290,'👤 사용자',{kind:'user',w:120}),N('ls',470,290,'라이선싱 서비스',{sub:':8080 · bootstrap.yml 세 줄',w:200}),N('db',780,290,'🗄️ PostgreSQL',{sub:'ostock_dev · 진짜 데이터',new:true,w:190}),
+        N('refresh',470,430,'POST /actuator/refresh',{sub:'재시작 없이 새 설정 적용',kind:'note',w:240})],
+ edges:[E('ls','cfg',{label:'"나 licensing-service, dev야"'}),E('cfg','repo'),E('cfg','prof',{dashed:true,arrow:false}),E('user','ls'),E('ls','db',{label:'JPA'}),E('refresh','ls',{dashed:true})],
+ steps:[
+  {say:'문제: DB 주소·비밀번호를 JAR 안에 넣으면 바꿀 때마다 다시 빌드해야 하고, 서비스가 10개면 10군데를 고쳐야 해요.',focus:['ls']},
+  {say:'해결: 서비스는 시작할 때 Config 서버에 "내 이름은 licensing-service, 프로파일은 dev"라고만 말해요 (bootstrap.yml 세 줄).',focus:['ls','cfg'],move:[['ls','cfg']]},
+  {say:'Config 서버가 보관소에서 licensing-service.properties + licensing-service-dev.properties 를 찾아 합쳐요.',focus:['cfg','repo','prof'],move:[['cfg','repo'],['repo','cfg']]},
+  {say:'설정이 내려와요. 비밀번호는 {cipher}… 로 암호화돼 있고, ENCRYPT_KEY 를 가진 서비스만 풀 수 있어요.',focus:['cfg','ls'],move:[['cfg','ls']]},
+  {say:'이 장부터 라이선스가 PostgreSQL 에 진짜로 저장돼요 (Spring Data JPA). 응답의 comment 에 "I AM DEV" 가 찍히면 dev 설정이 적용된 것.',focus:['user','ls','db'],move:[['user','ls'],['ls','db'],['db','ls'],['ls','user']]},
+  {say:'설정을 바꾼 뒤 POST /actuator/refresh 를 치면 @RefreshScope 빈이 새 값을 다시 읽어요. 재시작 없음!',focus:['refresh','ls','cfg'],move:[['refresh','ls'],['ls','cfg'],['cfg','ls']]}]
+},
+{
+ num:'6장', title:'서비스 디스커버리', en:'On service discovery', page:'chapter06.html',
+ one:'두 번째 서비스(조직)가 등장. 서로의 IP를 외우는 대신 Eureka "주소록"에 등록하고 이름으로 찾아 부릅니다.',
+ why:'<p>라이선싱이 조직 정보를 가져오려면 조직 서비스의 IP:포트를 알아야 해요. 그런데 컨테이너 IP는 뜰 때마다 바뀌고, 조직 서비스를 2대로 늘리면 어느 쪽을 불러야 하죠?</p>',
+ how:'<p>서비스가 시작하면 Eureka에 스스로 등록하고 주기적으로 "살아있어" 신호를 보내요. 호출하는 쪽은 IP 대신 이름(<code>http://organization-service/…</code>)으로 부르고, 클라이언트 로드밸런서가 인스턴스를 골라 실제 IP로 바꿔줍니다. 같은 일을 DiscoveryClient · RestTemplate · Feign 세 방식으로 해봅니다.</p>',
+ look:['<code>eurekaserver/…/EurekaServerApplication.java</code> — <code>@EnableEurekaServer</code>','<code>configserver/…/config/eureka-server.yml</code>, 각 서비스의 <code>eureka.client.*</code>','<code>licensing-service/…/service/client/Organization{Discovery,RestTemplate,Feign}Client.java</code>','<code>Initial/</code> = Eureka 없는 출발점, <code>Final/</code> = 완성본'],
+ sys:{have:['ls','dk','cfg','pg'],new:['org','eur']},
+ groups:[],
+ nodes:[N('eur',450,80,'📒 Eureka 서버',{sub:':8070 · 서비스 주소록',new:true,w:200}),N('user',80,290,'👤',{kind:'user',w:80}),
+        N('ls',300,290,'라이선싱 서비스',{sub:':8080',w:170}),N('o1',700,220,'🏢 조직 서비스 #1',{sub:':8081 · 172.18.0.7',new:true,w:200}),N('o2',700,360,'🏢 조직 서비스 #2',{sub:'늘리면 자동 등록',new:true,w:200}),
+        N('ways',300,430,'호출 방법 3가지',{sub:'DiscoveryClient · RestTemplate · Feign',kind:'note',w:270})],
+ edges:[E('o1','eur',{label:'등록'}),E('o2','eur',{label:'등록'}),E('ls','eur',{label:'"organization-service 어디?"'}),E('user','ls'),E('ls','o1',{label:'http://organization-service/…'}),E('ls','o2',{dashed:true})],
+ steps:[
+  {say:'문제: 라이선싱 서비스가 조직 정보를 가져오려면 조직 서비스의 IP를 알아야 해요. 컨테이너 IP는 뜰 때마다 바뀌고, 2대로 늘리면?',focus:['ls','o1','o2']},
+  {say:'해결: 서비스가 시작하면 Eureka 에 "나 organization-service, 172.18.0.7:8081 이야" 하고 스스로 등록해요 (30초마다 "살아있어" 신호).',focus:['o1','o2','eur'],move:[['o1','eur'],['o2','eur']]},
+  {say:'라이선싱도 등록하고, Eureka 에게 주소록 사본을 받아 둬요.',focus:['ls','eur'],move:[['ls','eur'],['eur','ls']]},
+  {say:'사용자가 라이선스 조회를 요청하면…',focus:['user','ls'],move:[['user','ls']]},
+  {say:'라이선싱은 IP 대신 이름 http://organization-service/… 로 호출. 주소록에서 인스턴스를 골라(로드밸런싱) 실제 IP로 바꿔줘요.',focus:['ls','o1'],move:[['ls','o1'],['o1','ls']]},
+  {say:'DiscoveryClient(목록 직접 조회) · @LoadBalanced RestTemplate · Feign(인터페이스만 선언) — 같은 일을 세 방식으로. 보통 Feign 이 가장 편해요.',focus:['ways']}]
+},
+{
+ num:'7장', title:'회복성 패턴 — Resilience4j', en:'When bad things happen: Resiliency patterns with Spring Cloud and Resilience4j', page:'chapter07.html',
+ one:'옆 서비스가 느려지거나 죽어도 나까지 같이 죽지 않게. 서킷 브레이커(두꺼비집)가 핵심입니다.',
+ why:'<p>조직 서비스가 5초씩 걸리면 라이선싱의 스레드가 전부 기다리다 묶이고, 결국 라이선싱도 응답을 못 해요. 한 서비스의 장애가 옆으로 번지는 <b>연쇄 장애</b>입니다.</p>',
+ how:'<p>호출 앞에 <b>서킷 브레이커</b>를 둡니다. 실패가 잦으면 회로를 열어(OPEN) 호출 자체를 막고 즉시 <b>폴백</b> 응답을 돌려줘요. 잠시 후 몇 개만 시험(HALF_OPEN)해 보고 괜찮으면 닫습니다. 재시도·속도 제한·벌크헤드(스레드 풀 격리)도 애너테이션 하나로 붙여요.</p>',
+ look:['<code>licensing-service/…/service/LicenseService.java</code> — <code>@CircuitBreaker @Retry @RateLimiter @Bulkhead</code> + 폴백','<code>licensing-service/…/resources/bootstrap.yml</code> — 임계값·대기 시간 설정','<code>utils/UserContext*.java</code> — 스레드 풀로 넘어가도 상관관계 ID 유지'],
+ sys:{have:['ls','org','cfg','eur','dk','pg'],new:['r4j']},
+ groups:[{x:40,y:28,w:830,h:120,label:'서킷 브레이커의 세 가지 상태'}],
+ nodes:[N('closed',180,90,'CLOSED',{sub:'정상 · 요청 통과',kind:'state',w:170}),N('open',455,90,'OPEN',{sub:'차단 · 바로 폴백',kind:'state',w:170}),N('half',730,90,'HALF_OPEN',{sub:'시험 · 몇 개만 통과',kind:'state',w:170}),
+        N('ls',130,300,'라이선싱 서비스',{w:180}),N('cb',430,300,'🛡️ 서킷 브레이커',{sub:'@CircuitBreaker · Resilience4j',new:true,w:220}),
+        N('org',745,300,'🏢 조직 서비스 (느림!)',{sub:'5초 걸리거나 에러',w:210}),N('fb',430,430,'폴백 응답',{sub:'"지금은 정보를 드릴 수 없어요"',kind:'note',w:250})],
+ edges:[E('closed','open',{label:'실패율 50% ↑'}),E('open','half',{label:'10초 후'}),E('half','closed',{label:'시험 성공',bend:48}),E('half','open',{label:'또 실패',bend:-40}),
+        E('ls','cb'),E('cb','org'),E('cb','fb',{dashed:true})],
+ steps:[
+  {say:'평소(CLOSED): 요청이 서킷 브레이커를 그냥 지나 조직 서비스로 가요. 집의 두꺼비집이 올라가 있는 상태.',focus:['closed','ls','cb','org'],move:[['ls','cb'],['cb','org'],['org','cb'],['cb','ls']]},
+  {say:'조직 서비스가 느려지거나 죽어요. 그냥 두면 라이선싱 스레드가 5초씩 기다리다 전부 묶이고, 라이선싱까지 같이 죽어요(연쇄 장애).',focus:['org','cb'],move:[['ls','cb'],['cb','org']]},
+  {say:'최근 5번 중 절반 이상 실패 → 서킷이 OPEN(차단). 두꺼비집이 내려간 거예요.',focus:['closed','open'],move:[['closed','open']]},
+  {say:'OPEN 동안은 조직 서비스에 가지도 않고 즉시 폴백 응답. 느리지 않고, 내 서비스는 멀쩡합니다.',focus:['open','ls','cb','fb'],move:[['ls','cb'],['cb','fb'],['fb','ls']]},
+  {say:'10초 후 HALF_OPEN: 요청 3개만 시험 삼아 보내봐요.',focus:['open','half','cb','org'],move:[['open','half'],['cb','org']]},
+  {say:'성공하면 CLOSED 복귀, 실패하면 다시 OPEN. 같은 메서드에 재시도(@Retry)·속도 제한(@RateLimiter)·벌크헤드(@Bulkhead)도 붙입니다.',focus:['half','closed'],move:[['half','closed']]}]
+},
+{
+ num:'8장', title:'스프링 클라우드 게이트웨이로 서비스 라우팅', en:'Service routing with Spring Cloud Gateway', page:'chapter08.html',
+ one:'입구를 하나(8072)로 모읍니다. 길 안내(라우팅)와 요청마다 송장 번호(상관관계 ID) 붙이기를 여기서 합니다.',
+ why:'<p>사용자가 서비스마다 포트(8080, 8081, …)를 알아야 하고, 로깅·보안 같은 공통 기능을 서비스마다 따로 만들어야 해요. 서비스가 늘수록 중복이 쌓입니다.</p>',
+ how:'<p>게이트웨이가 URL 앞부분(<code>/license/**</code>, <code>/organization/**</code>)을 보고 알맞은 서비스로 넘겨요. 위치는 Eureka에 물어봅니다. <b>전역 필터</b>가 들어오는 요청(pre)에 <code>tmx-correlation-id</code>를 붙이고, 나가는 응답(post)에도 실어줘요. 하위 서비스는 그 헤더를 다음 호출에 그대로 전달합니다.</p>',
+ look:['<code>configserver/…/config/gateway-server.yml</code> — 라우팅 규칙 (Path, RewritePath)','<code>gatewayserver/…/filters/TrackingFilter.java</code> — pre 필터','<code>gatewayserver/…/filters/ResponseFilter.java</code> — post 필터','<code>licensing-service/…/utils/UserContextInterceptor.java</code> — 다음 호출에 헤더 재삽입'],
+ sys:{have:['ls','org','cfg','eur','r4j','dk','pg'],new:['gw']},
+ groups:[],
+ nodes:[N('user',80,250,'👤',{kind:'user',w:80}),N('gw',340,250,'🚪 게이트웨이',{sub:':8072 · 유일한 입구',new:true,w:190}),N('eur',340,70,'📒 Eureka',{sub:':8070',kind:'infra'}),
+        N('ls',690,140,'라이선싱 서비스',{sub:'/license/** → 여기',w:190}),N('org',690,360,'🏢 조직 서비스',{sub:'/organization/** → 여기',w:190}),
+        N('flt',340,425,'전역 필터 (pre / post)',{sub:'tmx-correlation-id 발급 · 전달',kind:'note',new:true,w:240})],
+ edges:[E('user','gw',{label:':8072 하나만'}),E('gw','eur',{label:'어디 있어?'}),E('gw','ls'),E('gw','org'),E('ls','org',{label:'조직 정보? (같은 ID 전달)'}),E('flt','gw',{dashed:true,arrow:false})],
+ steps:[
+  {say:'문제: 사용자가 서비스마다 포트(8080, 8081…)를 알아야 하고, 보안·로깅 같은 공통 기능을 서비스마다 따로 만들어야 해요.',focus:['user','ls','org']},
+  {say:'해결: 입구를 하나(8072)로. 사용자는 게이트웨이만 알면 돼요.',focus:['user','gw'],move:[['user','gw']]},
+  {say:'/license/… 로 시작하면 라이선싱, /organization/… 이면 조직 서비스로 보내요(라우팅 규칙). 실제 위치는 Eureka 에 물어봄.',focus:['gw','eur','ls'],move:[['gw','eur'],['eur','gw'],['gw','ls']]},
+  {say:'들어올 때(pre 필터) 요청마다 고유 번호 tmx-correlation-id 를 만들어 헤더에 붙여요. 택배 송장 번호 같은 것.',focus:['flt','gw']},
+  {say:'라이선싱이 조직 서비스를 부를 때도 같은 번호를 헤더에 실어 보내요 (UserContextInterceptor). 번호가 끝까지 이어집니다.',focus:['ls','org'],move:[['ls','org'],['org','ls']]},
+  {say:'나갈 때(post 필터) 응답 헤더에도 번호를 넣어줘요. 문제가 생기면 이 번호 하나로 모든 서비스의 로그를 찾을 수 있어요 → 11장.',focus:['gw','user','flt'],move:[['ls','gw'],['gw','user']]}]
+},
+{
+ num:'9장', title:'마이크로서비스 보안', en:'Securing your microservices', page:'chapter09.html',
+ one:'로그인은 Keycloak이, 서비스는 토큰(놀이공원 손목 밴드)만 검사합니다. 삭제는 ADMIN만.',
+ why:'<p>지금은 아무나 조직을 삭제할 수 있어요. 누구인지(인증)와 뭘 해도 되는지(인가)를 확인해야 하는데, 서비스마다 비밀번호를 다루면 위험하고 중복입니다.</p>',
+ how:'<p>OAuth2: 사용자는 <b>Keycloak</b>(인증 서버)에 로그인해 <b>액세스 토큰(JWT)</b>을 받아요. 토큰엔 "illary, 역할 ADMIN"이 서명돼 있어요. 서비스는 토큰 서명만 검증하고 <code>@RolesAllowed</code>로 역할을 확인합니다. 라이선싱→조직 호출에도 토큰을 그대로 전달(8장 헤더 전파).</p>',
+ look:['<code>docker/realm-export.json</code> — realm <code>spmia-realm</code>, client <code>ostock</code>, 역할 ostock-user/admin','<code>*/config/SecurityConfig.java</code> — <code>KeycloakWebSecurityConfigurerAdapter</code>, bearer-only','<code>organization-service/…/OrganizationController.java</code> — <code>@RolesAllowed("ADMIN")</code> DELETE','주의: 사용자(illary/john)는 Keycloak 콘솔에서 직접 만들어야 함'],
+ sys:{have:['ls','org','cfg','eur','gw','r4j','dk','pg'],new:['kc']},
+ groups:[],
+ nodes:[N('user',80,250,'👤 illary (ADMIN)',{kind:'user',w:150}),N('kc',340,80,'🔐 Keycloak',{sub:':8080 · 로그인 · 토큰 발급',new:true,w:210}),N('gw',340,250,'🚪 게이트웨이',{sub:':8072',w:170}),
+        N('org',690,250,'🏢 조직 서비스',{sub:'@RolesAllowed("ADMIN") DELETE',w:220}),N('ls',690,410,'라이선싱 서비스',{sub:'토큰 검사 후 조직 호출',w:210}),
+        N('tok',90,415,'🎫 액세스 토큰 (JWT)',{sub:'"illary, 역할 ADMIN" + 서명',kind:'note',w:230})],
+ edges:[E('user','kc',{label:'ID / 비밀번호'}),E('kc','tok',{label:'토큰 발급',bend:-60}),E('user','gw',{label:'Bearer 토큰'}),E('gw','org'),E('gw','ls'),E('ls','org',{label:'토큰 그대로 전달'}),E('org','kc',{label:'서명 검증 (공개키)',dashed:true})],
+ steps:[
+  {say:'문제: 지금은 아무나 조직을 삭제할 수 있어요. 누구인지(인증), 뭘 해도 되는지(인가)를 확인해야 해요.',focus:['org']},
+  {say:'사용자가 Keycloak(인증 서버)에 ID/비밀번호로 로그인해요. 서비스들은 비밀번호를 몰라도 됩니다.',focus:['user','kc'],move:[['user','kc']]},
+  {say:'Keycloak 이 액세스 토큰(JWT)을 줘요. "이 사람은 illary, 역할 ADMIN" 이 적혀 있고 위조 못 하게 서명돼 있어요. 놀이공원 손목 밴드!',focus:['kc','tok'],move:[['kc','tok']]},
+  {say:'요청 헤더에 Authorization: Bearer 토큰 을 붙여 게이트웨이로 보내요.',focus:['user','gw','org'],move:[['user','gw'],['gw','org']]},
+  {say:'조직 서비스가 토큰 서명을 검증하고 역할을 확인. DELETE 는 @RolesAllowed("ADMIN") — john(USER)이면 403 Forbidden.',focus:['org','kc'],move:[['org','kc'],['kc','org']]},
+  {say:'라이선싱이 조직 서비스를 부를 때도 받은 토큰을 그대로 실어 보내요 (8장 헤더 전파 재사용). 토큰 없는 내부 호출은 거절됩니다.',focus:['gw','ls','org'],move:[['gw','ls'],['ls','org']]}]
+},
+{
+ num:'10장', title:'스프링 클라우드 스트림 — 이벤트 기반 아키텍처', en:'Event-driven architecture with Spring Cloud Stream', page:'chapter10.html',
+ one:'"조직이 바뀌었어요"를 전화(동기 호출) 대신 문자(메시지)로 알립니다. Kafka가 우체통, Redis가 복사본 보관함.',
+ why:'<p>라이선싱은 조직 정보를 매번 REST로 물어보는 대신 Redis에 복사해 두고 써요(캐시, 빠름). 그런데 조직 정보가 바뀌면 캐시는 옛날 값! 조직 서비스가 라이선싱을 직접 호출해서 알리면 서로 강하게 얽힙니다.</p>',
+ how:'<p>조직 서비스는 변경 시 Kafka 토픽에 <b>메시지를 던지고 끝</b>(발행자). 누가 읽는지 몰라도 돼요. 라이선싱은 토픽을 <b>구독</b>하다가 메시지를 받으면 캐시를 지웁니다. Spring Cloud Stream이 Kafka 코드를 감춰 주어 <code>@EnableBinding</code>/<code>@StreamListener</code>만 쓰면 됩니다.</p>',
+ look:['<code>organization-service/…/events/source/SimpleSourceBean.java</code> — 발행','<code>licensing-service/…/events/handler/OrganizationChangeHandler.java</code> — 구독(<code>@StreamListener</code>)','<code>licensing-service/…/repository/OrganizationRedisRepository.java</code>, <code>OrganizationRestTemplateClient.java</code> — 캐시 먼저 조회','주의: 이 저장소의 핸들러는 로그만 찍음. 캐시 삭제는 직접 구현해 보기'],
+ sys:{have:['ls','org','cfg','eur','gw','r4j','dk','pg'],new:['kf','rd']},
+ groups:[],
+ nodes:[N('user',80,160,'👤',{kind:'user',w:80}),N('org',320,160,'🏢 조직 서비스',{sub:'발행자 (Source)',w:190}),N('kafka',580,160,'📨 Kafka 토픽',{sub:'orgChangeTopic',new:true,w:190}),N('ls',820,160,'라이선싱 서비스',{sub:'구독자 (Sink)',w:150}),
+        N('odb',320,360,'🗄️ DB',{kind:'infra',w:120}),N('msg',580,360,'메시지',{sub:'{action:"UPDATED", organizationId:"e6a6…"}',kind:'note',w:280}),N('redis',820,360,'⚡ Redis 캐시',{sub:'조직 정보 복사본',new:true,w:150})],
+ edges:[E('user','org',{label:'PUT 조직 수정'}),E('org','odb'),E('org','kafka',{label:'이벤트 발행'}),E('kafka','ls',{label:'구독'}),E('ls','redis'),E('kafka','msg',{dashed:true,arrow:false})],
+ steps:[
+  {say:'상황: 라이선싱은 조직 정보를 매번 묻지 않고 Redis 에 복사해 두고 써요(캐시). 그런데 조직 정보가 바뀌면? 캐시는 옛날 값.',focus:['ls','redis'],move:[['ls','redis'],['redis','ls']]},
+  {say:'사용자가 조직 이름을 수정 → 조직 서비스가 DB 에 저장.',focus:['user','org','odb'],move:[['user','org'],['org','odb']]},
+  {say:'그리고 "조직 e6a6… 이 UPDATED 됐어요" 라는 메시지를 Kafka 토픽에 던져요. 누가 읽을지는 몰라도 돼요 — 문자 보내듯 비동기.',focus:['org','kafka','msg'],move:[['org','kafka']]},
+  {say:'라이선싱 서비스는 토픽을 구독 중. 메시지가 오면 @StreamListener 메서드가 실행돼요.',focus:['kafka','ls'],move:[['kafka','ls']]},
+  {say:'책에서는 여기서 Redis 의 옛 조직 정보를 지워요(캐시 무효화). 다음 조회 땐 새로 가져와 다시 캐시. (이 저장소 코드는 로그만 찍으니 직접 구현해 보세요)',focus:['ls','redis'],move:[['ls','redis']]},
+  {say:'핵심: 조직 서비스는 라이선싱 서비스의 존재를 몰라요. 구독자가 10개로 늘어도 발행 코드는 그대로 — 느슨한 결합.',focus:['org','ls']}]
+},
+{
+ num:'11장', title:'분산 추적 — Sleuth와 Zipkin', en:'Distributed tracing with Spring Cloud Sleuth and Zipkin', page:'chapter11.html',
+ one:'요청 하나에 번호표(trace id)를 붙여 세 서비스의 로그를 한 줄로 묶고, 어디서 느렸는지 그림으로 봅니다.',
+ why:'<p>요청 하나가 게이트웨이 → 라이선싱 → 조직 서비스를 지나요. 느려졌을 때 어느 서비스 탓인지, 컨테이너마다 흩어진 로그 중 어느 줄이 이 요청 것인지 찾기가 너무 어렵습니다.</p>',
+ how:'<p><b>Sleuth</b>가 요청마다 trace id를 만들고 헤더로 전달하며 모든 로그 줄에 <code>[서비스명, traceId, spanId]</code>를 찍어요(8장의 수동 ID를 자동화). 로그는 JSON으로 <b>Logstash → Elasticsearch → Kibana</b>에 모아 trace id로 검색. 구간별 소요 시간(span)은 <b>Zipkin</b>이 폭포수 그래프로 보여줍니다.</p>',
+ look:['<code>*/resources/logback-spring.xml</code> — <code>LogstashTcpSocketAppender</code> (logstash:5000)','<code>docker/config/logstash.conf</code> — TCP 입력 → Elasticsearch 출력','<code>gatewayserver/…/filters/ResponseFilter.java</code> — Brave Tracer의 traceId를 응답 헤더로','Kibana :5601 · Zipkin :9411'],
+ sys:{have:['ls','org','cfg','eur','gw','r4j','dk','pg','kf','rd'],new:['elk','zp']},
+ groups:[],
+ nodes:[N('user',70,230,'👤',{kind:'user',w:80}),N('gw',260,230,'🚪 게이트웨이',{sub:'[gateway, 3ff9…]',w:170}),N('ls',470,230,'라이선싱',{sub:'[licensing, 3ff9…]',w:160}),N('org',680,230,'🏢 조직',{sub:'[organization, 3ff9…]',w:170}),
+        N('zip',470,70,'🔍 Zipkin',{sub:':9411 · 구간별 소요 시간',new:true,w:200}),N('elk',470,400,'📚 ELK',{sub:'Logstash → Elasticsearch → Kibana',new:true,w:270}),
+        N('tid',820,80,'trace id = 3ff985c3',{sub:'요청 하나 = 번호 하나',kind:'note',w:200})],
+ edges:[E('user','gw'),E('gw','ls'),E('ls','org'),E('gw','elk',{dashed:true}),E('ls','elk',{dashed:true}),E('org','elk',{dashed:true}),E('gw','zip',{dashed:true}),E('ls','zip',{dashed:true}),E('org','zip',{dashed:true})],
+ steps:[
+  {say:'문제: 요청 하나가 3개 서비스를 지나요. 어디서 느려졌는지, 어느 로그가 이 요청 것인지 찾기 어려워요 (컨테이너마다 로그가 흩어져 있음).',focus:['gw','ls','org']},
+  {say:'Sleuth 가 요청마다 trace id 를 붙여요. 8장에서 손으로 만들던 번호를 이제 프레임워크가 자동으로.',focus:['user','gw','tid'],move:[['user','gw']]},
+  {say:'서비스를 넘어갈 때 헤더로 전달되고, 모든 로그 줄 앞에 [서비스명, trace id, span id] 가 찍혀요.',focus:['gw','ls','org','tid'],move:[['gw','ls'],['ls','org']]},
+  {say:'각 서비스가 로그를 JSON 으로 Logstash 에 보내고 → Elasticsearch 에 쌓여요. Kibana 에서 trace id 하나로 검색하면 세 서비스 로그가 한 줄로!',focus:['gw','ls','org','elk'],move:[['gw','elk'],['ls','elk'],['org','elk']]},
+  {say:'각 구간(span)이 몇 ms 걸렸는지는 Zipkin 으로. 폭포수 그래프에서 "조직 서비스에서 4초" 를 바로 찾아요.',focus:['gw','ls','org','zip'],move:[['gw','zip'],['ls','zip'],['org','zip']]}]
+},
+{
+ num:'12장', title:'마이크로서비스 배포', en:'Deploying your microservices', page:'chapter12.html',
+ one:'git push 한 번으로 빌드 → 이미지 → AWS 쿠버네티스까지 자동으로. 사람 손을 거치지 않는 파이프라인.',
+ why:'<p>서비스 6개를 손으로 빌드해서 서버에 올리면 빠뜨리고, 순서가 틀리고, "누가 언제 뭘 올렸지?"가 됩니다. 배포가 무서우면 자주 못 하고, 자주 못 하면 한 번에 바꾸는 양이 커져 더 무서워져요.</p>',
+ how:'<p><b>Jenkins</b>가 GitHub 변경을 감지해 <code>mvn package</code>(테스트 포함) → Docker 이미지 → <b>ECR</b>(AWS 이미지 창고) 푸시 → <code>kubectl apply</code>로 <b>EKS</b>(쿠버네티스)에 배포까지 자동 실행. 설정은 Git 저장소에서, 인증은 자체 authentication-service(JWT)로.</p>',
+ look:['<code>chapter12/Jenkinsfile</code> — Preparation → Build → Results → Build image → Push image → Kubernetes deploy','<code>AWS/EKS/*-deployment.yaml, *-service.yaml</code> — kompose로 변환한 매니페스트','<code>authentication-service/…/security/JWTOAuth2Config.java</code> — 자체 OAuth2 서버','<code>ecr-create-repo.sh, tag-services.sh, push-services.sh</code> — 포크가 추가한 스크립트 (ap-northeast-2)'],
+ sys:{have:['ls','org','cfg','eur','gw','r4j','dk','pg','kf','rd','elk','zp'],new:['auth','aws']},
+ groups:[{x:585,y:40,w:295,h:330,label:'☁️ AWS (ap-northeast-2)'}],
+ nodes:[N('dev',80,230,'👩‍💻 개발자',{kind:'user',sub:'git push',w:130}),N('gh',260,230,'GitHub',{sub:'소스 코드',kind:'infra',w:130}),N('jk',440,230,'🤖 Jenkins',{sub:'빌드 · 테스트 · 이미지',new:true,w:180}),
+        N('ecr',730,120,'📦 ECR',{sub:'이미지 창고',new:true,w:170}),N('eks',730,300,'☸️ EKS',{sub:'Kubernetes 클러스터',new:true,w:190}),
+        N('cfg',440,410,'⚙️ Config 서버',{sub:'설정을 Git 저장소에서',w:190}),N('auth',730,430,'🔑 authentication-service',{sub:'자체 OAuth2 (Keycloak 대신)',new:true,w:240})],
+ edges:[E('dev','gh'),E('gh','jk',{label:'새 커밋'}),E('jk','ecr',{label:'docker push'}),E('ecr','eks',{label:'이미지 pull'}),E('jk','eks',{label:'kubectl apply'}),E('cfg','gh',{label:'설정 읽기',dashed:true}),E('auth','eks',{dashed:true,arrow:false})],
+ steps:[
+  {say:'개발자가 코드를 push. 이제부터는 사람 손을 거치지 않아요 — 파이프라인이 알아서.',focus:['dev','gh'],move:[['dev','gh']]},
+  {say:'Jenkins 가 새 커밋을 가져와 mvn package: 컴파일 + 테스트. 테스트가 실패하면 여기서 멈춰요.',focus:['gh','jk'],move:[['gh','jk']]},
+  {say:'Docker 이미지를 만들어 ECR(AWS 의 이미지 창고)에 올려요. 태그는 :chapter12.',focus:['jk','ecr'],move:[['jk','ecr']]},
+  {say:'kubectl apply 로 Deployment 매니페스트를 적용 → EKS 가 ECR 에서 이미지를 받아 파드(컨테이너)를 띄워요. 죽으면 다시 띄우고, replicas 를 늘리면 복제.',focus:['jk','ecr','eks'],move:[['jk','eks'],['ecr','eks']]},
+  {say:'설정은 더 이상 JAR 안에 없어요. Config 서버가 Git 저장소에서 읽어요 — 환경(dev/prod)마다 다른 값.',focus:['cfg','gh'],move:[['cfg','gh'],['gh','cfg']]},
+  {say:'이 장에서는 Keycloak 대신 직접 만든 authentication-service 가 토큰을 발급해요 (Spring Security OAuth2 + JWT). 원리는 9장과 같아요.',focus:['auth','eks']}]
+},
+{
+ num:'부록', title:'모니터링 — Prometheus + Grafana', en:'Microservices monitoring', page:'monitoring.html',
+ one:'서비스가 숫자(요청 수, 응답 시간, 메모리)를 내놓으면 Prometheus가 모으고 Grafana가 그래프로 보여줍니다.',
+ why:'<p>11장 추적은 "요청 하나"를 따라가는 돋보기예요. 반면 "요즘 응답이 느려지고 있나?", "메모리가 새고 있나?" 같은 <b>전체 추세</b>는 숫자를 꾸준히 모아야 보입니다.</p>',
+ how:'<p>Spring Boot Actuator + <b>Micrometer</b>가 메트릭을 <code>/actuator/prometheus</code>로 노출해요. <b>Prometheus</b>가 5초마다 긁어가(pull) 시계열로 저장하고, <b>Grafana</b>가 질의(PromQL)해 대시보드를 그립니다. 공식 대시보드(예: 4701)를 가져오면 바로 JVM 상태가 보여요.</p>',
+ look:['<code>Monitoring/docker/prometheus.yml</code> — scrape 대상 licensingservice:8080, organizationservice:8081','<code>licensing-service/…/config/MetricsRegistryConfig.java</code> — 공통 태그 appName','<code>pom.xml</code> — <code>micrometer-registry-prometheus</code>','Prometheus :9090 · Grafana :3000 (admin / password)'],
+ sys:{have:['ls','org','cfg','eur','gw','auth','r4j','dk','pg'],new:['pm']},
+ groups:[],
+ nodes:[N('ls',200,150,'라이선싱 서비스',{sub:'/actuator/prometheus',w:200}),N('org',200,330,'🏢 조직 서비스',{sub:'/actuator/prometheus',w:200}),
+        N('prom',500,240,'📊 Prometheus',{sub:':9090 · 5초마다 수집 · 저장',new:true,w:210}),N('graf',780,240,'📈 Grafana',{sub:':3000 · 대시보드',new:true,w:170}),
+        N('ops',780,420,'👤 운영자',{kind:'user',w:120}),N('met',500,420,'메트릭 = 숫자',{sub:'요청 수 · 응답 시간 · JVM 메모리 · 서킷 상태',kind:'note',w:300})],
+ edges:[E('prom','ls',{label:'scrape'}),E('prom','org',{label:'scrape'}),E('graf','prom',{label:'PromQL 질의'}),E('ops','graf'),E('ls','met',{dashed:true,arrow:false})],
+ steps:[
+  {say:'서비스는 자기 상태를 숫자로 노출해요: 초당 요청 수, 응답 시간, 메모리, 서킷 브레이커 상태… (Micrometer 가 자동 수집)',focus:['ls','org','met']},
+  {say:'Prometheus 가 5초마다 /actuator/prometheus 를 방문해 숫자를 긁어가 시계열로 저장해요 (pull 방식).',focus:['prom','ls','org'],move:[['prom','ls'],['ls','prom'],['prom','org'],['org','prom']]},
+  {say:'Grafana 가 Prometheus 에 "최근 1시간 응답 시간 평균?" 같은 질의(PromQL)를 보내요.',focus:['graf','prom'],move:[['graf','prom'],['prom','graf']]},
+  {say:'운영자는 대시보드에서 그래프로 봐요. 임계값을 넘으면 알림도 가능. 11장 추적이 "한 요청"이라면, 모니터링은 "전체 추세". 투어 끝!',focus:['ops','graf'],move:[['ops','graf']]}]
+}];
+
+// ───────────────────────────── 렌더링 ─────────────────────────────
+const SVGNS='http://www.w3.org/2000/svg';
+const svg=document.getElementById('svg');
+let cur=0, stepIdx=0, playing=false, token=0;
+let nodeMap={}, edgeMap={};
+
+function el(tag,attrs={},parent){const e=document.createElementNS(SVGNS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+function clip(a,b){ // a의 테두리 위, b 방향 점
+  const hw=a.w/2,hh=a.h/2,dx=b.x-a.x,dy=b.y-a.y;
+  if(!dx&&!dy)return{x:a.x,y:a.y};
+  const t=Math.min(dx?hw/Math.abs(dx):1e9, dy?hh/Math.abs(dy):1e9);
+  return{x:a.x+dx*t,y:a.y+dy*t};
+}
+function pathD(e){
+  const a=nodeMap[e.f],b=nodeMap[e.t];
+  if(e.bend){const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1,cx=mx-dy/L*e.bend,cy=my+dx/L*e.bend;
+    const p1=clip(a,{x:cx,y:cy}),p2=clip(b,{x:cx,y:cy});return `M${p1.x},${p1.y} Q${cx},${cy} ${p2.x},${p2.y}`;}
+  const p1=clip(a,b),p2=clip(b,a);return `M${p1.x},${p1.y} L${p2.x},${p2.y}`;
+}
+function render(ch){
+  svg.innerHTML='';nodeMap={};edgeMap={};
+  const defs=el('defs',{},svg);
+  const mk=(id,cls)=>{const m=el('marker',{id,viewBox:'0 0 10 10',refX:'9',refY:'5',markerWidth:'8',markerHeight:'8',orient:'auto-start-reverse'},defs);el('path',{d:'M0,0 L10,5 L0,10 z',class:cls},m);};
+  mk('arr','arrhead');mk('arrA','arrheadA');
+  const st=el('style',{},defs);st.textContent='.arrhead{fill:var(--muted)} .arrheadA{fill:var(--packet)}';
+  ch.nodes.forEach(n=>nodeMap[n.id]=n);
+  (ch.groups||[]).forEach(g=>{const G=el('g',{class:'group'},svg);el('rect',{x:g.x,y:g.y,width:g.w,height:g.h},G);const t=el('text',{x:g.x+12,y:g.y+16},G);t.textContent=g.label;});
+  const gE=el('g',{},svg);
+  ch.edges.forEach(e=>{
+    const G=el('g',{class:'edge'+(e.dashed?' dashed':'')},gE);
+    const p=el('path',{d:pathD(e)},G);if(e.arrow)p.setAttribute('marker-end','url(#arr)');
+    if(e.label){const L=p.getTotalLength(),m=p.getPointAtLength(L/2);const t=el('text',{x:m.x,y:m.y-7,'text-anchor':'middle'},G);t.textContent=e.label;}
+    edgeMap[e.f+'>'+e.t]={g:G,p,e};
+  });
+  const gN=el('g',{},svg);
+  ch.nodes.forEach(n=>{
+    const G=el('g',{class:'node '+n.kind+(n.isNew?' isnew':''),id:'n-'+n.id},gN);
+    el('rect',{x:n.x-n.w/2,y:n.y-n.h/2,width:n.w,height:n.h,rx:n.kind==='state'?n.h/2:10},G);
+    const ty=n.sub?n.y-4:n.y+5;
+    const t=el('text',{x:n.x,y:ty,'text-anchor':'middle',class:'lbl'},G);t.textContent=n.label;
+    if(n.sub){const s=el('text',{x:n.x,y:n.y+15,'text-anchor':'middle',class:'sub'},G);s.textContent=n.sub;}
+    if(n.isNew){el('rect',{x:n.x+n.w/2-30,y:n.y-n.h/2-8,width:30,height:14,rx:4,class:'badgebg'},G);const b=el('text',{x:n.x+n.w/2-15,y:n.y-n.h/2+3,'text-anchor':'middle',class:'badge'},G);b.textContent='NEW';}
+  });
+  const lg=el('text',{x:12,y:484,class:'legend'},svg);lg.textContent='● 파란 점 = 요청/메시지의 이동  ·  NEW = 이 장에서 새로 생긴 것  ·  점선 = 참고 관계';
+}
+function setFocus(step){
+  const f=new Set(step.focus||[]);
+  const moveKeys=new Set();(step.move||[]).forEach(([a,b])=>{moveKeys.add(a+'>'+b);moveKeys.add(b+'>'+a);});
+  document.querySelectorAll('#svg .node').forEach(g=>{const id=g.id.slice(2);g.classList.toggle('focus',f.has(id));g.classList.toggle('dimmed',f.size>0&&!f.has(id));});
+  for(const k in edgeMap){const {g,e}=edgeMap[k];const involved=moveKeys.has(k)||(f.has(e.f)&&f.has(e.t));g.classList.toggle('active',moveKeys.has(k));g.classList.toggle('dimmed',f.size>0&&!involved);}
+}
+function wait(ms,tk){return new Promise(r=>setTimeout(()=>r(tk===token),ms));}
+function travel(from,to,tk){
+  let rec=edgeMap[from+'>'+to],rev=false,tmp=null;
+  if(!rec){rec=edgeMap[to+'>'+from];rev=!!rec;}
+  let p=rec?rec.p:null;
+  if(!p){tmp=el('path',{d:pathD(E(from,to)),style:'fill:none;stroke:none'},svg);p=tmp;}
+  const L=p.getTotalLength(),c=el('circle',{r:8,class:'packet'},svg),dur=Math.max(650,Math.min(1300,L*2.2));
+  return new Promise(res=>{const t0=performance.now();(function fr(now){
+    if(tk!==token){c.remove();tmp&&tmp.remove();return res(false);}
+    const k=Math.min(1,(now-t0)/dur),e=k<.5?2*k*k:-1+(4-2*k)*k,pt=p.getPointAtLength((rev?1-e:e)*L);
+    c.setAttribute('cx',pt.x);c.setAttribute('cy',pt.y);
+    if(k<1)requestAnimationFrame(fr);else{c.remove();tmp&&tmp.remove();pulse(to);res(true);}
+  })(t0);});
+}
+function pulse(id){const g=document.getElementById('n-'+id);if(!g)return;const r=g.querySelector('rect');r.style.transition='none';r.style.strokeWidth='5';requestAnimationFrame(()=>{r.style.transition='stroke-width .5s';r.style.strokeWidth='';});}
+function showStep(i){
+  const ch=CH[cur];stepIdx=Math.max(0,Math.min(ch.steps.length-1,i));const s=ch.steps[stepIdx];
+  document.getElementById('capIdx').textContent=stepIdx+1;document.getElementById('capText').textContent=s.say;
+  document.querySelectorAll('#cSteps li').forEach((li,k)=>li.classList.toggle('cur',k===stepIdx));
+  setFocus(s);
+  document.getElementById('btnPrevStep').disabled=stepIdx===0;
+  document.getElementById('btnNextStep').disabled=stepIdx===ch.steps.length-1;
+}
+async function runStep(i,tk){showStep(i);for(const [a,b] of (CH[cur].steps[stepIdx].move||[])){if(!(await travel(a,b,tk)))return false;}return tk===token;}
+async function play(from){
+  playing=true;updatePlayBtn();const tk=++token;
+  for(let i=from;i<CH[cur].steps.length;i++){if(!(await runStep(i,tk)))return;if(!(await wait(CH[cur].steps[i].move?1500:2300,tk)))return;}
+  if(tk===token){playing=false;updatePlayBtn();}
+}
+function stop(){token++;playing=false;updatePlayBtn();}
+function updatePlayBtn(){const b=document.getElementById('btnPlay');const last=stepIdx>=CH[cur].steps.length-1;b.textContent=playing?'⏸ 일시정지':(last?'▶ 다시 보기':'▶ 이어서 재생');}
+
+function goto(i,opts={}){
+  cur=Math.max(0,Math.min(CH.length-1,i));const ch=CH[cur];stop();
+  location.hash='#'+(cur+1);
+  document.getElementById('cNum').textContent=ch.num+' · '+ch.page.replace('.html','').replace('chapter0','chapter');
+  document.getElementById('cTitle').textContent=ch.title;document.getElementById('cEn').textContent=ch.en;
+  document.getElementById('cOne').textContent=ch.one;
+  document.getElementById('cWhy').innerHTML=ch.why;document.getElementById('cHow').innerHTML=ch.how;
+  document.getElementById('cLook').innerHTML=ch.look.map(x=>'<li>'+x+'</li>').join('');
+  document.getElementById('cLink').href=ch.page;
+  const sys=document.getElementById('cSys');sys.innerHTML='<span>지금까지의 시스템:</span>'+ch.sys.have.map(k=>'<span class="chip">'+COMP[k]+'</span>').join('')+ch.sys.new.map(k=>'<span class="chip new">'+COMP[k]+'</span>').join('');
+  const ol=document.getElementById('cSteps');ol.innerHTML='';ch.steps.forEach((s,k)=>{const li=document.createElement('li');li.innerHTML='<span class="n">'+(k+1)+'</span><span>'+s.say.split(/[.!?]\s/)[0].slice(0,60)+(s.say.length>60?'…':'')+'</span>';li.onclick=()=>{stop();runStep(k,++token);};ol.appendChild(li);});
+  document.querySelectorAll('#dots button').forEach((b,k)=>{b.classList.toggle('cur',k===cur);b.classList.toggle('done',k<cur);});
+  document.getElementById('btnPrev').disabled=cur===0;document.getElementById('btnNext').disabled=cur===CH.length-1;
+  document.getElementById('prevLabel').textContent=cur>0?'← '+CH[cur-1].num+' '+CH[cur-1].title:'—';
+  document.getElementById('nextLabel').textContent=cur<CH.length-1?CH[cur+1].num+' '+CH[cur+1].title+' →':'끝';
+  document.getElementById('count').textContent=(cur+1)+' / '+CH.length;
+  render(ch);showStep(0);
+  if(!opts.noScroll)window.scrollTo({top:0,behavior:'smooth'});
+  const tk=token;setTimeout(()=>{if(tk===token)play(0);},500);
+}
+// 컨트롤
+document.getElementById('btnPlay').onclick=()=>{if(playing)stop();else play(stepIdx>=CH[cur].steps.length-1?0:stepIdx);};
+document.getElementById('btnNextStep').onclick=()=>{stop();runStep(stepIdx+1,++token);};
+document.getElementById('btnPrevStep').onclick=()=>{stop();runStep(stepIdx-1,++token);};
+document.getElementById('btnRestart').onclick=()=>{stop();play(0);};
+document.getElementById('btnPrev').onclick=()=>goto(cur-1);
+document.getElementById('btnNext').onclick=()=>goto(cur+1);
+const dots=document.getElementById('dots');CH.forEach((c,k)=>{const b=document.createElement('button');b.textContent=k===CH.length-1?'부':(k+1);b.title=c.num+' '+c.title;b.onclick=()=>goto(k);dots.appendChild(b);});
+document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.key==='ArrowRight')goto(cur+1);else if(e.key==='ArrowLeft')goto(cur-1);else if(e.key===' '){e.preventDefault();document.getElementById('btnPlay').click();}});
+const h=parseInt((location.hash||'#1').slice(1),10);goto(isNaN(h)?0:h-1,{noScroll:true});
+</script>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>5장 스프링 클라우드 컨피그 서버 — manning-smia2</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="top"><a href="index.html">← 목차</a><a class="dim" href="chapter04.html">← 4장</a><span class="spacer"></span><a href="chapter06.html">6장 →</a></nav>
+<header>
+  <p class="kicker">Chapter 5 · chapter5/</p>
+  <h1>스프링 클라우드 컨피그 서버로 구성 관리</h1>
+  <p class="sub">Controlling your configuration with the Spring Cloud Configuration Server</p>
+  <p class="lead">
+    설정을 코드에서 떼어내 <b>중앙 구성 서버</b>에서 내려받도록 바꾸는 장입니다.
+    이와 함께 처음으로 <b>PostgreSQL + Spring Data JPA</b>가 들어와 라이선스가 실제 DB에 저장되고, DB 비밀번호는 암호화해서 보관합니다.
+    이 장부터 멀티 모듈 + docker-compose 구조가 됩니다.
+  </p>
+  <ul class="badges"><li>Spring Cloud Hoxton.SR1</li><li>spring-cloud-config-server</li><li>Spring Data JPA</li><li>PostgreSQL</li><li>@RefreshScope</li></ul>
+</header>
+
+<main>
+<section>
+  <h2>이 장의 목표</h2>
+  <ul>
+    <li>구성 관리 원칙: 분리 · 추상화 · 중앙 집중 · 견고함</li>
+    <li>Config Server 백엔드 — 클래스패스(native) / Git / Vault</li>
+    <li>클라이언트가 <code>bootstrap.yml</code>로 서버를 찾고, 프로파일(<code>dev</code>/<code>prod</code>)별 속성을 받는 흐름</li>
+    <li><code>@ConfigurationProperties</code>로 속성 바인딩, <code>@RefreshScope</code> + <code>POST /actuator/refresh</code>로 재시작 없이 갱신</li>
+    <li>대칭키(<code>ENCRYPT_KEY</code>)로 민감 정보 암호화 — <code>{cipher}…</code></li>
+  </ul>
+</section>
+
+<section>
+  <h2>구성 요소</h2>
+  <div class="arch">
+    <div class="box new"><b>configserver</b><small>:8071 · @EnableConfigServer</small></div>
+    <div class="box"><b>licensing-service</b><small>:8080 · 0.0.2-SNAPSHOT</small></div>
+    <div class="box infra new"><b>PostgreSQL</b><small>:5432 · ostock_dev</small></div>
+  </div>
+<pre><code>chapter5/
+├── pom.xml                      <span class="tag">NEW</span> 멀티 모듈 루트 (configserver, licensing-service)
+├── build-for-m1.sh
+├── configserver/                <span class="tag">NEW</span>
+│   └── src/main/resources/
+│       ├── bootstrap.yml                      # native / git / vault 설정, encrypt.key
+│       └── config/
+│           ├── licensing-service.properties       # 공통 (JPA, actuator)
+│           ├── licensing-service-dev.properties   # datasource URL, {cipher} 비밀번호
+│           └── licensing-service-prod.properties
+├── docker/                      <span class="tag">NEW</span>
+│   ├── docker-compose.yml       # database, configserver, licensingservice
+│   ├── init.sql                 # organizations, licenses 테이블
+│   └── data.sql                 # 샘플 데이터 (조직 3, 라이선스 2)
+└── licensing-service/
+    └── src/main/
+        ├── java/com/optimagrowth/license/
+        │   ├── config/ServiceConfig.java            <span class="tag">NEW</span> @ConfigurationProperties(prefix="example")
+        │   ├── controller/ExceptionController.java  <span class="tag">NEW</span> @ControllerAdvice
+        │   ├── model/License.java                   # @Entity @Table("licenses")
+        │   ├── model/Organization.java              <span class="tag">NEW</span>
+        │   ├── model/utils/{ErrorMessage,ResponseWrapper,RestErrorList}.java  <span class="tag">NEW</span>
+        │   ├── repository/LicenseRepository.java    <span class="tag">NEW</span> CrudRepository
+        │   └── service/{LicenseService,OrganizationService}.java
+        └── resources/bootstrap.yml                  <span class="tag">NEW</span> (application.properties 대체)</code></pre>
+</section>
+
+<section>
+  <h2>핵심 코드</h2>
+  <h3>configserver/bootstrap.yml</h3>
+<pre><code>spring:
+  application.name: config-server
+  profiles.active: native          # , git, vault 로 바꿔가며 실험
+  cloud.config.server:
+    encrypt.enabled: false         # ← 포크: 암호화 값을 서버가 풀지 않고 클라이언트가 풀도록
+    native.search-locations: classpath:/config
+    git:
+      uri: https://github.com/klimtever/config.git     # ← 포크
+      searchPaths: licensingservice
+    vault:                                             # ← 포크 추가
+      port: 8200, host: 127.0.0.1, kvVersion: 2, backend: licensing-service
+server.port: 8071
+encrypt.key: fje83Ki8403Iod87dne7Yjsl3THueh48jfuO9j4U2hf64Lo</code></pre>
+
+  <h3>licensing-service/bootstrap.yml — 클라이언트</h3>
+<pre><code>spring:
+  application.name: licensing-service   # → 서버가 licensing-service[-profile].properties 를 찾음
+  profiles.active: dev
+  cloud.config.uri: http://configserver:8071</code></pre>
+
+  <h3>서버가 내려주는 속성 (config/licensing-service-dev.properties)</h3>
+<pre><code>example.property= I AM DEV
+spring.datasource.url = jdbc:postgresql://database:5432/ostock_dev
+spring.datasource.username = postgres
+spring.datasource.password = {cipher}f4609209a3e75d8ac79a5e3063ce151c2cd28aa431170bb06974b9421e807b6a</code></pre>
+
+  <h3>속성 바인딩과 사용</h3>
+<pre><code>@Configuration
+@ConfigurationProperties(prefix = "example")
+@Getter @Setter
+public class ServiceConfig { private String property; }
+
+// LicenseService: 응답의 comment 필드에 현재 example.property 를 실어 보냄 → 프로파일/refresh 확인용
+return license.withComment(config.getProperty());</code></pre>
+  <p><code>LicenseServiceApplication</code>에 <code>@RefreshScope</code>가 붙어 있어 <code>POST /actuator/refresh</code> 후 다음 요청부터 바뀐 값이 반영됩니다.</p>
+
+  <h3>JPA 엔티티</h3>
+<pre><code>@Entity @Table(name="licenses")
+public class License extends RepresentationModel&lt;License&gt; {
+    @Id @Column(name = "license_id") private String licenseId;
+    private String description;
+    @Column(name = "organization_id") private String organizationId;
+    @Column(name = "product_name")    private String productName;
+    @Column(name = "license_type")    private String licenseType;
+    private String comment;
+}
+public interface LicenseRepository extends CrudRepository&lt;License, String&gt; {
+    List&lt;License&gt; findByOrganizationId(String organizationId);
+    License findByOrganizationIdAndLicenseId(String organizationId, String licenseId);
+}</code></pre>
+</section>
+
+<section>
+  <h2>실행 및 확인</h2>
+<pre><code>cd chapter5
+./build-for-m1.sh                 # 또는 mvn clean package dockerfile:build
+docker-compose -f docker/docker-compose.yml up
+
+# 구성 서버가 주는 값 보기
+curl http://localhost:8071/licensing-service/default
+curl http://localhost:8071/licensing-service/dev
+
+# 암호화 / 복호화
+curl -X POST http://localhost:8071/encrypt -d 'postgres'
+curl -X POST http://localhost:8071/decrypt -d '&lt;cipher text&gt;'
+
+# DB에서 실제 조회 (data.sql 의 샘플 ID)
+curl http://localhost:8080/v1/organization/e839ee96-28de-4f67-bb79-870ca89743a0/license/279709ff-e6d5-4a54-8b55-a5c37542025b
+#   → "comment":"I AM DEV"
+
+# 구성 갱신
+curl -X POST http://localhost:8080/actuator/refresh</code></pre>
+  <div class="table-wrap"><table>
+    <thead><tr><th>compose 서비스</th><th>이미지</th><th>주요 환경변수</th></tr></thead>
+    <tbody>
+      <tr><td>database</td><td>postgres:latest</td><td>POSTGRES_DB=ostock_dev, init.sql/data.sql 마운트, healthcheck</td></tr>
+      <tr><td>configserver</td><td>ostock/configserver:0.0.1-SNAPSHOT</td><td>ENCRYPT_KEY</td></tr>
+      <tr><td>licensingservice</td><td>ostock/licensing-service:0.0.2-SNAPSHOT</td><td>PROFILE=dev, CONFIGSERVER_URI, ENCRYPT_KEY, depends_on database(healthy)</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>메모</h2>
+  <ul>
+    <li><span class="tag">FORK</span> 원본과 달리 <code>encrypt.enabled=false</code>이고 키가 바뀌어 있습니다. 따라서 <code>{cipher}</code> 값은 <b>클라이언트</b>가 <code>ENCRYPT_KEY</code> 환경변수로 복호화합니다 — compose에서 licensingservice에도 같은 키를 넣는 이유.</li>
+    <li><span class="tag">FORK</span> Vault 백엔드 속성이 추가돼 있어 <code>profiles.active: vault</code>로 바꾸면 로컬 Vault(8200)에서 읽을 수 있습니다. Postman "Chapter-5 GET Vault /licensing/dev" 참고.</li>
+    <li><code>Organization</code> 모델과 <code>OrganizationService</code>가 미리 들어 있지만, 실제 조직 서비스 호출은 6장에서 시작됩니다.</li>
+    <li>샘플 조직 ID: <code>e6a625cc-…</code>(Ostock), <code>d898a142-…</code>(OptimaGrowth), <code>e839ee96-…</code>(Ostock). 이후 장의 Postman 요청이 모두 이 ID를 씁니다.</li>
+  </ul>
+</section>
+</main>
+<footer><nav><a href="chapter04.html">← 4장</a><span class="spacer"></span><a href="chapter06.html">다음: 6장 서비스 디스커버리 →</a></nav></footer>
+</body>
+</html>

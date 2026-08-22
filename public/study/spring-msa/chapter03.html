@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3장 스프링 부트로 마이크로서비스 구축 — manning-smia2</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="top"><a href="index.html">← 목차</a><a class="dim" href="chapter02.html">← 2장</a><span class="spacer"></span><a href="chapter04.html">4장 →</a></nav>
+<header>
+  <p class="kicker">Chapter 3 · chapter3/</p>
+  <h1>스프링 부트로 마이크로서비스 구축하기</h1>
+  <p class="sub">Building microservices with Spring Boot</p>
+  <p class="lead">
+    licensing-service에 <b>REST CRUD 컨트롤러</b>, 서비스 계층, 모델을 채워 넣습니다.
+    아직 DB는 없고 더미 데이터를 돌려주지만, HATEOAS 링크·국제화(i18n)·Actuator 같은 "프로덕션 준비" 요소를 함께 다룹니다.
+  </p>
+  <ul class="badges"><li>Spring Boot 2.2.3</li><li>spring-boot-starter-hateoas</li><li>MessageSource i18n</li><li>Actuator</li></ul>
+</header>
+
+<main>
+<section>
+  <h2>이 장의 목표</h2>
+  <ul>
+    <li>컨트롤러 → 서비스 → 모델 3계층으로 마이크로서비스 작성</li>
+    <li>REST 설계: JSON, HTTP 동사, URL에 리소스 의미 담기(<code>/v1/organization/{orgId}/license/{licenseId}</code>)</li>
+    <li><b>HATEOAS</b>로 응답에 관련 링크(self / create / update / delete) 포함</li>
+    <li><b>국제화</b> — <code>Accept-Language</code> 헤더에 따라 메시지 번들 선택</li>
+    <li>Actuator <code>/actuator/health</code>로 서비스 상태 노출</li>
+  </ul>
+</section>
+
+<section>
+  <h2>이전 장에서 달라진 것</h2>
+<pre><code>chapter3/licensing-service/src/main/
+├── java/com/optimagrowth/license/
+│   ├── LicenseServiceApplication.java   # + LocaleResolver, MessageSource 빈
+│   ├── controller/LicenseController.java  <span class="tag">NEW</span>
+│   ├── service/LicenseService.java        <span class="tag">NEW</span>
+│   └── model/License.java                 <span class="tag">NEW</span>  (extends RepresentationModel → HATEOAS)
+└── resources/
+    ├── messages_en.properties             <span class="tag">NEW</span>
+    ├── messages_es.properties             <span class="tag">NEW</span>
+    └── messages_ko.properties             <span class="tag">NEW</span>  ← 포크에서 추가</code></pre>
+</section>
+
+<section>
+  <h2>핵심 코드</h2>
+  <h3>LicenseController — 리소스 중심 URL</h3>
+<pre><code>@RestController
+@RequestMapping(value="v1/organization/{organizationId}/license")
+public class LicenseController {
+
+    @RequestMapping(value="/{licenseId}", method = RequestMethod.GET)
+    public ResponseEntity&lt;License&gt; getLicense(@PathVariable String organizationId,
+                                              @PathVariable String licenseId) {
+        License license = licenseService.getLicense(licenseId, organizationId);
+        license.add(
+            linkTo(methodOn(LicenseController.class).getLicense(organizationId, license.getLicenseId())).withSelfRel(),
+            linkTo(methodOn(LicenseController.class).createLicense(organizationId, license, null)).withRel("createLicense"),
+            linkTo(methodOn(LicenseController.class).updateLicense(organizationId, license)).withRel("updateLicense"),
+            linkTo(methodOn(LicenseController.class).deleteLicense(organizationId, license.getLicenseId())).withRel("deleteLicense"));
+        return ResponseEntity.ok(license);
+    }
+
+    @PostMapping
+    public ResponseEntity&lt;String&gt; createLicense(@PathVariable String organizationId, @RequestBody License request,
+            @RequestHeader(value = "Accept-Language", required = false) Locale locale) { … }
+    @PutMapping    public ResponseEntity&lt;String&gt; updateLicense(…) { … }
+    @DeleteMapping(value="/{licenseId}") public ResponseEntity&lt;String&gt; deleteLicense(…) { … }
+}</code></pre>
+
+  <h3>LicenseService — 아직 DB 없음</h3>
+  <p><code>getLicense()</code>는 <code>new License()</code>에 값을 채워 돌려주고, create/update/delete는 <code>MessageSource</code>로 만든 문자열 메시지를 반환합니다.</p>
+<pre><code>responseMessage = String.format(
+    messages.getMessage("license.create.message", null, locale), license.toString());</code></pre>
+
+  <h3>국제화 설정 (LicenseServiceApplication)</h3>
+<pre><code>@Bean public LocaleResolver localeResolver() {
+    SessionLocaleResolver r = new SessionLocaleResolver();
+    r.setDefaultLocale(Locale.US);        // Accept-Language 없으면 en
+    return r;
+}
+@Bean public ResourceBundleMessageSource messageSource() {
+    ResourceBundleMessageSource ms = new ResourceBundleMessageSource();
+    ms.setUseCodeAsDefaultMessage(true);  // 키 못 찾으면 키 자체를 반환
+    ms.setBasenames("messages");          // messages_{lang}.properties
+    return ms;
+}</code></pre>
+</section>
+
+<section>
+  <h2>실행 및 확인</h2>
+<pre><code>cd chapter3/licensing-service
+mvn spring-boot:run
+
+# 조회 (HATEOAS 링크 포함)
+curl http://localhost:8080/v1/organization/optimaGrowth/license/0235431845
+
+# 생성 — Accept-Language 로 메시지 언어 변경
+curl -X POST http://localhost:8080/v1/organization/optimaGrowth/license \
+     -H 'Content-Type: application/json' -H 'Accept-Language: es' \
+     -d '{"licenseId":"1","description":"x","productName":"Ostock","licenseType":"full"}'
+
+curl http://localhost:8080/actuator/health</code></pre>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Postman 항목</th><th>요청</th></tr></thead>
+    <tbody>
+      <tr><td>Chapter-3 GET /license</td><td><code>GET /v1/organization/optimaGrowth/license/0235431845</code></td></tr>
+      <tr><td>Chapter-3 POST /license</td><td><code>POST /v1/organization/optimaGrowth/license</code></td></tr>
+      <tr><td>Chapter-3 PUT /license</td><td><code>PUT /v1/organization/optimaGrowth/license/…</code></td></tr>
+      <tr><td>Chapter-3 DELETE /license</td><td><code>DELETE /v1/organization/optimaGrowth/license/0235431845</code></td></tr>
+      <tr><td>Chapter-3 GET /actuator/health</td><td><code>GET /actuator/health</code></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>메모</h2>
+  <ul>
+    <li><span class="tag">FORK</span> <code>messages_ko.properties</code>가 추가되어 있지만 내용은 영어 문장 그대로입니다(키만 준비됨). 한국어로 바꿔보는 것도 좋은 연습.</li>
+    <li>응답 <code>_links</code> 구조가 HATEOAS. 5장에서 <code>License</code>가 JPA 엔티티가 된 뒤에도 <code>RepresentationModel</code>을 계속 상속합니다.</li>
+  </ul>
+</section>
+</main>
+<footer><nav><a href="chapter02.html">← 2장</a><span class="spacer"></span><a href="chapter04.html">다음: 4장 도커 →</a></nav></footer>
+</body>
+</html>

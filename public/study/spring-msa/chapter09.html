@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>9장 마이크로서비스 보안 — manning-smia2</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="top"><a href="index.html">← 목차</a><a class="dim" href="chapter08.html">← 8장</a><span class="spacer"></span><a href="chapter10.html">10장 →</a></nav>
+<header>
+  <p class="kicker">Chapter 9 · chapter9/</p>
+  <h1>마이크로서비스 보안</h1>
+  <p class="sub">Securing your microservices</p>
+  <p class="lead">
+    <b>Keycloak</b>을 인증 서버(OAuth2 / OpenID Connect)로 세우고, 각 서비스를 <b>리소스 서버</b>로 만들어 토큰 없이는 접근할 수 없게 합니다.
+    조직 서비스에는 <code>@RolesAllowed</code>로 <b>역할 기반 접근 제어</b>를 걸고(삭제는 ADMIN만), 8장의 헤더 전파 장치로 액세스 토큰을 서비스 간 호출에도 이어 붙입니다.
+  </p>
+  <ul class="badges"><li>Keycloak 14</li><li>OAuth2 / OIDC</li><li>keycloak-spring-boot-starter</li><li>spring-boot-starter-security</li><li>@RolesAllowed (JSR-250)</li></ul>
+</header>
+
+<main>
+<section>
+  <h2>이 장의 목표</h2>
+  <ul>
+    <li>OAuth2의 네 역할 — 리소스 소유자, 클라이언트, 인증 서버, 리소스 서버 — 와 그랜트 타입</li>
+    <li>Keycloak 설치, realm / client / role / user 구성(<code>realm-export.json</code>으로 자동 임포트)</li>
+    <li>Spring Security + Keycloak 어댑터로 서비스를 <b>bearer-only 리소스 서버</b>로 만들기</li>
+    <li>엔드포인트별 역할 제한, 서비스 간 호출 시 토큰 전파</li>
+    <li>JWT 토큰 구조 이해, 마이크로서비스 보안 모범 사례(HTTPS, 게이트웨이 뒤에 숨기기, 존 분리)</li>
+  </ul>
+</section>
+
+<section>
+  <h2>구성 요소</h2>
+  <div class="arch">
+    <div class="box infra new"><b>Keycloak</b><small>:8080 · admin/admin</small></div>
+    <div class="box"><b>gatewayserver</b><small>:8072</small></div>
+    <div class="box"><b>licensing-service</b><small>호스트 <b>:8180</b> → 8080</small></div>
+    <div class="box"><b>organization-service</b><small>:8081 · @RolesAllowed</small></div>
+    <div class="box"><b>eureka / config</b><small>:8070 / :8071</small></div>
+    <div class="box infra"><b>PostgreSQL</b><small>:5432</small></div>
+  </div>
+<pre><code>chapter9/
+├── docker/
+│   ├── realm-export.json                                 <span class="tag">NEW</span> realm=spmia-realm, client=ostock, roles=ostock-user/ostock-admin
+│   └── docker-compose.yml                                # + keycloak (alemairebe/keycloak:14.0.0 ← arm64 지원 이미지)
+├── licensing-service/…/config/SecurityConfig.java        <span class="tag">NEW</span> KeycloakWebSecurityConfigurerAdapter
+├── organization-service/…/config/SecurityConfig.java     <span class="tag">NEW</span> + @EnableGlobalMethodSecurity(jsr250Enabled)
+├── organization-service/…/controller/OrganizationController.java   # @RolesAllowed 추가
+└── configserver/…/config/*.properties                    # keycloak.* 속성</code></pre>
+</section>
+
+<section>
+  <h2>핵심 코드</h2>
+  <h3>Keycloak 연결 속성 (config/licensing-service.properties · organization-service.properties)</h3>
+<pre><code>keycloak.realm = spmia-realm
+keycloak.auth-server-url = http://keycloak:8080/auth
+keycloak.ssl-required = external
+keycloak.resource = ostock                       # client id
+keycloak.credentials.secret = 5988f899-a5bf-4f76-b15f-f1cd0d2c81ba
+keycloak.use-resource-role-mappings = true
+keycloak.bearer-only = true                      # 로그인 리다이렉트 없이 토큰만 검사</code></pre>
+
+  <h3>SecurityConfig — 모든 요청에 인증 요구</h3>
+<pre><code>@Configuration @EnableWebSecurity
+@EnableGlobalMethodSecurity(jsr250Enabled = true)          // organization-service: @RolesAllowed 활성화
+public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
+    protected void configure(HttpSecurity http) throws Exception {
+        super.configure(http);
+        http.authorizeRequests().anyRequest().authenticated();
+        http.csrf().disable();
+    }
+    @Autowired
+    public void configureGlobal(AuthenticationManagerBuilder auth) {
+        KeycloakAuthenticationProvider p = keycloakAuthenticationProvider();
+        p.setGrantedAuthoritiesMapper(new SimpleAuthorityMapper());   // ostock-admin → ROLE_OSTOCK-ADMIN 등
+        auth.authenticationProvider(p);
+    }
+    @Bean public KeycloakConfigResolver KeycloakConfigResolver() { return new KeycloakSpringBootConfigResolver(); }
+}</code></pre>
+
+  <h3>역할 기반 접근 제어 (OrganizationController)</h3>
+<pre><code>@RolesAllowed({ "ADMIN", "USER" })  @GetMapping("/{organizationId}")     …
+@RolesAllowed({ "ADMIN", "USER" })  @PutMapping("/{organizationId}")     …
+@RolesAllowed({ "ADMIN", "USER" })  @PostMapping                          …
+@RolesAllowed("ADMIN")              @DeleteMapping("/{organizationId}")  …   // 관리자만 삭제</code></pre>
+
+  <h3>토큰 전파</h3>
+  <p>8장의 <code>UserContextFilter</code>가 <code>Authorization</code> 헤더를 <code>UserContext.AUTH_TOKEN</code>에 담고, <code>UserContextInterceptor</code>가 RestTemplate 호출에 다시 붙입니다. 그래서 licensing → organization 호출도 같은 사용자 토큰으로 인증됩니다.</p>
+</section>
+
+<section>
+  <h2>실행 및 확인</h2>
+<pre><code>cd chapter9
+./build-for-m1.sh
+docker-compose -f docker/docker-compose.yml up
+# Keycloak 기동에 1~2분. http://localhost:8080 → admin/admin → realm "spmia-realm" 확인
+# Postman 요청이 http://keycloak:8080 을 쓰므로 /etc/hosts 에  127.0.0.1 keycloak  추가
+
+# 1) 토큰 발급 (password grant)  — 사용자는 Keycloak 콘솔에서 미리 생성 (illary.huaylupo=ADMIN, john.carnell=USER)
+curl -X POST http://keycloak:8080/auth/realms/spmia-realm/protocol/openid-connect/token \
+  -u ostock:5988f899-a5bf-4f76-b15f-f1cd0d2c81ba \
+  -d 'grant_type=password&amp;username=illary.huaylupo&amp;password=password1'
+#   → {"access_token":"eyJ…", …}
+
+# 2) 토큰 없이 → 401
+curl -i http://localhost:8072/organization/v1/organization/e6a625cc-718b-48c2-ac76-1dfdff9a531e
+
+# 3) 토큰으로 조회 → 200
+curl -H "Authorization: Bearer $TOKEN" \
+     http://localhost:8072/organization/v1/organization/e6a625cc-718b-48c2-ac76-1dfdff9a531e
+
+# 4) DELETE — john(USER) 토큰은 403, illary(ADMIN) 토큰은 204
+curl -i -X DELETE -H "Authorization: Bearer $TOKEN" \
+     http://localhost:8072/organization/v1/organization/e6a625cc-718b-48c2-ac76-1dfdff9a531e
+
+# 5) 라이선스 (내부에서 조직 서비스까지 토큰 전파)
+curl -H "Authorization: Bearer $TOKEN" \
+     http://localhost:8072/license/v1/organization/d898a142-de44-466c-8c88-9ceb2c2429d3/license/f2a9c9d4-d2c0-44fa-97fe-724d77173c62</code></pre>
+  <div class="warn"><p><code>realm-export.json</code>에는 realm·client·role만 들어 있고 <b>사용자는 없습니다</b>(서비스 계정뿐). 책 9.2절대로 Keycloak 콘솔에서 illary.huaylupo / john.carnell을 만들고 역할을 매핑해야 Postman 시나리오가 동작합니다.</p></div>
+</section>
+
+<section>
+  <h2>메모</h2>
+  <ul>
+    <li>Keycloak이 8080을 쓰기 때문에 licensing-service의 호스트 포트가 <b>8180</b>으로 바뀌었습니다. 직접 호출할 일은 거의 없고 게이트웨이(8072)를 쓰면 됩니다.</li>
+    <li>구성 파일에 Kafka·Zipkin·logstash·Redis(AWS 호스트)·<code>authentication-service.properties</code> 같은 <b>뒷 장 설정이 미리 섞여</b> 있습니다. 이 장에서는 무시해도 되고, 10~12장에서 의미를 갖습니다.</li>
+    <li><span class="tag">FORK</span> Keycloak 이미지를 arm64에서 돌아가는 <code>alemairebe/keycloak:14.0.0</code>으로 교체. 원본은 <code>jboss/keycloak</code>.</li>
+    <li>10장 코드에서는 보안 설정이 다시 빠집니다(Kafka 실습에 집중). 12장에서 Keycloak 대신 자체 <code>authentication-service</code>(Spring Security OAuth2)로 되살아납니다.</li>
+  </ul>
+</section>
+</main>
+<footer><nav><a href="chapter08.html">← 8장</a><span class="spacer"></span><a href="chapter10.html">다음: 10장 이벤트 기반 아키텍처 →</a></nav></footer>
+</body>
+</html>

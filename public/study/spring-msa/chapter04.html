@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4장 도커 — manning-smia2</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="top"><a href="index.html">← 목차</a><a class="dim" href="chapter03.html">← 3장</a><span class="spacer"></span><a href="chapter05.html">5장 →</a></nav>
+<header>
+  <p class="kicker">Chapter 4 · chapter4/</p>
+  <h1>도커</h1>
+  <p class="sub">Welcome to Docker</p>
+  <p class="lead">
+    3장의 licensing-service를 그대로 가져와 <b>Docker 이미지로 포장</b>하는 장입니다.
+    자바 코드는 거의 안 바뀌고 <code>Dockerfile</code>, <code>docker-compose.yml</code>, Maven 도커 플러그인이 추가됩니다.
+    이후 모든 장은 이 방식으로 실행됩니다.
+  </p>
+  <ul class="badges"><li>Docker</li><li>docker-compose</li><li>dockerfile-maven-plugin 1.4.13</li><li>openjdk:11-slim</li></ul>
+</header>
+
+<main>
+<section>
+  <h2>이 장의 목표</h2>
+  <ul>
+    <li>컨테이너 vs VM, Docker 아키텍처(데몬·이미지·컨테이너·레지스트리)</li>
+    <li>Spring Boot JAR를 담는 <b>멀티스테이지 Dockerfile</b> 작성 — 이미지 크기와 레이어 캐시 최적화</li>
+    <li>Maven 빌드 단계에서 이미지까지 만들기(<code>mvn clean package dockerfile:build</code>)</li>
+    <li>docker-compose로 서비스 실행·환경변수 주입</li>
+  </ul>
+</section>
+
+<section>
+  <h2>이전 장에서 달라진 것</h2>
+<pre><code>chapter4/licensing-service/
+├── Dockerfile              <span class="tag">NEW</span>  멀티스테이지
+├── docker-compose.yml      <span class="tag">NEW</span>  서비스 1개
+├── build-for-m1.sh         <span class="tag">NEW</span>  ← 포크 추가
+├── pom.xml                 # + dockerfile-maven-plugin, docker.image.prefix=ostock
+└── src/main/resources/application.properties   # actuator 엔드포인트 설정 (health만 on)</code></pre>
+</section>
+
+<section>
+  <h2>핵심 코드</h2>
+  <h3>Dockerfile — 멀티스테이지</h3>
+<pre><code># stage 1: JAR를 풀어서 레이어 분리
+FROM openjdk:11-slim as build
+ARG JAR_FILE
+COPY ${JAR_FILE} app.jar
+RUN mkdir -p target/dependency && (cd target/dependency; jar -xf /app.jar)
+
+# stage 2: 풀어놓은 것만 복사 → lib(의존성)와 classes(내 코드)가 다른 레이어
+FROM openjdk:11-slim
+VOLUME /tmp
+ARG DEPENDENCY=/target/dependency
+COPY --from=build ${DEPENDENCY}/BOOT-INF/lib     /app/lib
+COPY --from=build ${DEPENDENCY}/META-INF         /app/META-INF
+COPY --from=build ${DEPENDENCY}/BOOT-INF/classes /app
+ENTRYPOINT ["java","-cp","app:app/lib/*","com.optimagrowth.license.LicenseServiceApplication"]</code></pre>
+  <p>의존성 레이어를 따로 두면 코드만 바뀌었을 때 재빌드/재푸시가 훨씬 빨라집니다. <code>java -jar</code> 대신 <code>-cp</code>로 메인 클래스를 직접 지정하는 점에 주의.</p>
+
+  <h3>pom.xml — 이미지 이름 규칙</h3>
+<pre><code>&lt;properties&gt;
+  &lt;docker.image.prefix&gt;ostock&lt;/docker.image.prefix&gt;
+&lt;/properties&gt;
+…
+&lt;plugin&gt;
+  &lt;groupId&gt;com.spotify&lt;/groupId&gt;
+  &lt;artifactId&gt;dockerfile-maven-plugin&lt;/artifactId&gt;
+  &lt;configuration&gt;
+    &lt;repository&gt;${docker.image.prefix}/${project.artifactId}&lt;/repository&gt;  &lt;!-- ostock/licensing-service --&gt;
+    &lt;tag&gt;${project.version}&lt;/tag&gt;                                          &lt;!-- 0.0.1-SNAPSHOT --&gt;
+    &lt;buildArgs&gt;&lt;JAR_FILE&gt;target/${project.build.finalName}.jar&lt;/JAR_FILE&gt;&lt;/buildArgs&gt;
+  &lt;/configuration&gt;
+&lt;/plugin&gt;</code></pre>
+
+  <h3>docker-compose.yml</h3>
+<pre><code>services:
+  licensingservice:
+    image: ostock/licensing-service:0.0.1-SNAPSHOT
+    ports: ["8080:8080"]
+    environment:
+      - "SPRING_PROFILES_ACTIVE=dev"</code></pre>
+</section>
+
+<section>
+  <h2>실행</h2>
+<pre><code>cd chapter4/licensing-service
+
+# Apple Silicon
+./build-for-m1.sh
+#   = mvn clean package
+#     docker build -t ostock/licensing-service:0.0.1-SNAPSHOT --build-arg JAR_FILE=target/licensing-service-0.0.1-SNAPSHOT.jar ./
+
+# Intel (spotify 플러그인)
+mvn clean package dockerfile:build
+
+docker-compose up
+curl http://localhost:8080/v1/organization/optimaGrowth/license/0235431845</code></pre>
+  <div class="warn"><p><code>dockerfile-maven-plugin</code>은 2020년 이후 관리되지 않습니다. arm64 맥에서 빌드가 실패하면 <code>build-for-m1.sh</code>를 쓰고, 새로 프로젝트를 만든다면 Spring Boot 2.3+의 <code>spring-boot:build-image</code>(Buildpacks)나 Jib을 고려하세요.</p></div>
+</section>
+
+<section>
+  <h2>메모</h2>
+  <ul>
+    <li><code>application.properties</code>는 Actuator 엔드포인트 목록이 주석으로 정리돼 있고, <code>enabled-by-default=false</code> + health만 켜는 보수적 설정입니다.</li>
+    <li>5장부터는 멀티 모듈 루트 <code>pom.xml</code>로 여러 서비스를 한 번에 빌드하고, compose 파일이 <code>docker/</code> 하위로 이동합니다.</li>
+  </ul>
+</section>
+</main>
+<footer><nav><a href="chapter03.html">← 3장</a><span class="spacer"></span><a href="chapter05.html">다음: 5장 스프링 클라우드 컨피그 서버 →</a></nav></footer>
+</body>
+</html>

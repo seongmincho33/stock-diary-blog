@@ -226,6 +226,33 @@ img {
   background: #22c55e;
   box-shadow: 0 6px #22c55e;
 }
+/* 개발공부 = 제본 노트 (초록 표지 띠 + 흰 페이지 + 회색 줄, flat 픽셀) */
+.dicon__img--study {
+  position: relative;
+  background: #fff;
+  box-shadow: inset -1px -1px var(--gray), inset 1px 1px #fff;
+}
+.dicon__img--study::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 7px;
+  background: #0b6e4f;
+}
+.dicon__img--study::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 12px;
+  height: 13px;
+  background:
+    linear-gradient(var(--gray) 0 0) 0 0 / 100% 2px no-repeat,
+    linear-gradient(var(--gray) 0 0) 0 5px / 100% 2px no-repeat,
+    linear-gradient(var(--gray) 0 0) 0 10px / 60% 2px no-repeat;
+}
 /* 기도문 = 촛불 (크림 초 + 앰버 불꽃 — 발광 없는 하드 픽셀, home 지붕과 같은 삼각 기법) */
 .dicon__img--prayer {
   position: relative;
@@ -1399,6 +1426,89 @@ img {
 .pager__btn--on {
   color: var(--navy);
   box-shadow: var(--bevel-sunken);
+}
+
+/* =========================================================
+   개발공부 — 테마별 문서 묶음 목록
+   ========================================================= */
+.study-list .hts-list__head {
+  margin-bottom: 14px;
+}
+.study + .study {
+  margin-top: 14px;
+}
+.study__body {
+  padding: 12px 14px 14px;
+}
+.study__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.study__sub {
+  color: #555;
+  font-size: 12px;
+}
+.study__date {
+  margin-left: auto;
+  font-size: 11px;
+  color: #888;
+}
+.study__desc {
+  margin: 8px 0 10px;
+  line-height: 1.65;
+  color: #222;
+}
+.study__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.study__toc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.study__toc-lb {
+  font-size: 11px;
+  color: #777;
+  margin-right: 4px;
+}
+.study__toc a {
+  display: inline-block;
+  padding: 2px 7px;
+  background: var(--silver);
+  box-shadow: var(--bevel-raised);
+  color: #000;
+  font-size: 11px;
+}
+.study__toc a:hover {
+  background: var(--navy);
+  color: #fff;
+}
+.study__foot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.study__n {
+  font-size: 11px;
+  color: #777;
+}
+.study__src {
+  font-size: 11px;
+  color: var(--navy);
+  margin-left: auto;
+}
+.study__note {
+  margin: 14px 0 0;
+  font-size: 11px;
+  color: #888;
 }
 
 /* =========================================================
