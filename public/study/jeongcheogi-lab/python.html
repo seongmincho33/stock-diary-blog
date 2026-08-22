@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>파이썬 랩 · Python Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f7f8fa;
+    --panel:#ffffff;
+    --panel-2:#f2f4f7;
+    --cell:#ffffff;
+    --line:#dbe1ea;
+    --line-soft:#e6eaf0;
+    --ink:#1a2230;
+    --ink-dim:#5a6b80;
+    --ink-faint:#93a1b3;
+    --cyan:#0e9e8f;
+    --cyan-bg:rgba(14,158,143,0.10);
+    --cyan-line:rgba(14,158,143,0.45);
+    --amber:#c47a12;
+    --amber-bg:rgba(196,122,18,0.11);
+    --amber-line:rgba(196,122,18,0.42);
+    --red:#d43e5e;
+    --red-bg:rgba(212,62,94,0.10);
+    --red-line:rgba(212,62,94,0.42);
+    --green:#1f9d5a;
+    --green-bg:rgba(31,157,90,0.11);
+    --green-line:rgba(31,157,90,0.42);
+    --violet:#7b5bd6;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --sans:'Space Grotesk',system-ui,sans-serif;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);line-height:1.6;
+    background-image:radial-gradient(circle at 12% 0%, rgba(14,158,143,0.06), transparent 45%),
+                     radial-gradient(circle at 88% 8%, rgba(123,91,214,0.05), transparent 40%);
+  }
+  @media (prefers-reduced-motion: reduce){ *{animation:none!important;transition:none!important;} }
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 80px;}
+
+  header.top{margin-bottom:28px;}
+  .kick{font-family:var(--mono);font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:var(--cyan);margin-bottom:10px;}
+  h1{font-size:clamp(28px,5vw,44px);font-weight:700;line-height:1.05;margin:0 0 12px;letter-spacing:-0.02em;}
+  h1 .sub{display:block;font-family:var(--mono);font-weight:400;font-size:clamp(13px,2.4vw,16px);color:var(--ink-dim);letter-spacing:0;margin-top:8px;}
+  .lede{color:var(--ink-dim);max-width:60ch;font-size:15px;}
+  .xlinks{display:flex;gap:8px;flex-wrap:wrap;}
+  a.xlink{font-family:var(--mono);font-size:12px;color:var(--cyan);text-decoration:none;border:0.5px solid var(--cyan-line);background:var(--cyan-bg);padding:5px 10px;border-radius:6px;display:inline-block;margin-top:14px;}
+  a.xlink:hover{border-color:var(--cyan);}
+
+  .maplegend{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 4px;}
+  .maplegend .seg{font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:6px;border:0.5px solid var(--line);color:var(--ink-dim);display:flex;align-items:center;gap:7px;}
+  .maplegend .dot{width:8px;height:8px;border-radius:2px;display:inline-block;}
+
+  .rail{position:sticky;top:0;z-index:20;background:rgba(247,248,250,0.88);backdrop-filter:blur(10px);border-bottom:0.5px solid var(--line);margin:24px -20px 0;padding:12px 20px;}
+  .rail-inner{max-width:960px;margin:0 auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .pips{display:flex;gap:6px;flex-wrap:wrap;}
+  .pip{font-family:var(--mono);font-size:12px;width:30px;height:30px;border-radius:7px;border:0.5px solid var(--line);background:var(--panel-2);color:var(--ink-dim);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;padding:0;}
+  .pip:hover{border-color:var(--cyan-line);color:var(--ink);}
+  .pip.active{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--cyan);}
+  .pip.done{color:var(--green);border-color:var(--green-line);}
+  .pip.done.active{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--cyan);}
+  .score{margin-left:auto;font-family:var(--mono);font-size:13px;color:var(--ink-dim);}
+  .score b{color:var(--cyan);}
+
+  /* left sidenav */
+  .sidenav{position:fixed;top:0;left:0;bottom:0;width:264px;background:var(--panel);border-right:0.5px solid var(--line);overflow-y:auto;padding:22px 14px 28px;z-index:30;display:none;flex-direction:column;gap:18px;}
+  .sn-head{display:flex;flex-direction:column;gap:10px;}
+  .sn-lab{font-family:var(--mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--cyan);}
+  .sn-title{font-size:16px;font-weight:600;line-height:1.2;letter-spacing:-0.01em;}
+  .sn-switch{display:flex;gap:6px;margin-top:2px;}
+  .sn-switch a{flex:1;text-align:center;font-family:var(--mono);font-size:11.5px;padding:6px 6px;border-radius:7px;border:0.5px solid var(--line);background:var(--panel-2);color:var(--ink-dim);text-decoration:none;transition:all .13s;}
+  .sn-switch a:hover{border-color:var(--cyan-line);color:var(--ink);}
+  .sn-switch a.on{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--cyan);font-weight:500;}
+  .sn-score{font-family:var(--mono);}
+  .sn-score-row{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--ink-dim);margin-bottom:8px;}
+  .sn-score-row b{font-size:15px;color:var(--cyan);}
+  .sn-score-row .tot{color:var(--ink-faint);}
+  .sn-bar{height:5px;background:var(--panel-2);border:0.5px solid var(--line-soft);border-radius:3px;overflow:hidden;}
+  .sn-bar-fill{height:100%;width:0;background:var(--green);border-radius:3px;transition:width .35s ease;}
+  .sn-list{display:flex;flex-direction:column;gap:2px;}
+  .sn-part{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--amber);margin:15px 4px 6px;}
+  .sn-part:first-child{margin-top:0;}
+  .sn-item{display:flex;align-items:center;gap:9px;width:100%;text-align:left;font-family:var(--sans);font-size:12.5px;padding:6px 8px;border-radius:8px;border:0.5px solid transparent;background:transparent;color:var(--ink-dim);cursor:pointer;transition:background .12s,color .12s,border-color .12s;}
+  .sn-item:hover{background:var(--panel-2);color:var(--ink);}
+  .sn-item.active{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--ink);}
+  .sn-num{flex:none;width:22px;height:22px;border-radius:6px;background:var(--panel-2);border:0.5px solid var(--line);font-family:var(--mono);font-size:11px;display:flex;align-items:center;justify-content:center;color:var(--ink-dim);}
+  .sn-item.active .sn-num{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--cyan);}
+  .sn-item.done .sn-num{background:var(--green-bg);border-color:var(--green-line);color:var(--green);}
+  .sn-txt{flex:1;line-height:1.22;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .sn-check{flex:none;color:var(--green);font-size:12px;opacity:0;transition:opacity .12s;}
+  .sn-item.done .sn-check{opacity:1;}
+  @media (min-width:1120px){
+    .sidenav{display:flex;}
+    body{padding-left:264px;}
+    .rail{display:none;}
+  }
+
+  .prob{margin-top:28px;border:0.5px solid var(--line);border-radius:16px;background:var(--panel);overflow:hidden;scroll-margin-top:64px;box-shadow:0 1px 3px rgba(26,34,48,0.04),0 8px 24px rgba(26,34,48,0.05);}
+  .prob-head{padding:18px 20px 16px;border-bottom:0.5px solid var(--line-soft);}
+  .prob-num{font-family:var(--mono);font-size:12px;color:var(--amber);letter-spacing:0.1em;}
+  .prob-title{font-size:19px;font-weight:600;margin:4px 0 2px;}
+  .prob-tag{font-family:var(--mono);font-size:11.5px;color:var(--ink-faint);}
+  .prob-body{padding:20px;}
+
+  .part-head{margin:44px 4px -6px;font-family:var(--mono);font-size:12px;color:var(--ink-dim);display:flex;align-items:center;gap:10px;}
+  .part-head .pk{color:var(--amber);letter-spacing:0.14em;font-weight:700;}
+  .part-head::after{content:'';flex:1;height:0.5px;background:var(--line);}
+
+  .stage{display:grid;grid-template-columns:minmax(0,0.82fr) minmax(0,1fr);gap:16px;align-items:start;}
+  @media (max-width:720px){ .stage{grid-template-columns:1fr;} }
+  .pane{background:var(--panel-2);border:0.5px solid var(--line-soft);border-radius:var(--radius);padding:13px;}
+  .pane-label{font-family:var(--mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px;}
+
+  pre.code{margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.95;white-space:pre;overflow-x:auto;}
+  .code .ln{display:block;padding:1px 8px;border-radius:5px;color:var(--ink-faint);transition:background .12s,color .12s;}
+  .code .ln.seen{color:var(--ink);}
+  .code .ln.on{background:var(--cyan-bg);color:var(--ink);}
+
+  .memsec{margin-bottom:11px;}
+  .memsec:last-child{margin-bottom:0;}
+  .memsec .sh{font-family:var(--mono);font-size:11px;color:var(--ink-dim);margin-bottom:7px;display:flex;align-items:center;gap:7px;}
+  .memsec .sh .badge{font-size:10px;color:var(--ink-faint);}
+  .memsec .sh .tag{width:7px;height:7px;border-radius:2px;}
+
+  .cellrow{display:flex;align-items:center;gap:9px;border:0.5px solid var(--line);background:var(--cell);border-radius:7px;padding:6px 10px;margin-bottom:5px;font-family:var(--mono);}
+  .cellrow.grp{margin-bottom:3px;}
+  .cellrow .addr{font-size:11px;color:var(--ink-faint);min-width:86px;}
+  .cellrow .nm{font-size:12.5px;font-weight:500;color:var(--ink);min-width:44px;}
+  .cellrow .val{font-size:12.5px;margin-left:auto;color:var(--ink);}
+  .cellrow.hot{background:var(--cyan-bg);border-color:var(--cyan-line);}
+  .cellrow.tgt{border-color:var(--cyan-line);}
+  .cellrow.ptr .val{color:var(--cyan);}
+  .cellrow.good{background:var(--green-bg);border-color:var(--green-line);}
+  .cellrow.good .val{color:var(--green);}
+  .cellrow.bad{background:var(--red-bg);border-color:var(--red-line);}
+  .cellrow.bad .val{color:var(--red);}
+  .cellrow .lock{font-size:11px;color:var(--ink-faint);margin-left:4px;}
+  .empty{font-family:var(--mono);font-size:12px;color:var(--ink-faint);padding:5px 2px;}
+
+  .steps-ctrl{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+  .modes{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap;}
+  button.btn{font-family:var(--mono);font-size:12px;padding:7px 12px;border-radius:7px;border:0.5px solid var(--line);background:var(--panel-2);color:var(--ink);cursor:pointer;transition:all .13s;}
+  button.btn:hover:not(:disabled){border-color:var(--cyan-line);}
+  button.btn:disabled{opacity:0.4;cursor:default;}
+  button.btn.on{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--cyan);}
+  .stepn{font-family:var(--mono);font-size:12px;color:var(--ink-dim);}
+
+  .calc{margin-top:12px;border-radius:var(--radius);padding:11px 13px;font-family:var(--mono);font-size:12.5px;white-space:pre;overflow-x:auto;background:var(--cyan-bg);color:var(--cyan);border:0.5px solid var(--cyan-line);}
+  .calc.bad{background:var(--red-bg);color:var(--red);border-color:var(--red-line);}
+  .calc.good{background:var(--green-bg);color:var(--green);border-color:var(--green-line);}
+  .note{margin-top:12px;background:var(--panel-2);border:0.5px solid var(--line-soft);border-radius:var(--radius);padding:12px 14px;font-size:14px;color:var(--ink);}
+
+  .quiz{margin-top:16px;border-top:0.5px dashed var(--line);padding-top:16px;}
+  .quiz .q{font-size:14.5px;font-weight:500;margin-bottom:10px;}
+  .quiz .q .qmono{font-family:var(--mono);color:var(--amber);}
+  .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;}
+  button.opt{font-family:var(--mono);font-size:13px;padding:9px 12px;border-radius:7px;border:0.5px solid var(--line);background:var(--panel-2);color:var(--ink);cursor:pointer;transition:all .13s;text-align:center;}
+  button.opt:hover:not(:disabled){border-color:var(--cyan-line);}
+  button.opt:disabled{cursor:default;}
+  button.opt.correct{background:var(--green-bg);border-color:var(--green-line);color:var(--green);}
+  button.opt.wrong{background:var(--red-bg);border-color:var(--red-line);color:var(--red);}
+  .exp{display:none;margin-top:11px;background:var(--panel-2);border:0.5px solid var(--line-soft);border-radius:var(--radius);padding:11px 13px;font-size:13.5px;line-height:1.65;}
+  .exp.show{display:block;}
+  .exp b{color:var(--green);}
+  .exp b.no{color:var(--red);}
+
+  /* drill zone */
+  .drill-stats{display:flex;gap:16px;font-family:var(--mono);font-size:12px;color:var(--ink-dim);margin-bottom:12px;flex-wrap:wrap;}
+  .drill-stats b{color:var(--cyan);}
+  .drill-code{font-family:var(--mono);font-size:13px;background:var(--panel-2);border:0.5px solid var(--line-soft);border-radius:var(--radius);padding:11px 13px;margin-bottom:10px;white-space:pre;overflow-x:auto;}
+  .drill-done{text-align:center;padding:14px 0 6px;}
+  .drill-done .big{font-size:28px;font-weight:700;color:var(--cyan);font-family:var(--mono);margin-bottom:6px;}
+  .drill-done .msg{color:var(--ink-dim);font-size:14px;margin-bottom:14px;}
+
+  footer{margin-top:44px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--ink-faint);}
+  .reset-all{margin-top:14px;}
+
+  a.skip{position:absolute;left:-999px;}
+  a.skip:focus{left:8px;top:8px;position:fixed;background:var(--cyan);color:#02110f;padding:8px 12px;border-radius:6px;z-index:99;font-family:var(--mono);}
+</style>
+</head>
+<body>
+<a href="#p1" class="skip">본문으로 건너뛰기</a>
+<aside class="sidenav" id="sidenav" aria-label="문제 목록">
+  <div class="sn-head">
+    <div class="sn-lab">Python Lab</div>
+    <div class="sn-title">파이썬 랩</div>
+    <div class="sn-switch">
+      <a href="clang.html">C</a>
+      <a href="java.html">Java</a>
+      <a href="python.html" class="on">Python</a>
+    </div>
+    <div class="sn-switch">
+      <a href="python.html" class="on">파이썬 랩 · 14문제</a>
+    </div>
+  </div>
+  <div class="sn-score">
+    <div class="sn-score-row"><span>SCORE</span><span><b id="snScore">0</b> / <span class="tot" id="snTot">14</span></span></div>
+    <div class="sn-bar"><div class="sn-bar-fill" id="snBar"></div></div>
+  </div>
+  <nav class="sn-list" id="snList" role="tablist"></nav>
+  <button class="sn-item" id="snDrill"><span class="sn-num">🔥</span><span class="sn-txt">드릴 존 · 속사포 훈련</span><span class="sn-check"></span></button>
+</aside>
+<div class="wrap">
+  <header class="top">
+    <div class="kick">Python Lab</div>
+    <h1>파이썬 랩
+      <span class="sub">14개 문제 + 드릴 존 · 문법 입문부터 정처기까지</span>
+    </h1>
+    <p class="lede">1·2편과 자바 랩에서 그린 메모리 지도가 마지막 언어를 만납니다. 파이썬 변수는 상자가 아니라 <b>이름표</b> — 이미 배운 참조 이야기의 완결편이라 문법이 처음이어도 절반은 아는 그림입니다. 본문에서 이해하고, 맨 아래 드릴 존에서 반복 훈련하세요.</p>
+    <div class="xlinks">
+      <a class="xlink" href="clang.html">← C 랩</a>
+      <a class="xlink" href="java.html">← 자바 랩</a>
+      <a class="xlink" href="quiz.html">🔥 기출 실전 랩 →</a>
+      <a class="xlink" href="#drill">🔥 드릴 존 바로가기</a>
+    </div>
+
+    <div class="maplegend" aria-label="메모리 영역 색상 안내">
+      <span class="seg"><span class="dot" style="background:var(--cyan)"></span>이름 공간 · 이름표</span>
+      <span class="seg"><span class="dot" style="background:var(--amber)"></span>객체 공간 · 모든 값이 객체</span>
+      <span class="seg"><span class="dot" style="background:var(--violet)"></span>클래스 공간 · class와 클래스 변수</span>
+    </div>
+  </header>
+
+  <div class="rail">
+    <div class="rail-inner">
+      <div class="pips" id="pips" role="tablist" aria-label="문제 바로가기"></div>
+      <div class="score">SCORE <b id="score">0</b> / <span id="scoreTotal">14</span></div>
+    </div>
+  </div>
+
+  <main id="problems"></main>
+
+  <section class="prob" id="drill">
+    <div class="prob-head">
+      <div class="prob-num">DRILL ZONE</div>
+      <div class="prob-title">드릴 존 · 속사포 훈련</div>
+      <div class="prob-tag">24문항 · 틀려도 부담 없이 · 섞어서 무한 반복</div>
+    </div>
+    <div class="prob-body"><div id="drillBody"></div></div>
+  </section>
+
+  <div style="text-align:center;">
+    <button class="btn reset-all" id="resetAll">↺ 전체 다시 풀기</button>
+  </div>
+
+  <footer>
+    이름표를 그릴 수 있으면 파이썬은 이미 절반이다
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- helpers to build memory rows ----------
+   첫 칼럼(addr 자리): 이름 공간 행은 비움, 객체 공간 행은 참조(@…) */
+function v(addr,name,val,o){o=o||{};return{addr:addr,name:name,val:val,cls:o.cls||'',ptr:!!o.ptr,lock:!!o.lock,grp:!!o.grp};}
+function sec(sh,badge,tag,rows){return{sh:sh,badge:badge||'',tag:tag||'',rows:rows};}
+function fr(title,dim,rows){return{title:title,dim:dim,rows:rows};}
+
+/* ---------- page-specific row builders ---------- */
+function pyStr(marks){
+  const C=["'P'","'Y'","'T'","'H'","'O'","'N'"];
+  return C.map((c,i)=>v('@s01','['+i+']',c,{cls:(marks&&marks[i])||'',lock:true,grp:i!==5}));
+}
+function listRows(ref,vals,marks){
+  return vals.map((val,i)=>v(ref,'['+i+']',String(val),{cls:(marks&&marks[i])||'',grp:i!==vals.length-1}));
+}
+
+/* ---------- PROBLEM DEFINITIONS ---------- */
+const PROBLEMS = [
+/* ===== P01 : names, not boxes ===== */
+{
+  id:'p1', num:'PROBLEM 01', title:'변수는 이름표 — 선언이 없는 이유', tag:'이름 공간 · 객체 · 동적 타입',
+  modes:[
+   {label:'이름표 붙이기',
+    lines:['a = 10','b = a','a = "hi"','print(b)   # ?'],
+    steps:[
+      {line:0,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@n10',{cls:'hot',ptr:1})]),sec('객체 공간','','var(--amber)',[v('@n10','int','10',{cls:'hot'})])],
+       note:'a라는 상자가 생긴 게 아닙니다. 객체 공간에 int 10이 만들어지고, 거기에 a라는 이름표가 붙은 것 — 자바 J01의 참조가 파이썬에선 "전부"입니다. 타입은 객체(int)에 있지 이름표엔 없어서, 선언도 타입 표기도 필요 없어요.'},
+      {line:1,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@n10',{ptr:1}),v('','b','@n10',{cls:'hot',ptr:1})]),sec('객체 공간','','var(--amber)',[v('@n10','int','10',{cls:'tgt'})])],
+       calc:'b = a  →  같은 객체에 이름표 하나 더',
+       note:'10이 복사된 게 아니라 이름표가 늘었습니다. int는 불변(immutable)이라 이 공유는 안전해요.'},
+      {line:2,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@s20',{cls:'hot',ptr:1}),v('','b','@n10',{ptr:1})]),sec('객체 공간','','var(--amber)',[v('@n10','int','10'),v('@s20','str','"hi"',{cls:'hot'})])],
+       calc:'a = "hi"  →  에러가 아니다!\na 이름표를 떼어 str 객체로 옮겨 붙였을 뿐',
+       note:'변수의 타입이 바뀐 게 아닙니다 — 애초에 이름표엔 타입이 없으니까요. C에서 int a에 문자열을 넣으면 컴파일 에러였던 것과 정반대의 세계.'},
+      {line:3,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@s20',{ptr:1}),v('','b','@n10',{cls:'tgt',ptr:1})]),sec('객체 공간','','var(--amber)',[v('@n10','int','10',{cls:'good'}),v('@s20','str','"hi"')])],
+       calc:'출력:  10',cgood:true,
+       note:'b는 여전히 10에 붙어 있습니다. 참고 — 파이썬은 작은 정수(-5~256)를 미리 만들어 캐시합니다. 자바 J02의 Integer 캐시와 같은 발상이에요.'}
+    ]},
+   {label:'type() — 객체에게 묻는다',
+    lines:['a = 10','print(type(a))   # ?','a = 3.14','print(type(a))   # ?'],
+    steps:[
+      {line:0,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@n10',{cls:'hot',ptr:1})]),sec('객체 공간','','var(--amber)',[v('@n10','int','10',{cls:'hot'})])],
+       note:'다시 int 10에 이름표 a.'},
+      {line:1,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@n10',{ptr:1})]),sec('객체 공간','','var(--amber)',[v('@n10','int','10',{cls:'good'})])],
+       calc:"type(a)  →  a가 붙은 객체의 타입  →  <class 'int'>",
+       note:'type()은 이름표가 아니라 객체에게 묻습니다 — 타입이 객체에 있다는 증거.'},
+      {line:2,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@f30',{cls:'hot',ptr:1})]),sec('객체 공간','','var(--amber)',[v('@n10','int','10 · 참조 0 — 수거 대상',{cls:'bad'}),v('@f30','float','3.14',{cls:'hot'})])],
+       calc:'a = 3.14  →  이름표 이사\n버려진 10은 참조 0  →  GC 대상',
+       note:'파이썬에도 GC가 있습니다(자바 J05) — 이름표가 다 떨어진 객체는 알아서 수거돼요. free를 부를 일도, 부를 방법도 없습니다.'},
+      {line:3,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@f30',{ptr:1})]),sec('객체 공간','','var(--amber)',[v('@f30','float','3.14',{cls:'good'})])],
+       calc:"출력:  <class 'float'>",cgood:true,
+       note:'같은 이름 a의 type이 바뀌었죠 — 정확히는 "a가 가리키는 객체"가 바뀐 겁니다. 동적 타이핑의 정체는 이름표의 자유이동이에요.'}
+    ]}
+  ],
+  quiz:{code:'x = [1, 2]\ny = x\nx = [9, 9]\nprint(y)',q:'출력값은?',opts:['[9, 9]','[1, 2]','[1, 2, 9, 9]','에러'],ans:1,
+    exp:'x = [9, 9]는 x 이름표를 새 리스트로 옮겨 붙인 것 — y가 붙어 있는 원래 리스트 [1, 2]는 그대로입니다. "재대입은 이름표 이사, 내용 수정은 객체 변경" — 이 구분이 파이썬 이해의 첫 단추이자 자바 J04의 규칙 그대로예요.'}
+},
+/* ===== P02 : division trio ===== */
+{
+  id:'p2', num:'PROBLEM 02', title:'나눗셈 삼형제 — / // % 그리고 **', tag:'실수 나눗셈 · 버림 · 거듭제곱',
+  modes:[
+   {label:'/ // % ** — C와 다른 나눗셈',
+    lines:['print(7 / 2)    # ?','print(7 // 2)   # ?','print(7 % 2)    # ?','print(2 ** 10)  # ?'],
+    steps:[
+      {line:0,secs:[sec('객체 공간','','var(--amber)',[v('@n07','int','7',{cls:'tgt'}),v('@n02','int','2',{cls:'tgt'})])],
+       calc:'7 / 2  →  3.5\n\nC(2편 M04):  7/2 = 3 이었다!\n파이썬의 / 는 "항상" 실수 나눗셈',
+       note:'C에서 가장 많은 버그를 만들던 정수 나눗셈의 버림이 파이썬 / 에는 없습니다. int끼리 나눠도 결과는 float — 4 / 2 조차 2.0입니다.'},
+      {line:1,secs:[sec('객체 공간','','var(--amber)',[v('@n07','int','7',{cls:'tgt'}),v('@n02','int','2',{cls:'tgt'})])],
+       calc:'7 // 2  →  3   (버림 나눗셈)\n\nC의 정수 나눗셈이 여기로 이사 왔습니다',
+       note:'슬래시 두 개가 "몫만"입니다. C 감각으로 나누고 싶을 때 쓰는 연산자.'},
+      {line:2,secs:[sec('객체 공간','','var(--amber)',[v('@n07','int','7',{cls:'tgt'}),v('@n02','int','2',{cls:'tgt'})])],
+       calc:'7 % 2  →  1   (나머지 — C와 같음)\n\n(7 // 2) × 2 + 7 % 2  ==  7   여전히 성립',
+       note:'나머지는 C와 같습니다. 짝홀 판별 n % 2도 그대로.'},
+      {line:3,secs:[sec('객체 공간','','var(--amber)',[v('@nk','int','1024',{cls:'good'})])],
+       calc:'2 ** 10  →  1024   (거듭제곱 — C엔 없던 연산자)',cgood:true,
+       note:'정처기 파이썬 계산 문제는 / // % ** 네 개만 정확히 구분하면 끝납니다. 특히 /가 실수라는 것.'}
+    ]},
+   {label:'큰 수 — 오버플로가 없다',
+    lines:['print(2 ** 100)   # ?','# 1267650600228229401496703205376','print(-7 // 2)    # ?'],
+    steps:[
+      {line:0,secs:[sec('객체 공간','자릿수 제한 없음','var(--amber)',[v('@big','int','2¹⁰⁰ (31자리)',{cls:'hot'})])],
+       calc:'2 ** 100 =\n1267650600228229401496703205376\n\n(오버플로 없음!)',
+       note:'C의 char 127+1 = -128, int 21억 한계(2편 M04)를 기억하세요 — 파이썬 int는 필요한 만큼 자릿수가 늘어나는 객체라 오버플로 자체가 없습니다.'},
+      {line:1,secs:[sec('객체 공간','','var(--amber)',[v('@big','int','2¹⁰⁰ (31자리)')])],
+       note:'대신 아주 큰 수의 연산은 하드웨어 한 번의 계산이 아니라서 느려질 수 있어요 — 자유의 값입니다.'},
+      {line:2,secs:[sec('객체 공간','','var(--amber)',[v('@nm','int','-4',{cls:'hot'})])],
+       calc:'-7 // 2  →  -4    (-3 이 아니다!)\n\nC:        0 쪽으로 버림  →  -3\n파이썬 //:  아래쪽으로 내림(floor)  →  -4',
+       note:'음수에서 C와 파이썬의 몫이 어긋나는 이유 — 버리는 방향이 다릅니다. 시험엔 주로 양수가 나오지만, 실무에선 자주 밟는 지뢰예요.'}
+    ]}
+  ],
+  quiz:{code:'print(10 // 3 + 10 % 3)',q:'출력값은?',opts:['3','4','5','4.3'],ans:1,
+    exp:'10 // 3은 몫 3, 10 % 3은 나머지 1 — 합쳐서 4입니다. 4.3을 골랐다면 //를 /로 읽은 것 — 슬래시 개수가 답을 가릅니다. 몫×3 + 나머지 = 10이 성립하는지로 검산하는 습관을 들이세요.'}
+},
+/* ===== P03 : slicing ===== */
+{
+  id:'p3', num:'PROBLEM 03', title:'슬라이싱 — [이상 : 미만 : 걸음]', tag:'인덱스 · 음수 · 뒤집기',
+  modes:[
+   {label:'인덱스 — 앞에서 0, 뒤에서 -1',
+    lines:['s = "PYTHON"','print(s[0])     # ?','print(s[-1])    # ?','print(s[2])     # ?'],
+    steps:[
+      {line:0,secs:[sec('이름 공간','','var(--cyan)',[v('','s','@s01',{cls:'hot',ptr:1})]),sec('객체 공간','음수로는 -6 ~ -1','var(--amber)',pyStr({}))],
+       note:'글자마다 줄자가 두 개 걸려 있습니다 — 앞에서 0, 1, 2… 그리고 뒤에서 -1, -2, …. 그리고 파이썬 문자열도 자바처럼 불변입니다(🔒).'},
+      {line:1,secs:[sec('이름 공간','','var(--cyan)',[v('','s','@s01',{ptr:1})]),sec('객체 공간','','var(--amber)',pyStr({0:'good'}))],
+       calc:'s[0]  →  P',
+       note:'0부터 시작 — C 배열, 자바 charAt과 같습니다.'},
+      {line:2,secs:[sec('이름 공간','','var(--cyan)',[v('','s','@s01',{ptr:1})]),sec('객체 공간','','var(--amber)',pyStr({5:'good'}))],
+       calc:'s[-1]  →  뒤에서 첫 번째  →  N\n(-1 은 len(s)-1 과 같은 칸)',
+       note:'음수 인덱스는 파이썬의 명물입니다. C의 p[-1](2편 E10)은 위험한 곡예였지만, 여기선 공식 문법이에요.'},
+      {line:3,secs:[sec('이름 공간','','var(--cyan)',[v('','s','@s01',{ptr:1})]),sec('객체 공간','','var(--amber)',pyStr({2:'good'}))],
+       calc:'s[2]  →  T',cgood:true,
+       note:'낱글자는 여기까지. 진짜 무기는 오른쪽 탭의 "범위 자르기"입니다.'}
+    ]},
+   {label:'슬라이싱 — 세 칸의 문법',
+    lines:['s = "PYTHON"','print(s[1:4])    # ?','print(s[:3])     # ?','print(s[::2])    # ?','print(s[::-1])   # ?'],
+    steps:[
+      {line:1,secs:[sec('이름 공간','','var(--cyan)',[v('','s','@s01',{ptr:1})]),sec('객체 공간','','var(--amber)',pyStr({1:'good',2:'good',3:'good'}))],
+       calc:'s[1:4]  →  [1] 이상 [4] 미만  →  YTH\n(자바 J12의 substring(1, 4)와 같은 규칙)',
+       note:'[이상:미만) — 끝 인덱스는 포함되지 않습니다. 자바에서 배운 그 규칙 그대로.'},
+      {line:2,secs:[sec('이름 공간','','var(--cyan)',[v('','s','@s01',{ptr:1})]),sec('객체 공간','','var(--amber)',pyStr({0:'good',1:'good',2:'good'}))],
+       calc:'s[:3]  →  처음부터 [3] 미만  →  PYT',
+       note:'칸을 비우면 "처음부터/끝까지"라는 뜻이 됩니다.'},
+      {line:3,secs:[sec('이름 공간','','var(--cyan)',[v('','s','@s01',{ptr:1})]),sec('객체 공간','','var(--amber)',pyStr({0:'good',2:'good',4:'good'}))],
+       calc:'s[::2]  →  처음부터 끝까지, 2걸음  →  PTO',
+       note:'세 번째 칸이 걸음(step)입니다 — C 포인터 산술의 보폭이 문법이 된 셈.'},
+      {line:4,secs:[sec('이름 공간','','var(--cyan)',[v('','s','@s01',{ptr:1})]),sec('객체 공간','','var(--amber)',pyStr({0:'good',1:'good',2:'good',3:'good',4:'good',5:'good'}))],
+       calc:'s[::-1]  →  걸음 -1 = 뒤에서부터  →  NOHTYP\n\n"뒤집기 한 줄" — 기출 최다 관용구',cgood:true,
+       note:'[이상:미만:걸음] 세 칸, 비우면 기본값 — 이 한 줄이 파이썬 슬라이싱의 전부입니다. 문자열이든 리스트든 똑같이 적용돼요.'}
+    ]}
+  ],
+  quiz:{code:'print("KOREA"[1:4])',q:'출력값은?',opts:['KOR','OREA','ORE','REA'],ans:2,
+    exp:'[1] 이상 [4] 미만 — O, R, E입니다. 2편 E09와 자바 J12에서 만난 KOREA가 세 번째 언어로 돌아왔어요: C는 포인터 산술(p+1), 자바는 substring(1, 4), 파이썬은 [1:4] — 문법은 달라도 [이상, 미만) 규칙은 하나입니다.'}
+},
+/* ===== P04 : lists & aliasing ===== */
+{
+  id:'p4', num:'PROBLEM 04', title:'리스트 — b = a의 함정, 다시', tag:'mutable · 앨리어싱 · a[:] 복사',
+  modes:[
+   {label:'b = a — 세 번째 언어, 같은 함정',
+    lines:['a = [1, 2, 3]','b = a          # 같은 리스트!','b[0] = 99','print(a)       # ?'],
+    steps:[
+      {line:0,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{cls:'hot',ptr:1})]),sec('객체 공간','','var(--amber)',listRows('@L30',[1,2,3],{0:'hot',1:'hot',2:'hot'}))],
+       note:'리스트는 객체 공간에 살고 a는 이름표 — 그리고 리스트는 가변(mutable)입니다. 불변인 int·str과 달리, 이 차이가 사고를 만듭니다.'},
+      {line:1,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{ptr:1}),v('','b','@L30',{cls:'hot',ptr:1})]),sec('객체 공간','리스트는 하나','var(--amber)',listRows('@L30',[1,2,3],{0:'tgt',1:'tgt',2:'tgt'}))],
+       calc:'b = a  →  이름표 복사 — 리스트는 그대로 하나',
+       note:'1편 문제 1, 자바 J01, 그리고 여기 — 세 번째 언어에서 같은 그림을 만납니다.'},
+      {line:2,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{ptr:1}),v('','b','@L30',{ptr:1})]),sec('객체 공간','','var(--amber)',listRows('@L30',[99,2,3],{0:'hot'}))],
+       calc:'b[0] = 99  →  공유하는 리스트의 0번 칸 수정',
+       note:'b로 고쳤지만 방은 하나뿐.'},
+      {line:3,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{cls:'tgt',ptr:1}),v('','b','@L30',{ptr:1})]),sec('객체 공간','','var(--amber)',listRows('@L30',[99,2,3],{0:'good'}))],
+       calc:'출력:  [99, 2, 3]',cgood:true,
+       note:'a를 건드린 적 없는데 99 — "복사한 줄 알았는데 같은 리스트"는 파이썬 입문자가 가장 많이 겪는 사고입니다. 해독제는 오른쪽 탭.'}
+    ]},
+   {label:'a[:] — 슬라이스는 복사본',
+    lines:['a = [1, 2, 3]','c = a[:]       # 슬라이스 = 새 리스트!','c[0] = 99','print(a)       # ?','print(c)       # ?'],
+    steps:[
+      {line:0,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{cls:'hot',ptr:1})]),sec('객체 공간','','var(--amber)',listRows('@L30',[1,2,3],{}))],
+       note:'같은 출발.'},
+      {line:1,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{ptr:1}),v('','c','@L40',{cls:'hot',ptr:1})]),sec('객체 공간','리스트가 두 개!','var(--amber)',listRows('@L30',[1,2,3],{}).concat(listRows('@L40',[1,2,3],{0:'hot',1:'hot',2:'hot'})))],
+       calc:'a[:]  →  처음부터 끝까지 슬라이스  →  "새" 리스트 @L40',
+       note:'슬라이싱은 언제나 새 객체를 만듭니다(P03) — 그래서 전체 슬라이스 a[:]가 복사 관용구가 됐어요.'},
+      {line:2,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{ptr:1}),v('','c','@L40',{ptr:1})]),sec('객체 공간','','var(--amber)',listRows('@L30',[1,2,3],{}).concat(listRows('@L40',[99,2,3],{0:'hot'})))],
+       calc:'c[0] = 99  →  복사본만 수정',
+       note:'이번엔 방이 두 개라 원본이 안전합니다.'},
+      {line:4,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{cls:'tgt',ptr:1}),v('','c','@L40',{cls:'tgt',ptr:1})]),sec('객체 공간','','var(--amber)',listRows('@L30',[1,2,3],{0:'good'}).concat(listRows('@L40',[99,2,3],{0:'good'})))],
+       calc:'출력:  [1, 2, 3]\n출력:  [99, 2, 3]',cgood:true,
+       note:'b = a(이름표 복사)와 c = a[:](객체 복사)의 차이 — 파이썬 리스트 버그의 8할이 이 구분입니다.'}
+    ]}
+  ],
+  quiz:{code:'a = [1, 2]\nb = a\na.append(3)\nprint(b)',q:'출력값은?',opts:['[1, 2]','[3]','[1, 2, 3]','에러'],ans:2,
+    exp:'append는 재대입이 아니라 "내용 수정" — 같은 리스트에 3이 붙고, 그 리스트에 b도 붙어 있으니 [1, 2, 3]입니다. P01 퀴즈(x = [9,9] 재대입)와 비교하세요 — 이름표 이사 vs 객체 수정, 이 둘의 구분이 반복해서 출제됩니다.'}
+},
+/* ===== P05 : for-in & range ===== */
+{
+  id:'p5', num:'PROBLEM 05', title:'for-in과 range — 세지 말고 걸어라', tag:'for-in · range · [이상, 미만, 걸음]',
+  modes:[
+   {label:'for-in — 값을 직접 손에',
+    lines:['total = 0','for x in [10, 20, 30]:','    total += x','print(total)   # ?'],
+    steps:[
+      {line:0,secs:[sec('이름 공간','','var(--cyan)',[v('','total','0',{cls:'hot'})])],
+       note:'C라면 for (i = 0; i < 3; i++) 하고 a[i]로 꺼냈겠죠(2편). 파이썬은 인덱스 없이 값을 직접 걷습니다.'},
+      {line:2,secs:[sec('이름 공간','','var(--cyan)',[v('','total','60',{cls:'hot'}),v('','x','30',{cls:'tgt'})])],
+       calc:'x = 10  →  total = 10\nx = 20  →  total = 30\nx = 30  →  total = 60',
+       note:'for-in이 리스트의 값을 하나씩 x에 쥐여줍니다. 인덱스 관리, 범위 실수(off-by-one)가 원천적으로 사라져요 — "세지 말고 걸어라".'},
+      {line:3,secs:[sec('이름 공간','','var(--cyan)',[v('','total','60',{cls:'good'}),v('','x','30')])],
+       calc:'출력:  60',cgood:true,
+       note:'콜론과 들여쓰기(다음 문제)가 블록을 만드는 것도 확인해 두세요.'}
+    ]},
+   {label:'range — 숫자가 필요할 때',
+    lines:['total = 0','for i in range(1, 10, 2):','    total += i','print(total)   # ?'],
+    steps:[
+      {line:1,secs:[sec('이름 공간','','var(--cyan)',[v('','total','0')])],
+       calc:'range(1, 10, 2)  →  1, 3, 5, 7, 9\n\n[이상, 미만, 걸음] — 슬라이싱과 같은 규칙!',
+       note:'10은 "미만"이라 포함되지 않습니다. P03의 세 칸 규칙이 여기서도 그대로 — 파이썬은 같은 규칙을 재활용하는 언어예요.'},
+      {line:2,secs:[sec('이름 공간','','var(--cyan)',[v('','total','25',{cls:'hot'}),v('','i','9',{cls:'tgt'})])],
+       calc:'1 + 3 + 5 + 7 + 9  →  total = 25',
+       note:'홀수만 밟고 지나갑니다.'},
+      {line:3,secs:[sec('이름 공간','','var(--cyan)',[v('','total','25',{cls:'good'})])],
+       calc:'출력:  25',cgood:true,
+       note:'range(5)는 0~4입니다. 기출 반복문의 90%가 range 해석 — [이상, 미만, 걸음] 세 칸만 확인하면 됩니다.'}
+    ]}
+  ],
+  quiz:{code:'s = 0\nfor i in range(5):\n    s += i\nprint(s)',q:'출력값은?',opts:['15','10','5','4'],ans:1,
+    exp:'range(5)는 0, 1, 2, 3, 4 — 5는 미만이라 미포함입니다. 합은 10. 15를 골랐다면 1~5로 읽은 최다 오답 — range의 시작 기본값은 0이고 끝은 언제나 미만입니다.'}
+},
+/* ===== P06 : indentation & logic ===== */
+{
+  id:'p6', num:'PROBLEM 06', title:'들여쓰기가 문법 — 블록의 모양', tag:'if · elif · and/or 단락 평가',
+  modes:[
+   {label:'블록 = 들여쓰기',
+    lines:['x = 7','if x > 5:','    print("big")','    print("still in if")','print("always")'],
+    steps:[
+      {line:1,secs:[sec('이름 공간','','var(--cyan)',[v('','x','7',{cls:'tgt'})])],
+       calc:'x > 5  →  참  →  들여쓴 블록 진입',
+       note:'콜론(:)이 "블록 시작" 신호, 들여쓰기가 C의 { }입니다. 괄호가 사라진 대신 모양이 문법이 됐어요.'},
+      {line:3,secs:[sec('이름 공간','','var(--cyan)',[v('','x','7')])],
+       calc:'같은 깊이로 들여쓴 줄까지가 한 블록\n→  big, still in if  둘 다 출력',
+       note:'두 print가 같은 깊이라 둘 다 if에 속합니다.'},
+      {line:4,secs:[sec('이름 공간','','var(--cyan)',[v('','x','7')])],
+       calc:'들여쓰기가 끝나면 블록 밖\n→  always 는 조건과 무관\n\n출력:  big / still in if / always',cgood:true,
+       note:'들여쓰기는 스타일이 아니라 문법입니다 — 한 칸만 어긋나도 IndentationError로 죽어요. 스페이스 4칸이 표준입니다.'}
+    ]},
+   {label:'and/or — 단락 평가는 여기도',
+    lines:['a = 0','if a != 0 and 10 / a > 1:','    print("big")','else:','    print("safe")   # 0으로 나누기 회피!'],
+    steps:[
+      {line:1,secs:[sec('이름 공간','','var(--cyan)',[v('','a','0',{cls:'tgt'})])],
+       calc:'a != 0  →  거짓  →  and 는 여기서 끝\n10 / a (ZeroDivisionError!)는 실행되지 않음',cgood:true,
+       note:'2편 M06의 단락 평가가 이름만 바꿔 돌아왔습니다 — &&가 and, ||가 or, !가 not. 왼쪽 검사가 오른쪽의 방패가 되는 구조도 그대로.'},
+      {line:4,secs:[sec('이름 공간','','var(--cyan)',[v('','a','0')])],
+       calc:'출력:  safe',
+       note:'C → 자바 → 파이썬, 문법은 셋 다 다르지만 "결과가 정해지면 멈춘다"는 규칙은 하나였습니다.'}
+    ]}
+  ],
+  quiz:{code:'x = 3\nif x > 5:\n    print("A")\nelif x > 1:\n    print("B")\nelse:\n    print("C")',q:'출력값은?',opts:['A','B','C','AB'],ans:1,
+    exp:'elif는 else if의 줄임 — 위에서부터 검사해 "처음 참이 되는 가지 하나만" 실행합니다. x=3은 5보다 크지 않고 1보다는 크니 B. 이후 가지는 쳐다보지도 않아요.'}
+},
+/* ===== P07 : dict, tuple, one-line swap ===== */
+{
+  id:'p7', num:'PROBLEM 07', title:'딕셔너리·튜플 — 그리고 한 줄 swap', tag:'dict · tuple · a, b = b, a',
+  modes:[
+   {label:'딕셔너리 — 키로 찾는다',
+    lines:['d = {"kim": 90, "lee": 85}','d["park"] = 70','print(d["lee"])      # ?','print(len(d))        # ?','print("kim" in d)    # ?'],
+    steps:[
+      {line:0,secs:[sec('이름 공간','','var(--cyan)',[v('','d','@D50',{cls:'hot',ptr:1})]),sec('객체 공간','키 → 값','var(--amber)',[v('@D50','"kim"','90',{cls:'hot',grp:true}),v('@D50','"lee"','85',{cls:'hot'})])],
+       note:'딕셔너리는 번호 대신 "키"로 찾는 저장소입니다. C 구조체(1편 14)는 칸이 컴파일 때 고정이었지만, 딕셔너리는 실행 중에 자랍니다.'},
+      {line:1,secs:[sec('이름 공간','','var(--cyan)',[v('','d','@D50',{ptr:1})]),sec('객체 공간','','var(--amber)',[v('@D50','"kim"','90',{grp:true}),v('@D50','"lee"','85',{grp:true}),v('@D50','"park"','70',{cls:'hot'})])],
+       calc:'없는 키에 대입  →  새 칸 추가',
+       note:'있는 키에 대입하면 덮어쓰기, 없는 키면 추가 — 대입 하나로 둘 다 합니다.'},
+      {line:2,secs:[sec('이름 공간','','var(--cyan)',[v('','d','@D50',{ptr:1})]),sec('객체 공간','','var(--amber)',[v('@D50','"kim"','90',{grp:true}),v('@D50','"lee"','85',{cls:'good',grp:true}),v('@D50','"park"','70')])],
+       calc:'d["lee"]  →  85',
+       note:'키로 바로 찾아갑니다 — 인덱스를 세지 않아요.'},
+      {line:4,secs:[sec('이름 공간','','var(--cyan)',[v('','d','@D50',{ptr:1})]),sec('객체 공간','','var(--amber)',[v('@D50','"kim"','90',{cls:'good',grp:true}),v('@D50','"lee"','85',{grp:true}),v('@D50','"park"','70')])],
+       calc:'len(d)  →  키 개수  →  3\n"kim" in d  →  키가 있는가  →  True',cgood:true,
+       note:'in은 "키" 검사입니다(값이 아니라!) — 기출 단골 함정. 값 검사는 90 in d.values().'}
+    ]},
+   {label:'튜플과 한 줄 swap — 저주의 끝',
+    lines:['a, b = 1, 2       # 튜플로 묶여 풀린다','a, b = b, a       # 그 swap이 한 줄','print(a, b)       # ?','# C: 포인터 필요 / Java: 불가능 / Python: 끝'],
+    steps:[
+      {line:0,secs:[sec('이름 공간','','var(--cyan)',[v('','a','1',{cls:'hot'}),v('','b','2',{cls:'hot'})])],
+       calc:'a, b = 1, 2\n오른쪽이 튜플 (1, 2)로 묶였다가 순서대로 풀림',
+       note:'튜플은 괄호를 생략해도 됩니다 — 쉼표가 진짜 문법이에요. 그리고 튜플은 불변: 리스트의 🔒 버전입니다.'},
+      {line:1,secs:[sec('이름 공간','','var(--cyan)',[v('','a','2',{cls:'hot'}),v('','b','1',{cls:'hot'})])],
+       calc:'a, b = b, a\n①  오른쪽 (b, a) = (2, 1) 튜플을 "먼저" 완성\n②  왼쪽 이름표에 순서대로 풀기\n(임시 변수 t가 튜플 속에 숨어 있던 셈)',
+       note:'여정의 결말입니다 — 1편 문제 3에서 C는 포인터를 배워야 겨우 성공했고, 자바 J04는 방법 자체가 없었죠. 파이썬은 문법이 해결합니다. 세 언어를 완주한 사람만 느낄 수 있는 한 줄이에요.'},
+      {line:2,secs:[sec('이름 공간','','var(--cyan)',[v('','a','2',{cls:'good'}),v('','b','1',{cls:'good'})])],
+       calc:'출력:  2 1',cgood:true,
+       note:'print(a, b)처럼 쉼표로 나열하면 공백으로 구분해 출력됩니다.'}
+    ]}
+  ],
+  quiz:{code:'d = {"a": 1, "b": 2}\nd["a"] = 10\nprint(d["a"] + d["b"])',q:'출력값은?',opts:['3','10','에러','12'],ans:3,
+    exp:'있는 키 "a"에 대입하면 덮어쓰기 — d["a"]는 10이 되고, 10 + 2 = 12입니다. 3은 덮어쓰기를 놓친 오답. 딕셔너리 기출은 "추가인가 덮어쓰기인가"만 가리면 끝나요.'}
+},
+/* ===== P08 : functions ===== */
+{
+  id:'p8', num:'PROBLEM 08', title:'함수 — def, 기본값, 여러 개 반환', tag:'def · 기본값 인자 · return 튜플',
+  modes:[
+   {label:'def — 기본값과 여러 개 반환',
+    lines:['def calc(x, y=10):','    return x + y, x * y','s, m = calc(5)','print(s, m)     # ?'],
+    steps:[
+      {line:2,secs:[sec('함수 안 이름 공간','calc(5) 실행 중','var(--cyan)',[v('','x','5',{cls:'hot'}),v('','y','10',{cls:'hot'})])],
+       calc:'calc(5)  →  x = 5,  y는 안 넘겼으니 기본값 10',
+       note:'기본값 인자 — C·자바에 없던 편의입니다. 안 넘기면 기본값, 넘기면 그 값.'},
+      {line:1,secs:[sec('함수 안 이름 공간','','var(--cyan)',[v('','x','5'),v('','y','10')]),sec('객체 공간','','var(--amber)',[v('@t60','tuple','(15, 50)',{cls:'hot'})])],
+       calc:'return x + y, x * y  →  (15, 50)\n"여러 값"처럼 보이지만 튜플 "하나"로 반환',
+       note:'P07의 묶기가 여기서도 — 쉼표가 튜플을 만듭니다.'},
+      {line:2,secs:[sec('이름 공간','','var(--cyan)',[v('','s','15',{cls:'hot'}),v('','m','50',{cls:'hot'})])],
+       calc:'s, m = (15, 50)  →  순서대로 풀기',
+       note:'묶어서 돌려주고, 받아서 풉니다 — swap과 같은 원리.'},
+      {line:3,secs:[sec('이름 공간','','var(--cyan)',[v('','s','15',{cls:'good'}),v('','m','50',{cls:'good'})])],
+       calc:'출력:  15 50',cgood:true,
+       note:'C에서 값 두 개를 돌려주려면 포인터 매개변수가 필요했죠(1편 3) — 파이썬은 튜플 하나로 끝냅니다.'}
+    ]},
+   {label:'리스트 인자 — 원본에 닿는다',
+    lines:['def fill(lst):','    lst.append(9)','def move(lst):','    lst = [7]','a = [1]','fill(a)','move(a)','print(a)    # ?'],
+    steps:[
+      {line:4,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{cls:'hot',ptr:1})]),sec('객체 공간','','var(--amber)',listRows('@L30',[1],{0:'hot'}))],
+       note:'리스트 하나에 이름표 a.'},
+      {line:1,secs:[sec('이름 공간','fill 실행 중','var(--cyan)',[v('','a','@L30',{ptr:1}),v('','lst','@L30',{cls:'hot',ptr:1})]),sec('객체 공간','','var(--amber)',listRows('@L30',[1,9],{1:'hot'}))],
+       calc:'fill(a)  →  lst 도 같은 @L30 에 붙는다\nappend  →  원본이 자란다',
+       note:'자바 J04 탭2 그대로 — 이름표가 복사되어도 객체는 하나. 내용 수정은 밖에 남습니다.'},
+      {line:3,secs:[sec('이름 공간','move 실행 중','var(--cyan)',[v('','a','@L30',{cls:'tgt',ptr:1}),v('','lst','@L70',{cls:'hot',ptr:1})]),sec('객체 공간','','var(--amber)',listRows('@L30',[1,9],{}).concat([v('@L70','[0]','7 · 곧 수거 대상',{cls:'bad'})]))],
+       calc:'lst = [7]  →  함수 안 이름표만 이사\na 는 여전히 @L30',
+       note:'재대입은 이름표 이사(P01 퀴즈)일 뿐 — 함수가 끝나면 @L70은 참조 0으로 수거됩니다.'},
+      {line:7,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{cls:'tgt',ptr:1})]),sec('객체 공간','','var(--amber)',listRows('@L30',[1,9],{0:'good',1:'good'}))],
+       calc:'출력:  [1, 9]',cgood:true,
+       note:'정리 — 파이썬 함수도 "객체 내용 수정만 밖에 남는다". C → 자바 → 파이썬, 세 언어가 전부 같은 규칙이었습니다.'}
+    ]}
+  ],
+  quiz:{code:'def f(x, y=2):\n    return x ** y\nprint(f(3))',q:'출력값은?',opts:['6','9','8','에러'],ans:1,
+    exp:'y를 안 넘겼으니 기본값 2 — 3 ** 2 = 9입니다. 6은 x * y로 읽은 오답, 8은 2 ** 3으로 순서를 뒤집은 오답. **는 왼쪽이 밑, 오른쪽이 지수입니다.'}
+},
+/* ===== P09 : slicing drill ===== */
+{
+  id:'p9', num:'PROBLEM 09', title:'슬라이싱 기출 리믹스', tag:'[::2] · [-2:] · [::-1]',
+  modes:[{
+    lines:['a = [1, 2, 3, 4, 5, 6]','print(a[2:5])     # ?','print(a[::2])     # ?','print(a[-2:])     # ?','print(a[::-1])    # ?'],
+    steps:[
+      {line:1,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{ptr:1})]),sec('객체 공간','','var(--amber)',listRows('@L30',[1,2,3,4,5,6],{2:'good',3:'good',4:'good'}))],
+       calc:'a[2:5]  →  [2] 이상 [5] 미만  →  [3, 4, 5]',
+       note:'문자열에서 배운 규칙이 리스트에 그대로 — 슬라이싱은 타입을 가리지 않습니다.'},
+      {line:2,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{ptr:1})]),sec('객체 공간','','var(--amber)',listRows('@L30',[1,2,3,4,5,6],{0:'good',2:'good',4:'good'}))],
+       calc:'a[::2]  →  2걸음  →  [1, 3, 5]',
+       note:'짝수 번째 칸(인덱스 0, 2, 4)이 뽑힙니다.'},
+      {line:3,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{ptr:1})]),sec('객체 공간','','var(--amber)',listRows('@L30',[1,2,3,4,5,6],{4:'good',5:'good'}))],
+       calc:'a[-2:]  →  뒤에서 2번째부터 끝까지  →  [5, 6]',
+       note:'음수 시작 + 빈 끝 — "마지막 n개" 관용구입니다.'},
+      {line:4,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{ptr:1})]),sec('객체 공간','','var(--amber)',listRows('@L30',[1,2,3,4,5,6],{0:'good',1:'good',2:'good',3:'good',4:'good',5:'good'}))],
+       calc:'a[::-1]  →  [6, 5, 4, 3, 2, 1]\n\n전부 "새 리스트" — 원본 a 는 그대로!',cgood:true,
+       note:'슬라이싱 결과는 언제나 복사본(P04 탭2)이라 원본은 안 변합니다. 기출은 이 두 사실 — [이상:미만:걸음] 해석과 "원본 불변" — 만 압니다.'}
+    ]
+  }],
+  quiz:{code:'a = [10, 20, 30, 40, 50]\nprint(a[1:4:2])',q:'출력값은?',opts:['[20, 30, 40]','[20, 40]','[10, 30]','[20, 30]'],ans:1,
+    exp:'[1] 이상 [4] 미만을 2걸음으로 — 인덱스 1과 3, 즉 [20, 40]입니다. [20, 30, 40]은 걸음을 무시한 최다 오답. 세 칸을 전부 읽는 습관 — 이상, 미만, 걸음.'}
+},
+/* ===== P10 : list methods ===== */
+{
+  id:'p10', num:'PROBLEM 10', title:'리스트 메서드 기출', tag:'pop · sort vs sorted · append vs extend',
+  modes:[
+   {label:'pop — 돌려주며 제거',
+    lines:['a = [1, 2, 3]','a.append(4)       # [1, 2, 3, 4]','x = a.pop()       # ?','y = a.pop(0)      # ?','print(x, y, a)    # ?'],
+    steps:[
+      {line:1,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{ptr:1})]),sec('객체 공간','','var(--amber)',listRows('@L30',[1,2,3,4],{3:'hot'}))],
+       calc:'append(4)  →  맨 뒤에 추가',
+       note:'append는 원본을 수정합니다(P04 퀴즈에서 확인한 그 성질).'},
+      {line:2,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{ptr:1}),v('','x','4',{cls:'hot'})]),sec('객체 공간','','var(--amber)',listRows('@L30',[1,2,3],{}))],
+       calc:'a.pop()  →  마지막 4를 "돌려주며" 제거\nx = 4,  a = [1, 2, 3]',
+       note:'pop은 두 가지 일을 동시에 — 꺼내주고, 지웁니다. "돌려준다"를 놓치면 기출 전체가 무너져요.'},
+      {line:3,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{ptr:1}),v('','x','4'),v('','y','1',{cls:'hot'})]),sec('객체 공간','','var(--amber)',listRows('@L30',[2,3],{}))],
+       calc:'a.pop(0)  →  0번 칸 1을 돌려주며 제거\ny = 1,  a = [2, 3]',
+       note:'인덱스를 주면 그 칸을 뽑습니다.'},
+      {line:4,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{ptr:1}),v('','x','4',{cls:'good'}),v('','y','1',{cls:'good'})]),sec('객체 공간','','var(--amber)',listRows('@L30',[2,3],{0:'good',1:'good'}))],
+       calc:'출력:  4 1 [2, 3]',cgood:true,
+       note:'insert(i, v), remove(값)도 같은 계열 — 전부 원본 수정입니다.'}
+    ]},
+   {label:'sort vs sorted / append vs extend',
+    lines:['a = [3, 1, 2]','b = sorted(a)     # b는? a는?','a.sort()          # a는?','a.append([4, 5])  # 통째로 한 칸!','print(len(a))     # ?'],
+    steps:[
+      {line:1,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{ptr:1}),v('','b','@L80',{cls:'hot',ptr:1})]),sec('객체 공간','','var(--amber)',listRows('@L30',[3,1,2],{}).concat(listRows('@L80',[1,2,3],{0:'hot',1:'hot',2:'hot'})))],
+       calc:'sorted(a)  →  정렬된 "새" 리스트  →  b = [1, 2, 3]\na 는 그대로 [3, 1, 2]',
+       note:'내장 함수 sorted는 원본을 건드리지 않습니다.'},
+      {line:2,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{ptr:1}),v('','b','@L80',{ptr:1})]),sec('객체 공간','','var(--amber)',listRows('@L30',[1,2,3],{0:'hot',1:'hot',2:'hot'}).concat(listRows('@L80',[1,2,3],{})))],
+       calc:'a.sort()  →  원본을 "제자리" 정렬\n(반환값은 None!)',
+       note:'메서드 sort는 원본 수정입니다. x = a.sort()라고 받으면 x는 None — 기출 함정.'},
+      {line:3,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{ptr:1})]),sec('객체 공간','','var(--amber)',[v('@L30','[0]','1',{grp:true}),v('@L30','[1]','2',{grp:true}),v('@L30','[2]','3',{grp:true}),v('@L30','[3]','[4, 5]',{cls:'hot'})])],
+       calc:'append([4, 5])  →  리스트가 "통째로" 한 칸\na = [1, 2, 3, [4, 5]]',
+       note:'append는 뭐가 오든 한 칸입니다. 풀어서 붙이고 싶으면 extend — 그랬다면 [1, 2, 3, 4, 5]가 됐겠죠.'},
+      {line:4,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{ptr:1})]),sec('객체 공간','','var(--amber)',[v('@L30','[0]','1',{grp:true}),v('@L30','[1]','2',{grp:true}),v('@L30','[2]','3',{grp:true}),v('@L30','[3]','[4, 5]',{cls:'good'})])],
+       calc:'len(a)  →  4',cgood:true,
+       note:'sort vs sorted(제자리 vs 새것), append vs extend(통째 vs 풀어서) — 기출 양대 구분입니다.'}
+    ]}
+  ],
+  quiz:{code:'a = [5, 3, 1]\na.sort()\nprint(a.pop(0))',q:'출력값은?',opts:['5','1','3','[3, 5]'],ans:1,
+    exp:'sort로 [1, 3, 5]가 된 뒤 pop(0)이 0번 칸을 "돌려주며" 제거 — 1이 출력됩니다. 5는 정렬을 빼먹은 오답, [3, 5]는 pop이 남은 리스트를 돌려준다고 본 오답 — pop은 뽑힌 값 하나를 돌려줍니다.'}
+},
+/* ===== P11 : loop tracing ===== */
+{
+  id:'p11', num:'PROBLEM 11', title:'반복문 추적 기출', tag:'while · continue · break',
+  modes:[
+   {label:'while — 탈출 직후의 값',
+    lines:['i = 1','total = 0','while i < 10:','    total += i','    i += 2','print(i, total)   # ?'],
+    steps:[
+      {line:2,secs:[sec('이름 공간','','var(--cyan)',[v('','i','1',{cls:'hot'}),v('','total','0',{cls:'hot'})])],
+       note:'while은 조건 먼저 — C·자바와 같습니다. 표를 그리며 따라가 봅시다.'},
+      {line:4,secs:[sec('이름 공간','','var(--cyan)',[v('','i','11',{cls:'hot'}),v('','total','25',{cls:'hot'})])],
+       calc:'i:      1 → 3 → 5 → 7 → 9 → 11\ntotal:  1 → 4 → 9 → 16 → 25',
+       note:'i가 9일 때 total에 9가 더해지고 i는 11이 됩니다 — 그리고 11 < 10이 거짓이라 탈출.'},
+      {line:5,secs:[sec('이름 공간','','var(--cyan)',[v('','i','11',{cls:'good'}),v('','total','25',{cls:'good'})])],
+       calc:'출력:  11 25',cgood:true,
+       note:'기출이 노리는 건 "탈출 직후의 i" — 마지막으로 더해진 9가 아니라 조건을 깬 11입니다. 2편 E08의 do-while 함정과 짝을 이루는 지점.'}
+    ]},
+   {label:'continue와 break',
+    lines:['s = 0','for i in range(1, 6):','    if i == 3:','        continue','    if i == 5:','        break','    s += i','print(s)    # ?'],
+    steps:[
+      {line:1,secs:[sec('이름 공간','','var(--cyan)',[v('','s','0',{cls:'hot'})])],
+       calc:'range(1, 6)  →  1, 2, 3, 4, 5',
+       note:'6은 미만. 이제 두 개의 관문(continue, break)을 지나며 걷습니다.'},
+      {line:6,secs:[sec('이름 공간','','var(--cyan)',[v('','s','3',{cls:'hot'}),v('','i','2',{cls:'tgt'})])],
+       calc:'i = 1  →  s = 1\ni = 2  →  s = 3',
+       note:'1과 2는 무사통과.'},
+      {line:3,secs:[sec('이름 공간','','var(--cyan)',[v('','s','3'),v('','i','3',{cls:'tgt'})])],
+       calc:'i = 3  →  continue  →  이번 판만 건너뜀',
+       note:'s += i를 건너뛰고 다음 i로 — 루프는 계속됩니다.'},
+      {line:5,secs:[sec('이름 공간','','var(--cyan)',[v('','s','7',{cls:'hot'}),v('','i','5',{cls:'tgt'})])],
+       calc:'i = 4  →  s = 7\ni = 5  →  break  →  루프 "전체" 종료',
+       note:'continue는 이번 판, break는 전체 — 2편 E08과 완전히 같은 규칙, 문법만 파이썬입니다.'},
+      {line:7,secs:[sec('이름 공간','','var(--cyan)',[v('','s','7',{cls:'good'})])],
+       calc:'출력:  7    (1 + 2 + 4)',cgood:true,
+       note:'i | 관문 | s 세 칸짜리 표를 손으로 채우면 실수가 사라집니다.'}
+    ]}
+  ],
+  quiz:{code:'i = 0\ns = 0\nwhile i < 5:\n    i += 1\n    if i % 2 == 0:\n        continue\n    s += i',q:'끝난 뒤 s의 값은?',opts:['6','15','9','10'],ans:2,
+    exp:'짝수(2, 4)는 continue로 건너뛰고 홀수만 — 1 + 3 + 5 = 9입니다. 15는 continue를 무시하고 전부 더한 오답, 6은 짝수만 더한 오답. i += 1이 continue보다 "앞"에 있어 무한 루프가 아니라는 것도 확인 포인트예요.'}
+},
+/* ===== P12 : string methods ===== */
+{
+  id:'p12', num:'PROBLEM 12', title:'문자열 메서드 기출', tag:'upper · replace · split · count · find',
+  modes:[{
+    lines:['s = "Hello World"','print(s.upper())            # ?','print(s.replace("l", "*")) # ?','print(s.split())            # ?','print(s.count("o"))         # ?','print(s.find("World"))      # ?'],
+    steps:[
+      {line:1,secs:[sec('이름 공간','','var(--cyan)',[v('','s','@s01',{ptr:1})]),sec('객체 공간','','var(--amber)',[v('@s01','str','"Hello World"',{cls:'tgt',lock:true}),v('@s90','str','"HELLO WORLD"',{cls:'hot'})])],
+       calc:'s.upper()  →  HELLO WORLD\n(원본은 그대로 — 문자열은 불변!)',
+       note:'P03에서 본 불변이 여기서 힘을 씁니다 — 모든 문자열 메서드는 "새 문자열"을 돌려줄 뿐 원본을 못 건드려요. 자바 J03의 concat 함정과 같은 원리.'},
+      {line:2,secs:[sec('이름 공간','','var(--cyan)',[v('','s','@s01',{ptr:1})]),sec('객체 공간','','var(--amber)',[v('@s01','str','"Hello World"',{cls:'tgt',lock:true}),v('@s91','str','"He**o Wor*d"',{cls:'hot'})])],
+       calc:'s.replace("l", "*")  →  He**o Wor*d\n(l 세 개 "전부" 교체된 새 문자열)',
+       note:'replace는 기본이 전부 교체입니다.'},
+      {line:3,secs:[sec('이름 공간','','var(--cyan)',[v('','s','@s01',{ptr:1})]),sec('객체 공간','','var(--amber)',[v('@s01','str','"Hello World"',{cls:'tgt',lock:true}),v('@L92','list',"['Hello', 'World']",{cls:'hot'})])],
+       calc:"s.split()  →  공백 기준 쪼개기\n→  ['Hello', 'World']   (결과는 리스트!)",
+       note:'split의 결과가 리스트라는 것 — 그래서 split(...)[1] 같은 체인이 기출에 나옵니다.'},
+      {line:4,secs:[sec('이름 공간','','var(--cyan)',[v('','s','@s01',{ptr:1})]),sec('객체 공간','','var(--amber)',[v('@s01','str','"Hello World"',{cls:'good',lock:true})])],
+       calc:'s.count("o")  →  o가 몇 번?  →  2',
+       note:'Hello에 하나, World에 하나.'},
+      {line:5,secs:[sec('이름 공간','','var(--cyan)',[v('','s','@s01',{ptr:1})]),sec('객체 공간','','var(--amber)',[v('@s01','str','"Hello World"',{cls:'good',lock:true})])],
+       calc:'s.find("World")  →  시작 인덱스  →  6\n(없으면 -1)',cgood:true,
+       note:'출력 정리: HELLO WORLD / He**o Wor*d / [\'Hello\', \'World\'] / 2 / 6. 그리고 s 자신은 끝까지 "Hello World" — 불변이니까요.'}
+    ]
+  }],
+  quiz:{code:'s = "a,b,c"\nprint(s.split(",")[1])',q:'출력값은?',opts:['a','b','c',"['b']"],ans:1,
+    exp:'split(",")이 [\'a\', \'b\', \'c\'] 리스트를 만들고, [1]이 두 번째 원소를 꺼냅니다 — b. [\'b\']를 골랐다면 인덱싱이 리스트를 돌려준다고 본 것 — [1]은 원소 하나를 꺼냅니다(슬라이스 [1:2]와의 차이).'}
+},
+/* ===== P13 : class & self ===== */
+{
+  id:'p13', num:'PROBLEM 13', title:'클래스와 self — 자바보다 솔직한', tag:'__init__ · self · 클래스 변수',
+  modes:[
+   {label:'self의 정체',
+    lines:['class Dog:','    def __init__(self, name):','        self.name = name','    def bark(self):','        print(self.name + "!")','d = Dog("초코")','d.bark()    # ?'],
+    steps:[
+      {line:5,secs:[sec('이름 공간','','var(--cyan)',[v('','d','@D70',{cls:'hot',ptr:1})]),sec('객체 공간','','var(--amber)',[v('@D70','Dog','객체 생성 중',{cls:'tgt'})])],
+       calc:'Dog("초코")  →  객체 생성  →  __init__(self, "초코") 자동 호출\nself = 방금 만든 그 객체',
+       note:'__init__은 자바의 생성자(J07)입니다. 그리고 self는 자바 this의 정체를 드러낸 것 — 숨기지 않고 첫 매개변수로 보여줍니다.'},
+      {line:2,secs:[sec('이름 공간','','var(--cyan)',[v('','d','@D70',{ptr:1})]),sec('객체 공간','','var(--amber)',[v('@D70','name','"초코"',{cls:'hot'})])],
+       calc:'self.name = name  →  객체 안에 name 칸 생성',
+       note:'파이썬 객체의 필드는 선언이 아니라 "첫 대입"으로 태어납니다 — 자바와 다른 지점.'},
+      {line:6,secs:[sec('이름 공간','','var(--cyan)',[v('','d','@D70',{cls:'tgt',ptr:1})]),sec('객체 공간','','var(--amber)',[v('@D70','name','"초코"',{cls:'good'})])],
+       calc:'d.bark()  →  사실은 Dog.bark(d)\nself 자리에 d가 배달된다  →  초코!',cgood:true,
+       note:'점 앞의 객체가 self로 배달된다 — 이 한 줄이 self의 전부입니다. 메서드 첫 인자가 왜 항상 self인지도 이걸로 설명돼요.'}
+    ]},
+   {label:'클래스 변수 — static 세 번째 재회',
+    lines:['class Dog:','    count = 0            # 클래스에 하나','    def __init__(self):','        Dog.count += 1','d1 = Dog()','d2 = Dog()','print(Dog.count)   # ?'],
+    steps:[
+      {line:1,secs:[sec('클래스 공간','class Dog','var(--violet)',[v('','count','0',{cls:'hot'})]),sec('객체 공간','아직 비어 있음','var(--amber)',[])],
+       note:'클래스 몸통에 바로 쓴 변수는 클래스 소속 — 2편 M01의 static, 자바 J06의 클래스 변수와 세 번째 재회입니다.'},
+      {line:5,secs:[sec('이름 공간','','var(--cyan)',[v('','d1','@a10',{ptr:1}),v('','d2','@b20',{ptr:1})]),sec('클래스 공간','','var(--violet)',[v('','count','2',{cls:'hot'})]),sec('객체 공간','','var(--amber)',[v('@a10','Dog','1호',{grp:true}),v('@b20','Dog','2호')])],
+       calc:'객체가 생길 때마다 Dog.count += 1\ncount:  0 → 1 → 2',
+       note:'count는 어느 객체 안에도 없습니다 — 클래스 공간에 하나뿐. "객체 수 세기"는 세 언어 공통의 기출 용법이에요.'},
+      {line:6,secs:[sec('이름 공간','','var(--cyan)',[v('','d1','@a10',{ptr:1}),v('','d2','@b20',{ptr:1})]),sec('클래스 공간','','var(--violet)',[v('','count','2',{cls:'good'})]),sec('객체 공간','','var(--amber)',[v('@a10','Dog','1호',{grp:true}),v('@b20','Dog','2호')])],
+       calc:'출력:  2',cgood:true,
+       note:'접근도 Dog.count처럼 클래스 이름으로 — C의 .data, 자바의 메서드 영역, 파이썬의 클래스 공간. 이름은 달라도 "클래스에 하나"는 하나의 개념입니다.'}
+    ]}
+  ],
+  quiz:{code:'class P:\n    def __init__(self, n):\n        self.n = n + 1\np = P(5)\nprint(p.n)',q:'출력값은?',opts:['5','n+1','6','에러'],ans:2,
+    exp:'P(5)가 만들어지는 순간 __init__이 자동 실행되어 self.n = 5 + 1 = 6이 저장됩니다. 5는 __init__이 안 돈다고 본 오답 — 생성자는 new 없이도(파이썬엔 new가 없죠) 생성 즉시 실행됩니다.'}
+},
+/* ===== P14 : final ===== */
+{
+  id:'p14', num:'PROBLEM 14', title:'졸업 모의고사 — 참조와 복사의 종합', tag:'함수 × 리스트 참조 × 슬라이싱 × 반복',
+  modes:[{
+    lines:['def proc(lst):','    for i in range(len(lst)):','        if lst[i] % 2 == 0:','            lst[i] = 0','    return lst[::-1]','a = [1, 2, 3, 4, 5]','b = proc(a)','print(a, b)    # ?'],
+    steps:[
+      {line:5,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{cls:'hot',ptr:1})]),sec('객체 공간','','var(--amber)',listRows('@L30',[1,2,3,4,5],{}))],
+       note:'마지막 문제 — P02(%), P04(참조), P05(range), P08(함수 인자), P09(슬라이스 복사)가 전부 모입니다.'},
+      {line:0,secs:[sec('이름 공간','proc 실행 중','var(--cyan)',[v('','a','@L30',{ptr:1}),v('','lst','@L30',{cls:'hot',ptr:1})]),sec('객체 공간','','var(--amber)',listRows('@L30',[1,2,3,4,5],{}))],
+       calc:'proc(a)  →  lst 와 a 는 같은 리스트 (P08)',
+       note:'이름표가 하나 늘었을 뿐 — 안에서의 수정은 밖에 남습니다.'},
+      {line:3,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{ptr:1}),v('','lst','@L30',{ptr:1})]),sec('객체 공간','원본이 바뀌는 중!','var(--amber)',listRows('@L30',[1,0,3,0,5],{1:'hot',3:'hot'}))],
+       calc:'i = 1:  2 는 짝수  →  0\ni = 3:  4 는 짝수  →  0\nlst = [1, 0, 3, 0, 5]',
+       note:'lst[i] = 0은 재대입이 아니라 칸 수정 — @L30 자체가 바뀝니다.'},
+      {line:4,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{ptr:1}),v('','lst','@L30',{ptr:1})]),sec('객체 공간','','var(--amber)',listRows('@L30',[1,0,3,0,5],{}).concat(listRows('@L80',[5,0,3,0,1],{0:'hot',1:'hot',2:'hot',3:'hot',4:'hot'})))],
+       calc:'return lst[::-1]  →  뒤집힌 "새" 리스트 (P09)',
+       note:'반환되는 건 복사본 @L80 — 원본과 별개의 객체입니다.'},
+      {line:7,secs:[sec('이름 공간','','var(--cyan)',[v('','a','@L30',{cls:'tgt',ptr:1}),v('','b','@L80',{cls:'tgt',ptr:1})]),sec('객체 공간','','var(--amber)',listRows('@L30',[1,0,3,0,5],{0:'good',1:'good',2:'good',3:'good',4:'good'}).concat(listRows('@L80',[5,0,3,0,1],{0:'good',1:'good',2:'good',3:'good',4:'good'})))],
+       calc:'출력:  [1, 0, 3, 0, 5] [5, 0, 3, 0, 1]',cgood:true,
+       note:'함수 안의 수정은 원본에 남고(참조), 반환은 복사본(슬라이스) — 두 규칙을 한 문제에서 가려내는 것이 실기 최고난도 유형입니다. C의 주소에서 출발해 자바의 참조를 지나 파이썬의 이름표까지 — 세 언어 완주를 축하합니다!'}
+    ]
+  }],
+  quiz:{code:'def f(x):\n    x.append(len(x))\n    return x[:]\na = [7, 8]\nb = f(a)\nb.append(9)\nprint(a, b)',q:'출력값은?',opts:['[7, 8, 2] [7, 8, 2, 9]','[7, 8, 2, 9] [7, 8, 2, 9]','[7, 8] [7, 8, 2, 9]','[7, 8, 2] [7, 8, 2]'],ans:0,
+    exp:'f 안의 append(len(x))는 원본 수정 — a가 [7, 8, 2]가 됩니다. 반환된 x[:]는 복사본이라 이후 b.append(9)는 b만 [7, 8, 2, 9]로. "안에서의 수정은 남고, 슬라이스 반환은 별개" — 졸업 문제의 두 규칙 그대로입니다.'}
+}
+];
+
+/* ---------- drill zone question bank (정답은 항상 o[0], 표시할 때 섞음) ---------- */
+const DRILL=[
+  {c:'print(7 // 2)',o:['3','3.5','4','2']},
+  {c:'print(2 ** 3)',o:['8','6','9','5']},
+  {c:'print(10 % 4)',o:['2','2.5','0','4']},
+  {c:'print("PYTHON"[1:4])',o:['YTH','YTHO','PYT','THO']},
+  {c:'print("PYTHON"[-2])',o:['O','N','H','에러']},
+  {c:'print("ABCDE"[::-1])',o:['EDCBA','ABCDE','ACE','EDC']},
+  {c:'print("ABCDEF"[::2])',o:['ACE','BDF','AB','ABC']},
+  {c:'print(len([1, [2, 3], 4]))',o:['3','4','2','에러']},
+  {c:'a = [1, 2]\nb = a\nb.append(3)\nprint(len(a))',o:['3','2','1','에러']},
+  {c:'a = [1, 2]\nc = a[:]\nc.append(3)\nprint(len(a))',o:['2','3','1','에러']},
+  {c:'print(list(range(3)))',o:['[0, 1, 2]','[1, 2, 3]','[0, 1, 2, 3]','[3]']},
+  {c:'s = 0\nfor i in range(2, 8, 2):\n    s += i\nprint(s)',o:['12','20','14','8']},
+  {c:'print("a,b,c".split(",")[2])',o:['c','b','a',"['c']"]},
+  {c:'print("banana".count("a"))',o:['3','2','6','1']},
+  {c:'print("hello".upper()[0])',o:['H','h','HELLO','E']},
+  {c:'d = {"x": 1, "y": 2}\nd["x"] = 9\nprint(d["x"] + d["y"])',o:['11','3','9','에러']},
+  {c:'a, b = 3, 5\na, b = b, a\nprint(a - b)',o:['2','-2','0','8']},
+  {c:'def f(x, y=3):\n    return x * y\nprint(f(4))',o:['12','7','4','에러']},
+  {c:'print(4 / 2)',o:['2.0','2','2.5','4']},
+  {c:'a = [5, 2, 8]\na.sort()\nprint(a[0])',o:['2','5','8','[2]']},
+  {c:'a = [1, 2, 3]\nprint(a.pop())',o:['3','1','[1, 2]','2']},
+  {c:'print(-7 // 2)',o:['-4','-3','-3.5','3']},
+  {c:'x = 5\nprint("big" if x > 3 else "small")',o:['big','small','True','에러']},
+  {c:'print(3 * "ab")',o:['ababab','ab3','9','에러']}
+];
+
+/* ---------- render engine ---------- */
+const state={}; // id -> {mode, step}
+const solved={}; // id -> bool
+
+/* ---------- part dividers & progress persistence ---------- */
+const PARTS={
+  p1:['PART 1','문법 기초 — 이름표의 나라 (01–08)'],
+  p9:['PART 2','정처기 실전 파이썬 (09–14)']
+};
+const STORE_KEY='plab-progress-v1';
+function saveProgress(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify({solved:solved,state:state})); }catch(e){}
+}
+function loadProgress(){
+  try{
+    const d=JSON.parse(localStorage.getItem(STORE_KEY)||'null');
+    if(!d) return;
+    PROBLEMS.forEach(p=>{
+      if(d.solved && d.solved[p.id]) solved[p.id]=true;
+      const s=d.state && d.state[p.id];
+      if(s && state[p.id]){
+        const m=Math.min(Math.max(0,s.mode|0), p.modes.length-1);
+        state[p.id].mode=m;
+        state[p.id].step=Math.min(Math.max(0,s.step|0), p.modes[m].steps.length-1);
+      }
+    });
+  }catch(e){}
+}
+
+function cellEl(x,dim){
+  const d=document.createElement('div');
+  d.className='cellrow'+(x.cls?' '+x.cls:'')+(x.ptr?' ptr':'')+(x.grp?' grp':'');
+  if(dim) d.style.opacity='0.5';
+  const a=document.createElement('span');a.className='addr';a.textContent=x.addr;
+  const n=document.createElement('span');n.className='nm';n.textContent=x.name;
+  const val=document.createElement('span');val.className='val';val.textContent=x.val+(x.ptr?' →':'');
+  d.appendChild(a);d.appendChild(n);d.appendChild(val);
+  if(x.lock){const l=document.createElement('span');l.className='lock';l.textContent='🔒';l.setAttribute('aria-label','읽기 전용');d.appendChild(l);}
+  return d;
+}
+
+function renderStage(prob){
+  const st=state[prob.id];
+  const mode=prob.modes[st.mode];
+  const step=mode.steps[st.step];
+  const root=document.getElementById('stage-'+prob.id);
+
+  let modeHtml='';
+  if(prob.modes.length>1){
+    modeHtml='<div class="modes">'+prob.modes.map((m,i)=>
+      '<button class="btn mode-btn'+(i===st.mode?' on':'')+'" data-mode="'+i+'">'+m.label+'</button>'
+    ).join('')+'</div>';
+  }
+
+  const ctrl='<div class="steps-ctrl">'
+    +'<button class="btn nav-prev">← 이전</button>'
+    +'<button class="btn nav-next">다음 →</button>'
+    +'<span class="stepn">'+(st.step+1)+' / '+mode.steps.length+'</span></div>';
+
+  const codeHtml='<pre class="code">'+mode.lines.map((l,i)=>{
+    const cls=(i===step.line?'ln on':(i<=step.line?'ln seen':'ln'));
+    return '<span class="'+cls+'">'+escapeHtml(l||' ')+'</span>';
+  }).join('')+'</pre>';
+
+  let memHtml='';
+  if(step.frames){
+    memHtml=step.frames.map(f=>{
+      return '<div class="memsec"><div class="sh">'+escapeHtml(f.title)+'</div>'
+        + f.rows.map(r=>cellEl(r,f.dim).outerHTML).join('')+'</div>';
+    }).join('');
+  } else if(step.secs){
+    memHtml=step.secs.map(s=>{
+      const tag=s.tag?'<span class="tag" style="background:'+s.tag+'"></span>':'';
+      const badge=s.badge?'<span class="badge">— '+escapeHtml(s.badge)+'</span>':'';
+      const body=s.rows.length? s.rows.map(r=>cellEl(r,false).outerHTML).join('') : '<div class="empty">(비어 있음)</div>';
+      return '<div class="memsec"><div class="sh">'+tag+escapeHtml(s.sh)+' '+badge+'</div>'+body+'</div>';
+    }).join('');
+  }
+
+  const calcHtml = step.calc ? '<div class="calc'+(step.cbad?' bad':(step.cgood?' good':''))+'">'+escapeHtml(step.calc)+'</div>' : '';
+  const noteHtml = '<div class="note">'+escapeHtml(step.note)+'</div>';
+
+  root.innerHTML = modeHtml + ctrl
+    + '<div class="stage">'
+    +   '<div class="pane"><div class="pane-label">코드</div>'+codeHtml+'</div>'
+    +   '<div class="pane"><div class="pane-label">메모리</div>'+memHtml+'</div>'
+    + '</div>' + calcHtml + noteHtml;
+
+  root.querySelectorAll('.mode-btn').forEach(b=>b.onclick=()=>{st.mode=+b.dataset.mode;st.step=0;renderStage(prob);saveProgress();});
+  root.querySelector('.nav-prev').onclick=()=>{const n=mode.steps.length;st.step=(st.step-1+n)%n;renderStage(prob);saveProgress();};
+  root.querySelector('.nav-next').onclick=()=>{const n=mode.steps.length;st.step=(st.step+1)%n;renderStage(prob);saveProgress();};
+}
+
+function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+function renderQuiz(prob){
+  const root=document.getElementById('quiz-'+prob.id);
+  const qz=prob.quiz;
+  root.innerHTML=''
+    +'<div class="q"><span class="qmono" style="white-space:pre-wrap;display:inline-block;">'+escapeHtml(qz.code)+'</span><br>'+escapeHtml(qz.q)+'</div>'
+    +'<div class="opts">'+qz.opts.map((o,i)=>'<button class="opt" data-i="'+i+'">'+escapeHtml(o)+'</button>').join('')+'</div>'
+    +'<div class="exp" id="exp-'+prob.id+'"></div>';
+  const opts=[...root.querySelectorAll('.opt')];
+  const exp=root.querySelector('.exp');
+  opts.forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i, ok=(i===qz.ans);
+    opts.forEach(o=>o.disabled=true);
+    if(ok){ b.classList.add('correct'); if(!solved[prob.id]){solved[prob.id]=true;updateScore();} }
+    else { b.classList.add('wrong'); opts[qz.ans].classList.add('correct'); }
+    exp.classList.add('show');
+    exp.innerHTML=(ok?'<b>정답.</b> ':'<b class="no">정답은 '+escapeHtml(qz.opts[qz.ans])+'.</b> ')+escapeHtml(qz.exp);
+    saveProgress();
+  });
+  if(solved[prob.id]){
+    opts.forEach(o=>o.disabled=true);
+    opts[qz.ans].classList.add('correct');
+    exp.classList.add('show');
+    exp.innerHTML='<b>정답.</b> '+escapeHtml(qz.exp);
+  }
+}
+
+function updateScore(){
+  const n=Object.values(solved).filter(Boolean).length;
+  document.getElementById('score').textContent=n;
+  const sn=document.getElementById('snScore'); if(sn) sn.textContent=n;
+  const bar=document.getElementById('snBar'); if(bar) bar.style.width=(PROBLEMS.length?(n/PROBLEMS.length*100):0)+'%';
+  document.querySelectorAll('.pip,.sn-item').forEach(p=>{
+    p.classList.toggle('done', !!solved[p.dataset.id]);
+  });
+}
+
+function buildSideNav(){
+  const nav=document.getElementById('snList');
+  if(!nav) return;
+  nav.innerHTML=PROBLEMS.map((p,i)=>{
+    const part=PARTS[p.id]?'<div class="sn-part">'+escapeHtml(PARTS[p.id][0])+'</div>':'';
+    return part+'<button class="sn-item" data-id="'+p.id+'" role="tab" title="'+escapeHtml(p.title)+'">'
+      +'<span class="sn-num">'+(i+1)+'</span>'
+      +'<span class="sn-txt">'+escapeHtml(p.title)+'</span>'
+      +'<span class="sn-check" aria-hidden="true">✓</span>'
+      +'</button>';
+  }).join('');
+  nav.querySelectorAll('.sn-item').forEach(b=>b.onclick=()=>{
+    document.getElementById(b.dataset.id).scrollIntoView({behavior:'smooth',block:'start'});
+  });
+}
+function ensureVisible(item){
+  const nav=document.getElementById('sidenav');
+  if(!nav||!item) return;
+  const it=item.getBoundingClientRect(), nv=nav.getBoundingClientRect();
+  if(it.top<nv.top) nav.scrollTop-=(nv.top-it.top)+10;
+  else if(it.bottom>nv.bottom) nav.scrollTop+=(it.bottom-nv.bottom)+10;
+}
+
+function buildPips(){
+  const rail=document.getElementById('pips');
+  rail.innerHTML=PROBLEMS.map((p,i)=>'<button class="pip" role="tab" data-id="'+p.id+'" data-idx="'+i+'" aria-label="문제 '+(i+1)+'로 이동">'+(i+1)+'</button>').join('');
+  const pips=[...rail.querySelectorAll('.pip')];
+  pips.forEach(p=>p.onclick=()=>{
+    document.getElementById(p.dataset.id).scrollIntoView({behavior:'smooth',block:'start'});
+  });
+  if(typeof IntersectionObserver!=='undefined'){
+    const obs=new IntersectionObserver(entries=>{
+      entries.forEach(e=>{
+        if(e.isIntersecting){
+          document.querySelectorAll('.pip,.sn-item').forEach(el=>el.classList.toggle('active', el.dataset.id===e.target.id));
+          ensureVisible(document.querySelector('.sn-item.active'));
+        }
+      });
+    },{rootMargin:'-45% 0px -45% 0px'});
+    PROBLEMS.forEach(p=>obs.observe(document.getElementById(p.id)));
+  } else {
+    pips[0].classList.add('active');
+  }
+}
+
+/* ---------- drill zone ---------- */
+const DRILL_BEST_KEY='plab-drill-best';
+let drillOrder=[],drillIdx=0,drillStreak=0,drillCorrect=0;
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=arr[i];arr[i]=arr[j];arr[j]=t;}return arr;}
+function drillBest(){try{return +localStorage.getItem(DRILL_BEST_KEY)||0;}catch(e){return 0;}}
+function setDrillBest(n){try{localStorage.setItem(DRILL_BEST_KEY,String(n));}catch(e){}}
+function drillStats(){
+  return '<div class="drill-stats"><span>Q <b>'+Math.min(drillIdx+1,DRILL.length)+'</b> / '+DRILL.length+'</span>'
+    +'<span>🔥 연속 <b>'+drillStreak+'</b></span><span>맞힘 <b>'+drillCorrect+'</b></span>'
+    +'<span>최고 기록 <b>'+drillBest()+'</b></span></div>';
+}
+function startDrill(){
+  drillOrder=shuffle(DRILL.map((_,i)=>i));
+  drillIdx=0;drillStreak=0;drillCorrect=0;
+  renderDrill();
+}
+function renderDrill(){
+  const root=document.getElementById('drillBody');
+  if(!root) return;
+  if(drillIdx>=drillOrder.length){
+    if(drillCorrect>drillBest()) setDrillBest(drillCorrect);
+    const perfect=drillCorrect===DRILL.length;
+    root.innerHTML=drillStats()
+      +'<div class="drill-done"><div class="big">'+drillCorrect+' / '+DRILL.length+'</div>'
+      +'<div class="msg">'+(perfect?'만점! 정처기 파이썬 계산 문제는 이제 받아쓰기입니다.':'틀린 유형은 본문의 해당 문제로 돌아가 스텝을 다시 밟아 보세요.')+'</div>'
+      +'<button class="btn" id="drillAgain">↺ 다시 섞어서 훈련</button></div>';
+    document.getElementById('drillAgain').onclick=startDrill;
+    return;
+  }
+  const q=DRILL[drillOrder[drillIdx]];
+  const opts=shuffle(q.o.map((t,i)=>({t:t,ok:i===0})));
+  root.innerHTML=drillStats()
+    +'<div class="drill-code">'+escapeHtml(q.c)+'</div>'
+    +'<div class="q" style="margin-bottom:10px;">출력은?</div>'
+    +'<div class="opts">'+opts.map(o=>'<button class="opt" data-ok="'+(o.ok?1:0)+'">'+escapeHtml(o.t)+'</button>').join('')+'</div>'
+    +'<div class="exp" id="drillExp"></div>';
+  const btns=[...root.querySelectorAll('.opt')];
+  btns.forEach(b=>b.onclick=()=>{
+    btns.forEach(o=>o.disabled=true);
+    const ok=b.dataset.ok==='1';
+    if(ok){ b.classList.add('correct'); drillCorrect++; drillStreak++; }
+    else { b.classList.add('wrong'); drillStreak=0; btns.find(o=>o.dataset.ok==='1').classList.add('correct'); }
+    const exp=root.querySelector('#drillExp');
+    exp.classList.add('show');
+    exp.innerHTML=(ok?'<b>정답!</b>':'<b class="no">아깝다 — 초록이 정답.</b>')
+      +' <button class="btn" id="drillNext" style="margin-left:8px;">다음 →</button>';
+    document.getElementById('drillNext').onclick=()=>{drillIdx++;renderDrill();};
+  });
+}
+
+function build(){
+  const main=document.getElementById('problems');
+  main.innerHTML=PROBLEMS.map(p=>{
+    const part=PARTS[p.id]?'<div class="part-head"><span class="pk">'+PARTS[p.id][0]+'</span>'+escapeHtml(PARTS[p.id][1])+'</div>':'';
+    return part
+    +'<section class="prob" id="'+p.id+'">'
+    +  '<div class="prob-head">'
+    +    '<div class="prob-num">'+p.num+'</div>'
+    +    '<div class="prob-title">'+escapeHtml(p.title)+'</div>'
+    +    '<div class="prob-tag">'+escapeHtml(p.tag)+'</div>'
+    +  '</div>'
+    +  '<div class="prob-body">'
+    +    '<div id="stage-'+p.id+'"></div>'
+    +    '<div class="quiz"><div id="quiz-'+p.id+'"></div></div>'
+    +  '</div>'
+    +'</section>';
+  }).join('');
+
+  PROBLEMS.forEach(p=>{ state[p.id]={mode:0,step:0}; });
+  loadProgress();
+  PROBLEMS.forEach(p=>{ renderStage(p); renderQuiz(p); });
+  buildSideNav();
+  buildPips();
+  updateScore();
+  document.getElementById('scoreTotal').textContent=PROBLEMS.length;
+  const snTot=document.getElementById('snTot'); if(snTot) snTot.textContent=PROBLEMS.length;
+  const sd=document.getElementById('snDrill');
+  if(sd) sd.onclick=()=>{document.getElementById('drill').scrollIntoView({behavior:'smooth',block:'start'});};
+  startDrill();
+}
+
+document.getElementById('resetAll').onclick=()=>{
+  Object.keys(solved).forEach(k=>delete solved[k]);
+  try{ localStorage.removeItem(STORE_KEY); }catch(e){}
+  PROBLEMS.forEach(p=>{state[p.id]={mode:0,step:0};renderStage(p);renderQuiz(p);});
+  updateScore();
+  startDrill();
+  document.getElementById(PROBLEMS[0].id).scrollIntoView({behavior:'smooth'});
+};
+
+build();
+</script>
+</body>
+</html>

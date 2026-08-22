@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>자바 랩 · Java Memory Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f7f8fa;
+    --panel:#ffffff;
+    --panel-2:#f2f4f7;
+    --cell:#ffffff;
+    --line:#dbe1ea;
+    --line-soft:#e6eaf0;
+    --ink:#1a2230;
+    --ink-dim:#5a6b80;
+    --ink-faint:#93a1b3;
+    --cyan:#0e9e8f;
+    --cyan-bg:rgba(14,158,143,0.10);
+    --cyan-line:rgba(14,158,143,0.45);
+    --amber:#c47a12;
+    --amber-bg:rgba(196,122,18,0.11);
+    --amber-line:rgba(196,122,18,0.42);
+    --red:#d43e5e;
+    --red-bg:rgba(212,62,94,0.10);
+    --red-line:rgba(212,62,94,0.42);
+    --green:#1f9d5a;
+    --green-bg:rgba(31,157,90,0.11);
+    --green-line:rgba(31,157,90,0.42);
+    --violet:#7b5bd6;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --sans:'Space Grotesk',system-ui,sans-serif;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);line-height:1.6;
+    background-image:radial-gradient(circle at 12% 0%, rgba(14,158,143,0.06), transparent 45%),
+                     radial-gradient(circle at 88% 8%, rgba(123,91,214,0.05), transparent 40%);
+  }
+  @media (prefers-reduced-motion: reduce){ *{animation:none!important;transition:none!important;} }
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 80px;}
+
+  /* header */
+  header.top{margin-bottom:28px;}
+  .kick{font-family:var(--mono);font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:var(--cyan);margin-bottom:10px;}
+  h1{font-size:clamp(28px,5vw,44px);font-weight:700;line-height:1.05;margin:0 0 12px;letter-spacing:-0.02em;}
+  h1 .sub{display:block;font-family:var(--mono);font-weight:400;font-size:clamp(13px,2.4vw,16px);color:var(--ink-dim);letter-spacing:0;margin-top:8px;}
+  .lede{color:var(--ink-dim);max-width:60ch;font-size:15px;}
+  .xlinks{display:flex;gap:8px;flex-wrap:wrap;}
+  a.xlink{font-family:var(--mono);font-size:12px;color:var(--cyan);text-decoration:none;border:0.5px solid var(--cyan-line);background:var(--cyan-bg);padding:5px 10px;border-radius:6px;display:inline-block;margin-top:14px;}
+  a.xlink:hover{border-color:var(--cyan);}
+
+  /* memory-map legend */
+  .maplegend{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 4px;}
+  .maplegend .seg{font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:6px;border:0.5px solid var(--line);color:var(--ink-dim);display:flex;align-items:center;gap:7px;}
+  .maplegend .dot{width:8px;height:8px;border-radius:2px;display:inline-block;}
+
+  /* progress rail */
+  .rail{position:sticky;top:0;z-index:20;background:rgba(247,248,250,0.88);backdrop-filter:blur(10px);border-bottom:0.5px solid var(--line);margin:24px -20px 0;padding:12px 20px;}
+  .rail-inner{max-width:960px;margin:0 auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .pips{display:flex;gap:6px;flex-wrap:wrap;}
+  .pip{font-family:var(--mono);font-size:12px;width:30px;height:30px;border-radius:7px;border:0.5px solid var(--line);background:var(--panel-2);color:var(--ink-dim);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;padding:0;}
+  .pip:hover{border-color:var(--cyan-line);color:var(--ink);}
+  .pip.active{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--cyan);}
+  .pip.done{color:var(--green);border-color:var(--green-line);}
+  .pip.done.active{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--cyan);}
+  .score{margin-left:auto;font-family:var(--mono);font-size:13px;color:var(--ink-dim);}
+  .score b{color:var(--cyan);}
+
+  /* left sidenav */
+  .sidenav{position:fixed;top:0;left:0;bottom:0;width:264px;background:var(--panel);border-right:0.5px solid var(--line);overflow-y:auto;padding:22px 14px 28px;z-index:30;display:none;flex-direction:column;gap:18px;}
+  .sn-head{display:flex;flex-direction:column;gap:10px;}
+  .sn-lab{font-family:var(--mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--cyan);}
+  .sn-title{font-size:16px;font-weight:600;line-height:1.2;letter-spacing:-0.01em;}
+  .sn-switch{display:flex;gap:6px;margin-top:2px;}
+  .sn-switch a{flex:1;text-align:center;font-family:var(--mono);font-size:11.5px;padding:6px 6px;border-radius:7px;border:0.5px solid var(--line);background:var(--panel-2);color:var(--ink-dim);text-decoration:none;transition:all .13s;}
+  .sn-switch a:hover{border-color:var(--cyan-line);color:var(--ink);}
+  .sn-switch a.on{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--cyan);font-weight:500;}
+  .sn-score{font-family:var(--mono);}
+  .sn-score-row{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--ink-dim);margin-bottom:8px;}
+  .sn-score-row b{font-size:15px;color:var(--cyan);}
+  .sn-score-row .tot{color:var(--ink-faint);}
+  .sn-bar{height:5px;background:var(--panel-2);border:0.5px solid var(--line-soft);border-radius:3px;overflow:hidden;}
+  .sn-bar-fill{height:100%;width:0;background:var(--green);border-radius:3px;transition:width .35s ease;}
+  .sn-list{display:flex;flex-direction:column;gap:2px;}
+  .sn-part{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--amber);margin:15px 4px 6px;}
+  .sn-part:first-child{margin-top:0;}
+  .sn-item{display:flex;align-items:center;gap:9px;width:100%;text-align:left;font-family:var(--sans);font-size:12.5px;padding:6px 8px;border-radius:8px;border:0.5px solid transparent;background:transparent;color:var(--ink-dim);cursor:pointer;transition:background .12s,color .12s,border-color .12s;}
+  .sn-item:hover{background:var(--panel-2);color:var(--ink);}
+  .sn-item.active{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--ink);}
+  .sn-num{flex:none;width:22px;height:22px;border-radius:6px;background:var(--panel-2);border:0.5px solid var(--line);font-family:var(--mono);font-size:11px;display:flex;align-items:center;justify-content:center;color:var(--ink-dim);}
+  .sn-item.active .sn-num{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--cyan);}
+  .sn-item.done .sn-num{background:var(--green-bg);border-color:var(--green-line);color:var(--green);}
+  .sn-txt{flex:1;line-height:1.22;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .sn-check{flex:none;color:var(--green);font-size:12px;opacity:0;transition:opacity .12s;}
+  .sn-item.done .sn-check{opacity:1;}
+  @media (min-width:1120px){
+    .sidenav{display:flex;}
+    body{padding-left:264px;}
+    .rail{display:none;}
+  }
+
+  /* problem card */
+  .prob{margin-top:28px;border:0.5px solid var(--line);border-radius:16px;background:var(--panel);overflow:hidden;scroll-margin-top:64px;box-shadow:0 1px 3px rgba(26,34,48,0.04),0 8px 24px rgba(26,34,48,0.05);}
+  .prob-head{padding:18px 20px 16px;border-bottom:0.5px solid var(--line-soft);}
+  .prob-num{font-family:var(--mono);font-size:12px;color:var(--amber);letter-spacing:0.1em;}
+  .prob-title{font-size:19px;font-weight:600;margin:4px 0 2px;}
+  .prob-tag{font-family:var(--mono);font-size:11.5px;color:var(--ink-faint);}
+  .prob-body{padding:20px;}
+
+  /* part divider */
+  .part-head{margin:44px 4px -6px;font-family:var(--mono);font-size:12px;color:var(--ink-dim);display:flex;align-items:center;gap:10px;}
+  .part-head .pk{color:var(--amber);letter-spacing:0.14em;font-weight:700;}
+  .part-head::after{content:'';flex:1;height:0.5px;background:var(--line);}
+
+  /* code + memory grid */
+  .stage{display:grid;grid-template-columns:minmax(0,0.82fr) minmax(0,1fr);gap:16px;align-items:start;}
+  @media (max-width:720px){ .stage{grid-template-columns:1fr;} }
+  .pane{background:var(--panel-2);border:0.5px solid var(--line-soft);border-radius:var(--radius);padding:13px;}
+  .pane-label{font-family:var(--mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px;}
+  .pane-label .muted{color:var(--ink-faint);text-transform:none;letter-spacing:0;}
+
+  pre.code{margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.95;white-space:pre;overflow-x:auto;}
+  .code .ln{display:block;padding:1px 8px;border-radius:5px;color:var(--ink-faint);transition:background .12s,color .12s;}
+  .code .ln.seen{color:var(--ink);}
+  .code .ln.on{background:var(--cyan-bg);color:var(--ink);}
+
+  .memsec{margin-bottom:11px;}
+  .memsec:last-child{margin-bottom:0;}
+  .memsec .sh{font-family:var(--mono);font-size:11px;color:var(--ink-dim);margin-bottom:7px;display:flex;align-items:center;gap:7px;}
+  .memsec .sh .badge{font-size:10px;color:var(--ink-faint);}
+  .memsec .sh .tag{width:7px;height:7px;border-radius:2px;}
+
+  .cellrow{display:flex;align-items:center;gap:9px;border:0.5px solid var(--line);background:var(--cell);border-radius:7px;padding:6px 10px;margin-bottom:5px;font-family:var(--mono);}
+  .cellrow.grp{margin-bottom:3px;}
+  .cellrow .addr{font-size:11px;color:var(--ink-faint);min-width:86px;}
+  .cellrow .nm{font-size:12.5px;font-weight:500;color:var(--ink);min-width:44px;}
+  .cellrow .val{font-size:12.5px;margin-left:auto;color:var(--ink);}
+  .cellrow.hot{background:var(--cyan-bg);border-color:var(--cyan-line);}
+  .cellrow.tgt{border-color:var(--cyan-line);}
+  .cellrow.ptr .val{color:var(--cyan);}
+  .cellrow.good{background:var(--green-bg);border-color:var(--green-line);}
+  .cellrow.good .val{color:var(--green);}
+  .cellrow.bad{background:var(--red-bg);border-color:var(--red-line);}
+  .cellrow.bad .val{color:var(--red);}
+  .cellrow .lock{font-size:11px;color:var(--ink-faint);margin-left:4px;}
+  .empty{font-family:var(--mono);font-size:12px;color:var(--ink-faint);padding:5px 2px;}
+
+  /* controls */
+  .steps-ctrl{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+  .modes{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap;}
+  button.btn{font-family:var(--mono);font-size:12px;padding:7px 12px;border-radius:7px;border:0.5px solid var(--line);background:var(--panel-2);color:var(--ink);cursor:pointer;transition:all .13s;}
+  button.btn:hover:not(:disabled){border-color:var(--cyan-line);}
+  button.btn:disabled{opacity:0.4;cursor:default;}
+  button.btn.on{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--cyan);}
+  .stepn{font-family:var(--mono);font-size:12px;color:var(--ink-dim);}
+
+  .calc{margin-top:12px;border-radius:var(--radius);padding:11px 13px;font-family:var(--mono);font-size:12.5px;white-space:pre;overflow-x:auto;background:var(--cyan-bg);color:var(--cyan);border:0.5px solid var(--cyan-line);}
+  .calc.bad{background:var(--red-bg);color:var(--red);border-color:var(--red-line);}
+  .calc.good{background:var(--green-bg);color:var(--green);border-color:var(--green-line);}
+  .note{margin-top:12px;background:var(--panel-2);border:0.5px solid var(--line-soft);border-radius:var(--radius);padding:12px 14px;font-size:14px;color:var(--ink);}
+
+  /* quiz */
+  .quiz{margin-top:16px;border-top:0.5px dashed var(--line);padding-top:16px;}
+  .quiz .q{font-size:14.5px;font-weight:500;margin-bottom:10px;}
+  .quiz .q .qmono{font-family:var(--mono);color:var(--amber);}
+  .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;}
+  button.opt{font-family:var(--mono);font-size:13px;padding:9px 12px;border-radius:7px;border:0.5px solid var(--line);background:var(--panel-2);color:var(--ink);cursor:pointer;transition:all .13s;text-align:center;}
+  button.opt:hover:not(:disabled){border-color:var(--cyan-line);}
+  button.opt:disabled{cursor:default;}
+  button.opt.correct{background:var(--green-bg);border-color:var(--green-line);color:var(--green);}
+  button.opt.wrong{background:var(--red-bg);border-color:var(--red-line);color:var(--red);}
+  .exp{display:none;margin-top:11px;background:var(--panel-2);border:0.5px solid var(--line-soft);border-radius:var(--radius);padding:11px 13px;font-size:13.5px;line-height:1.65;}
+  .exp.show{display:block;}
+  .exp b{color:var(--green);}
+  .exp b.no{color:var(--red);}
+
+  footer{margin-top:44px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--ink-faint);}
+  .reset-all{margin-top:14px;}
+
+  a.skip{position:absolute;left:-999px;}
+  a.skip:focus{left:8px;top:8px;position:fixed;background:var(--cyan);color:#02110f;padding:8px 12px;border-radius:6px;z-index:99;font-family:var(--mono);}
+</style>
+</head>
+<body>
+<a href="#p1" class="skip">본문으로 건너뛰기</a>
+<aside class="sidenav" id="sidenav" aria-label="문제 목록">
+  <div class="sn-head">
+    <div class="sn-lab">Java Memory Lab</div>
+    <div class="sn-title">자바 랩</div>
+    <div class="sn-switch">
+      <a href="clang.html">C</a>
+      <a href="java.html" class="on">Java</a>
+      <a href="python.html">Python</a>
+    </div>
+    <div class="sn-switch">
+      <a href="java.html" class="on">자바 랩</a>
+      <a href="patterns.html">디자인 패턴</a>
+    </div>
+  </div>
+  <div class="sn-score">
+    <div class="sn-score-row"><span>SCORE</span><span><b id="snScore">0</b> / <span class="tot" id="snTot">13</span></span></div>
+    <div class="sn-bar"><div class="sn-bar-fill" id="snBar"></div></div>
+  </div>
+  <nav class="sn-list" id="snList" role="tablist"></nav>
+</aside>
+<div class="wrap">
+  <header class="top">
+    <div class="kick">Java Memory Lab</div>
+    <h1>자바 랩
+      <span class="sub">13개 문제 · 참조와 객체, 그리고 정보처리기사</span>
+    </h1>
+    <p class="lede">1·2편에서 그린 메모리 지도를 자바 위에 다시 그립니다. 자바의 참조는 <b>*를 뗀 포인터</b>, 상수 풀은 자바의 .rodata, GC는 누수의 정반대 결말 — 아는 그림이라 절반은 이미 배운 셈입니다. PART 2는 전부 정처기 기출 유형입니다.</p>
+    <div class="xlinks">
+      <a class="xlink" href="clang.html">← C 1편 · 포인터</a>
+      <a class="xlink" href="clang2.html">← C 2편 · 마스터</a>
+      <a class="xlink" href="patterns.html">디자인 패턴 랩 →</a>
+      <a class="xlink" href="python.html">파이썬 랩 →</a>
+      <a class="xlink" href="quiz.html">🔥 기출 실전 랩 →</a>
+    </div>
+
+    <div class="maplegend" aria-label="메모리 영역 색상 안내">
+      <span class="seg"><span class="dot" style="background:var(--cyan)"></span>스택 · 참조와 원시값</span>
+      <span class="seg"><span class="dot" style="background:var(--amber)"></span>힙 · 모든 객체</span>
+      <span class="seg"><span class="dot" style="background:var(--violet)"></span>메서드 영역 · static과 상수 풀</span>
+    </div>
+  </header>
+
+  <div class="rail">
+    <div class="rail-inner">
+      <div class="pips" id="pips" role="tablist" aria-label="문제 바로가기"></div>
+      <div class="score">SCORE <b id="score">0</b> / <span id="scoreTotal">13</span></div>
+    </div>
+  </div>
+
+  <main id="problems"></main>
+
+  <div style="text-align:center;">
+    <button class="btn reset-all" id="resetAll">↺ 전체 다시 풀기</button>
+  </div>
+
+  <footer>
+    참조를 그릴 수 있으면 자바의 절반은 끝났다
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- helpers to build memory rows ----------
+   자바 페이지에서는 첫 칼럼(addr 자리)에 "타입 또는 참조(@)"를 표시합니다.
+   스택 행: 타입(int, int[], String, Parent …) / 힙 행: 객체 참조(@a10 …) */
+function v(addr,name,val,o){o=o||{};return{addr:addr,name:name,val:val,cls:o.cls||'',ptr:!!o.ptr,lock:!!o.lock,grp:!!o.grp};}
+function sec(sh,badge,tag,rows){return{sh:sh,badge:badge||'',tag:tag||'',rows:rows};}
+function fr(title,dim,rows){return{title:title,dim:dim,rows:rows};}
+
+/* ---------- page-specific row builders ---------- */
+function koreaRows(marks){
+  const C=["'K'","'O'","'R'","'E'","'A'"];
+  return C.map((c,i)=>v('@c01','['+i+']',c,{cls:(marks&&marks[i])||'',lock:true,grp:i!==4}));
+}
+
+/* ---------- PROBLEM DEFINITIONS ---------- */
+const PROBLEMS = [
+/* ===== J01 : primitive vs reference ===== */
+{
+  id:'p1', num:'PROBLEM 01', title:'원시 vs 참조 — 포인터의 귀환', tag:'primitive · reference · 힙',
+  modes:[
+   {label:'원시 타입 — 값이 복사된다',
+    lines:['int a = 10;','int b = a;      // 값 복사','b = 99;','System.out.println(a);   // ?'],
+    steps:[
+      {line:0,secs:[sec('스택','','var(--cyan)',[v('int','a','10',{cls:'hot'})])],
+       note:'자바의 int는 C의 int와 똑같이 동작합니다 — 스택 상자에 값이 통째로 들어가요. 이 탭은 복습입니다.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',[v('int','a','10',{cls:'tgt'}),v('int','b','10',{cls:'hot'})])],
+       note:'값 복사 — 상자가 두 개가 되고, 이후로는 서로 남남입니다.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',[v('int','a','10'),v('int','b','99',{cls:'hot'})])],
+       calc:'b = 99  →  b의 상자만 바뀜',
+       note:'a는 꿈쩍도 안 합니다. 원시 타입(int, double, char, boolean)은 언제나 이렇게 — 값이 통째로 복사되고 독립적으로 삽니다.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('int','a','10',{cls:'good'}),v('int','b','99')])],
+       calc:'출력:  10',cgood:true,
+       note:'여기까진 예상대로죠. 진짜 자바는 오른쪽 탭에서 시작됩니다.'}
+    ]},
+   {label:'참조 타입 — 주소가 복사된다',
+    lines:['int[] x = {1, 2, 3};','int[] y = x;      // 참조 복사','y[0] = 99;','System.out.println(x[0]);   // ?'],
+    steps:[
+      {line:0,secs:[sec('스택','','var(--cyan)',[v('int[]','x','@a10',{cls:'hot',ptr:1})]),sec('힙','모든 객체는 여기','var(--amber)',[v('@a10','[0]','1',{grp:true}),v('@a10','[1]','2',{grp:true}),v('@a10','[2]','3')])],
+       note:'자바에서 배열·객체는 전부 힙에 삽니다. 변수 x에 든 건 배열 자체가 아니라 방 번호(참조) @a10 — "자바엔 포인터가 없다"는 말의 진실은, *와 &만 뗀 포인터가 모든 객체 변수 안에 숨어 있다는 것입니다.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',[v('int[]','x','@a10',{ptr:1}),v('int[]','y','@a10',{cls:'hot',ptr:1})]),sec('힙','배열은 여전히 하나','var(--amber)',[v('@a10','[0]','1',{cls:'tgt',grp:true}),v('@a10','[1]','2',{cls:'tgt',grp:true}),v('@a10','[2]','3',{cls:'tgt'})])],
+       calc:'int[] y = x  →  복사된 건 방 번호 @a10 뿐',
+       note:'1편 문제 1의 int *p = &a와 같은 그림입니다. 배열이 복사된 게 아니라 이름표가 하나 더 붙었어요.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',[v('int[]','x','@a10',{ptr:1}),v('int[]','y','@a10',{ptr:1})]),sec('힙','','var(--amber)',[v('@a10','[0]','99',{cls:'hot',grp:true}),v('@a10','[1]','2',{grp:true}),v('@a10','[2]','3')])],
+       calc:'y[0] = 99  →  @a10 방의 0번 칸에 99\n(y[0]은 사실상 *(y + 0) — 역참조를 자바가 대신 해줄 뿐)',
+       note:'y로 열어서 넣었지만 방은 하나뿐입니다.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('int[]','x','@a10',{cls:'tgt',ptr:1}),v('int[]','y','@a10',{ptr:1})]),sec('힙','','var(--amber)',[v('@a10','[0]','99',{cls:'good',grp:true}),v('@a10','[1]','2',{grp:true}),v('@a10','[2]','3')])],
+       calc:'출력:  99',cgood:true,
+       note:'x를 건드린 적이 없는데 99 — 1편 문제 1의 "남의 상자 열기"가 자바에선 기본 동작입니다. 값이냐 참조냐, 이 구분이 자바 이해의 절반이에요.'}
+    ]}
+  ],
+  quiz:{code:'int[] x = {5, 6, 7}; int[] y = x; y[1] = 77; System.out.println(x[1]);',q:'출력값은?',opts:['6','77','5','0'],ans:1,
+    exp:'x와 y는 같은 배열의 두 이름표입니다. y[1] = 77은 공유하는 방의 1번 칸을 바꾼 것이라 x[1]도 77. 6을 골랐다면 배열이 복사됐다고 본 최다 오답 — 복사된 건 참조(방 번호)뿐입니다.'}
+},
+/* ===== J02 : == vs equals ===== */
+{
+  id:'p2', num:'PROBLEM 02', title:'== vs equals — 자바의 .rodata, 상수 풀', tag:'String pool · == · equals',
+  modes:[
+   {label:'리터럴 — 상수 풀에서 공유',
+    lines:['String a = "hi";','String b = "hi";     // 새로 안 만든다!','System.out.println(a == b);        // ?','System.out.println(a.equals(b));   // ?'],
+    steps:[
+      {line:0,secs:[sec('스택','','var(--cyan)',[v('String','a','@c01',{cls:'hot',ptr:1})]),sec('메서드 영역 · 상수 풀','','var(--violet)',[v('@c01','String','"hi"',{cls:'hot',lock:true})])],
+       note:'리터럴 "hi"는 상수 풀에 딱 하나 만들어집니다. 1편 문제 4의 .rodata와 같은 발상 — 같은 글자를 두 번 저장할 이유가 없으니까요.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',[v('String','a','@c01',{ptr:1}),v('String','b','@c01',{cls:'hot',ptr:1})]),sec('메서드 영역 · 상수 풀','','var(--violet)',[v('@c01','String','"hi"',{cls:'tgt',lock:true})])],
+       calc:'"hi" 리터럴  →  풀에 이미 있음  →  재사용',
+       note:'b는 새 객체를 만들지 않고 같은 @c01을 받습니다. 이름표만 두 개, 객체는 하나.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',[v('String','a','@c01',{cls:'tgt',ptr:1}),v('String','b','@c01',{cls:'tgt',ptr:1})]),sec('메서드 영역 · 상수 풀','','var(--violet)',[v('@c01','String','"hi"',{lock:true})])],
+       calc:'a == b  →  참조(방 번호) 비교\n@c01 == @c01  →  true',
+       note:'==는 "같은 객체인가?"를 묻습니다. 상자 안의 방 번호 두 개를 비교할 뿐이에요.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('String','a','@c01',{ptr:1}),v('String','b','@c01',{ptr:1})]),sec('메서드 영역 · 상수 풀','','var(--violet)',[v('@c01','String','"hi"',{cls:'good',lock:true})])],
+       calc:'a.equals(b)  →  내용(h, i) 비교  →  true',cgood:true,
+       note:'여기서는 둘 다 true라 차이가 안 보입니다. 오른쪽 탭에서 갈라져요.'}
+    ]},
+   {label:'new String — 힙에 별도 객체',
+    lines:['String a = "hi";','String c = new String("hi");   // 힙에 새로!','System.out.println(a == c);        // ?','System.out.println(a.equals(c));   // ?'],
+    steps:[
+      {line:0,secs:[sec('스택','','var(--cyan)',[v('String','a','@c01',{cls:'hot',ptr:1})]),sec('메서드 영역 · 상수 풀','','var(--violet)',[v('@c01','String','"hi"',{cls:'hot',lock:true})])],
+       note:'출발은 같습니다 — 풀의 "hi"를 a가 가리킵니다.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',[v('String','a','@c01',{ptr:1}),v('String','c','@b20',{cls:'hot',ptr:1})]),sec('힙','new는 무조건 새로','var(--amber)',[v('@b20','String','"hi"',{cls:'hot'})]),sec('메서드 영역 · 상수 풀','','var(--violet)',[v('@c01','String','"hi"',{lock:true})])],
+       calc:'new String("hi")  →  힙에 "새" 객체 @b20',
+       note:'new의 뜻은 "무조건 힙에 새로"입니다. 내용이 같아도 방은 다른 방 — 이제 "hi"가 메모리에 두 개 있습니다.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',[v('String','a','@c01',{cls:'tgt',ptr:1}),v('String','c','@b20',{cls:'tgt',ptr:1})]),sec('힙','','var(--amber)',[v('@b20','String','"hi"')]),sec('메서드 영역 · 상수 풀','','var(--violet)',[v('@c01','String','"hi"',{lock:true})])],
+       calc:'a == c  →  @c01 == @b20  →  false!',cbad:true,
+       note:'내용이 똑같은데 false — ==가 주소를 비교하기 때문입니다. 실무 버그와 기출 함정의 단골 지점.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('String','a','@c01',{ptr:1}),v('String','c','@b20',{ptr:1})]),sec('힙','','var(--amber)',[v('@b20','String','"hi"',{cls:'good'})]),sec('메서드 영역 · 상수 풀','','var(--violet)',[v('@c01','String','"hi"',{cls:'good',lock:true})])],
+       calc:'a.equals(c)  →  내용 비교  →  true',cgood:true,
+       note:'규칙은 한 줄 — 문자열 내용 비교는 무조건 equals, ==는 "같은 방인가"를 물을 때만. (참고로 -128~127 범위의 Integer도 풀처럼 캐시돼 똑같은 함정이 있습니다.)'}
+    ]}
+  ],
+  quiz:{code:'String s1 = "java"; String s2 = "java"; String s3 = new String("java");',q:'다음 중 false인 것은?',opts:['s1 == s2','s1.equals(s3)','s1 == s3','s2.equals(s3)'],ans:2,
+    exp:'s1과 s2는 상수 풀의 같은 객체를 가리켜 s1 == s2는 true. s3은 new라서 힙의 새 객체 — s1 == s3만 false입니다. equals는 셋 다 내용이 "java"라 전부 true. 그림을 그리면 화살표 방향이 답을 알려줍니다.'}
+},
+/* ===== J03 : String immutability ===== */
+{
+  id:'p3', num:'PROBLEM 03', title:'String 불변 — 바꾸는 척, 새로 만들기', tag:'immutable · StringBuilder · GC 예고',
+  modes:[
+   {label:'String — 더할 때마다 새 객체',
+    lines:['String s = "ab";','s = s + "c";     // 새 객체!','s += "d";        // 또 새 객체!','System.out.println(s);   // ?'],
+    steps:[
+      {line:0,secs:[sec('스택','','var(--cyan)',[v('String','s','@c01',{cls:'hot',ptr:1})]),sec('메서드 영역 · 상수 풀','','var(--violet)',[v('@c01','String','"ab"',{cls:'hot',lock:true})])],
+       note:'풀의 "ab"에서 출발합니다.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',[v('String','s','@b10',{cls:'hot',ptr:1})]),sec('힙','','var(--amber)',[v('@b10','String','"abc"',{cls:'hot'})]),sec('메서드 영역 · 상수 풀','"ab"는 그대로','var(--violet)',[v('@c01','String','"ab"',{lock:true})])],
+       calc:'s + "c"  →  힙에 "abc"를 "새로" 만들고\ns 는 새 방 번호 @b10 으로 갈아탐',
+       note:'"ab"가 "abc"로 자란 게 아닙니다. String은 불변(immutable) — 1편 문제 4의 .rodata처럼, 자바는 언어 차원에서 문자열 수정을 금지했어요. 고치는 것처럼 보이는 건 전부 새로 만들기입니다.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',[v('String','s','@b20',{cls:'hot',ptr:1})]),sec('힙','','var(--amber)',[v('@b10','String','"abc" · 참조 0 — 수거 대상',{cls:'bad'}),v('@b20','String','"abcd"',{cls:'hot'})]),sec('메서드 영역 · 상수 풀','','var(--violet)',[v('@c01','String','"ab"',{lock:true})])],
+       calc:'s += "d"  →  "abcd" 또 새로 (@b20)\n방금 만든 "abc"는 벌써 고아',
+       note:'반복문에서 s += 를 돌리면 바퀴마다 객체가 태어나고 버려집니다. 그 낭비를 막으려고 자바가 준 도구가 오른쪽 탭이에요.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('String','s','@b20',{ptr:1})]),sec('힙','','var(--amber)',[v('@b10','String','"abc" · 수거 대상',{cls:'bad'}),v('@b20','String','"abcd"',{cls:'good'})]),sec('메서드 영역 · 상수 풀','','var(--violet)',[v('@c01','String','"ab"',{lock:true})])],
+       calc:'출력:  abcd',cgood:true,
+       note:'결과는 얻었지만 힙에 시체가 하나 남았죠. 고아가 된 @b10의 운명은 문제 5(GC)에서 다룹니다.'}
+    ]},
+   {label:'StringBuilder — 제자리에서 자란다',
+    lines:['StringBuilder sb = new StringBuilder("ab");','sb.append("c");','sb.append("d");','System.out.println(sb);   // ?'],
+    steps:[
+      {line:0,secs:[sec('스택','','var(--cyan)',[v('SB','sb','@b30',{cls:'hot',ptr:1})]),sec('힙','','var(--amber)',[v('@b30','SB','"ab"',{cls:'hot'})])],
+       note:'StringBuilder는 "수정 가능한 문자열 버퍼"입니다. 1편 문제 4의 char s[] 버전 — 내 버퍼니까 제자리에서 고칠 수 있어요.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',[v('SB','sb','@b30',{ptr:1})]),sec('힙','같은 방!','var(--amber)',[v('@b30','SB','"abc"',{cls:'hot'})])],
+       calc:'append("c")  →  @b30 그 자리에서 "abc"로',
+       note:'새 객체가 안 생깁니다. 방 번호 @b30이 그대로인 걸 확인하세요.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',[v('SB','sb','@b30',{ptr:1})]),sec('힙','','var(--amber)',[v('@b30','SB','"abcd"',{cls:'hot'})])],
+       calc:'append("d")  →  여전히 @b30',
+       note:'몇 번을 붙여도 객체는 하나.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('SB','sb','@b30',{ptr:1})]),sec('힙','','var(--amber)',[v('@b30','SB','"abcd"',{cls:'good'})])],
+       calc:'출력:  abcd',cgood:true,
+       note:'왼쪽 탭과 출력은 같지만 힙에 남긴 흔적이 다릅니다. 정리 — 몇 번 안 붙이면 String, 루프에서 이어 붙이면 StringBuilder.'}
+    ]}
+  ],
+  quiz:{code:'String s = "A"; s.concat("B"); System.out.println(s);',q:'출력값은?',opts:['A','AB','B','컴파일 에러'],ans:0,
+    exp:'concat은 원본을 바꾸지 않고 "AB"라는 "새 객체를 돌려줄" 뿐입니다. 반환값을 안 받았으니 그대로 버려지고 s는 여전히 "A". s = s.concat("B")라고 받아야 AB가 됩니다. 불변 타입의 대표 함정 — replace, toUpperCase, substring 전부 같은 규칙이에요.'}
+},
+/* ===== J04 : pass by value of reference ===== */
+{
+  id:'p4', num:'PROBLEM 04', title:'swap의 저주 — 자바도 값 전달뿐', tag:'pass by value · 내용 수정 vs 재대입',
+  modes:[
+   {label:'swap — 여전히 실패',
+    lines:['static void swap(int x, int y) {','    int t = x;  x = y;  y = t;','}','int a = 1, b = 2;','swap(a, b);','System.out.println(a + " " + b);   // ?'],
+    steps:[
+      {line:3,frames:[fr('main 프레임',false,[v('int','a','1',{cls:'hot'}),v('int','b','2',{cls:'hot'})])],
+       note:'1편 문제 3의 그 swap이 자바 옷을 입고 돌아왔습니다. 결과도 같을까요?'},
+      {line:4,frames:[fr('swap 프레임 — 복사본',false,[v('int','x','1',{cls:'hot'}),v('int','y','2',{cls:'hot'})]),fr('main 프레임',true,[v('int','a','1'),v('int','b','2')])],
+       note:'자바도 무조건 값 복사(pass by value)입니다. x, y는 a, b의 복사본 — 여기까지 C와 완전히 같습니다.'},
+      {line:1,frames:[fr('swap 프레임',false,[v('int','x','2',{cls:'hot'}),v('int','y','1',{cls:'hot'}),v('int','t','1')]),fr('main 프레임',true,[v('int','a','1'),v('int','b','2')])],
+       calc:'swap 안에서는 교환 성공 — 하지만 전부 복사본',
+       note:'main의 a, b는 미동도 없습니다.'},
+      {line:5,frames:[fr('main 프레임',false,[v('int','a','1',{cls:'hot'}),v('int','b','2',{cls:'hot'})])],
+       calc:'출력:  1 2      아무것도 안 바뀜',cbad:true,
+       note:'자바는 C보다 한 술 더 뜹니다 — C는 &a로 주소를 넘겨 해결했지만(1편 3 탭2), 자바엔 & 자체가 없어요. int를 밖에서 바꿔줄 방법이 아예 없습니다. 그럼 자바는 어떻게? → 오른쪽 탭.'}
+    ]},
+   {label:'배열 전달 — 내용은 되고, 재대입은 안 되고',
+    lines:['static void fill(int[] a) { a[0] = 9; }','static void move(int[] a) { a = new int[]{7}; }','int[] arr = {1, 2};','fill(arr);    // 내용 수정 → ?','move(arr);    // 재대입 → ?','System.out.println(arr[0]);   // ?'],
+    steps:[
+      {line:2,secs:[sec('스택','','var(--cyan)',[v('int[]','arr','@a10',{cls:'hot',ptr:1})]),sec('힙','','var(--amber)',[v('@a10','[0]','1',{grp:true}),v('@a10','[1]','2')])],
+       note:'main의 arr가 힙 배열 @a10을 가리킵니다.'},
+      {line:3,secs:[sec('스택','fill 호출 중','var(--cyan)',[v('int[]','arr','@a10',{ptr:1}),v('int[]','a','@a10',{cls:'hot',ptr:1})]),sec('힙','','var(--amber)',[v('@a10','[0]','9',{cls:'hot',grp:true}),v('@a10','[1]','2')])],
+       calc:'fill(arr)  →  참조가 "값으로" 복사  →  a 도 @a10\na[0] = 9  →  원본 배열이 바뀜',
+       note:'1편 문제 3 탭2(주소 전달)의 원리 그대로 — 복사해도 가리키는 곳이 같으니, 내용 수정은 원본에 닿습니다.'},
+      {line:4,secs:[sec('스택','move 호출 중','var(--cyan)',[v('int[]','arr','@a10',{cls:'tgt',ptr:1}),v('int[]','a','@b40',{cls:'hot',ptr:1})]),sec('힙','','var(--amber)',[v('@a10','[0]','9',{grp:true}),v('@a10','[1]','2'),v('@b40','[0]','7 · 곧 수거 대상',{cls:'bad'})])],
+       calc:'move(arr)  →  a = new int[]{7}\n복사본 a 만 @b40 으로 — arr(원본)는 여전히 @a10',
+       note:'재대입은 복사본의 방 번호만 바꿉니다. C에선 int**로 이 문도 열 수 있었지만(1편 문제 5), 자바엔 그 열쇠(&)가 없어요 — 메서드가 끝나면 @b40은 아무도 모르는 방이 됩니다.'},
+      {line:5,secs:[sec('스택','','var(--cyan)',[v('int[]','arr','@a10',{cls:'tgt',ptr:1})]),sec('힙','','var(--amber)',[v('@a10','[0]','9',{cls:'good',grp:true}),v('@a10','[1]','2'),v('@b40','[0]','참조 0 — 수거 대상',{cls:'bad'})])],
+       calc:'출력:  9',cgood:true,
+       note:'정리 — 자바 메서드가 바깥세상에 영향을 주는 길은 단 하나, "넘겨받은 객체의 내용을 수정"하는 것뿐입니다. 재대입·원시값 수정은 전부 복사본 안의 일이에요.'}
+    ]}
+  ],
+  quiz:{code:'static void f(int[] a) { a[0] += 10; }  int[] n = {5}; f(n); f(n); System.out.println(n[0]);',q:'출력값은?',opts:['5','15','25','10'],ans:2,
+    exp:'참조가 복사되어도 가리키는 배열은 하나 — 두 번의 호출이 모두 원본 n[0]에 닿습니다. 5 + 10 + 10 = 25. 5는 "자바는 값 전달이니 안 바뀐다"를 원시/참조 구분 없이 적용한 오답 — 값 전달인 건 맞지만, 복사된 "값"이 방 번호라는 게 핵심입니다.'}
+},
+/* ===== J05 : GC ===== */
+{
+  id:'p5', num:'PROBLEM 05', title:'GC — free가 없는 나라', tag:'참조 세기 · 수거 대상 · C와의 대비',
+  modes:[{
+    lines:['Point p = new Point(3, 4);','Point q = p;              // 참조 2개','p = new Point(9, 9);      // 이제 1개','q = null;                 // 0개!','// free()는 없다 — 청소부(GC)가 온다'],
+    steps:[
+      {line:0,secs:[sec('스택','','var(--cyan)',[v('Point','p','@a10',{cls:'hot',ptr:1})]),sec('힙','','var(--amber)',[v('@a10','x','3',{cls:'hot',grp:true}),v('@a10','y','4',{cls:'hot'})])],
+       note:'힙에 Point 객체가 생기고 p가 방 번호를 받았습니다. 2편 문제 11(누수)과 같은 무대 — 결말이 어떻게 다른지 보세요.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',[v('Point','p','@a10',{ptr:1}),v('Point','q','@a10',{cls:'hot',ptr:1})]),sec('힙','@a10을 아는 이름표: 2개','var(--amber)',[v('@a10','x','3',{cls:'tgt',grp:true}),v('@a10','y','4',{cls:'tgt'})])],
+       note:'GC 이해의 전부는 이 "세기"입니다 — 이 방 번호를 아는 이름표가 몇 개인가.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',[v('Point','p','@b20',{cls:'hot',ptr:1}),v('Point','q','@a10',{ptr:1})]),sec('힙','@a10을 아는 건 이제 q뿐: 1개','var(--amber)',[v('@a10','x','3',{grp:true}),v('@a10','y','4'),v('@b20','x','9',{cls:'hot',grp:true}),v('@b20','y','9',{cls:'hot'})])],
+       calc:'p 는 새 객체 @b20 으로 갈아탐\n@a10 을 아는 참조:  2 → 1',
+       note:'2편 문제 11에서 이 장면은 "누수 직전"이었죠. 여기선 아직 q가 쥐고 있으니 안전합니다.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('Point','p','@b20',{ptr:1}),v('Point','q','null',{cls:'hot'})]),sec('힙','','var(--amber)',[v('@a10','x','3 · 참조 0 — 수거 대상',{cls:'bad',grp:true}),v('@a10','y','4 · 수거 대상',{cls:'bad'}),v('@b20','x','9',{grp:true}),v('@b20','y','9')])],
+       calc:'@a10 을 아는 참조:  2 → 1 → 0\n\nC (2편 11):  영원한 누수 — 아무도 free 못 함\n자바:  GC가 찾아내 회수',
+       note:'같은 그림, 정반대 결말입니다. free를 잊는 누수도, 반납한 방을 또 여는 use-after-free(1편 6)도 자바엔 없어요 — 참조가 남아 있으면 GC가 안 걷어가고, 0이면 접근할 방법 자체가 없으니까. C의 버그 두 마리를 청소부 한 명이 다 잡았습니다.'},
+      {line:4,secs:[sec('스택','','var(--cyan)',[v('Point','p','@b20',{ptr:1}),v('Point','q','null')]),sec('힙','','var(--amber)',[v('@a10','x','수거됨 (언젠가)',{cls:'bad',grp:true}),v('@a10','y','수거됨',{cls:'bad'}),v('@b20','x','9',{cls:'good',grp:true}),v('@b20','y','9',{cls:'good'})])],
+       calc:'수거 시점:  보장되는 건 "언젠가" 뿐',
+       note:'단, 공짜는 아닙니다 — 수거 시점은 JVM 마음이고, 청소하는 동안 프로그램이 잠깐 멈추기도 합니다(GC pause). C가 수동 기어, 자바가 오토라고 기억하면 정확해요.'}
+    ]
+  }],
+  quiz:{code:'String a = new String("x"); String b = a; a = null;',q:'이 시점에 힙의 "x" 객체는?',opts:['GC 수거 대상이다','b가 참조 중이라 살아 있다','a = null 순간 즉시 삭제된다','컴파일 에러가 난다'],ans:1,
+    exp:'참조 세기 — b가 아직 방 번호를 쥐고 있으니 참조 1개, 수거 대상이 아닙니다. a = null은 이름표 하나를 뗀 것뿐이에요. 셋째 보기도 함정 — 참조가 0이 되어도 "즉시"가 아니라 "언젠가" 수거됩니다.'}
+},
+/* ===== J06 : static ===== */
+{
+  id:'p6', num:'PROBLEM 06', title:'static 재회 — 클래스에 하나, 객체마다 하나', tag:'static · 메서드 영역 · 공유 vs 개별',
+  modes:[{
+    lines:['class Counter {','    static int total = 0;   // 클래스에 하나','    int mine = 0;           // 객체마다 하나','    void hit() { total++; mine++; }','}','Counter c1 = new Counter(), c2 = new Counter();','c1.hit();  c1.hit();  c2.hit();','System.out.println(Counter.total+" "+c1.mine+" "+c2.mine);'],
+    steps:[
+      {line:1,secs:[sec('스택','아직 비어 있음','var(--cyan)',[]),sec('메서드 영역','클래스 로딩과 함께','var(--violet)',[v('static int','total','0',{cls:'hot'})])],
+       note:'static은 객체가 아니라 클래스 소속입니다 — 클래스가 로딩되는 순간 메서드 영역에 놓여요. 2편 M01의 .data와 같은 자리, 자바식 이름일 뿐입니다.'},
+      {line:5,secs:[sec('스택','','var(--cyan)',[v('Counter','c1','@a10',{cls:'hot',ptr:1}),v('Counter','c2','@b20',{cls:'hot',ptr:1})]),sec('힙','','var(--amber)',[v('@a10','mine','0',{cls:'hot',grp:true}),v('@b20','mine','0',{cls:'hot'})]),sec('메서드 영역','','var(--violet)',[v('static int','total','0')])],
+       note:'객체 두 개가 태어났습니다. mine은 객체마다 하나씩 힙에 — 그런데 total은 어느 객체 안에도 없다는 걸 지금 그림에서 확인하세요.'},
+      {line:6,secs:[sec('스택','','var(--cyan)',[v('Counter','c1','@a10',{cls:'tgt',ptr:1}),v('Counter','c2','@b20',{ptr:1})]),sec('힙','','var(--amber)',[v('@a10','mine','2',{cls:'hot',grp:true}),v('@b20','mine','0')]),sec('메서드 영역','','var(--violet)',[v('static int','total','2',{cls:'hot'})])],
+       calc:'c1.hit() × 2\ntotal:  0 → 1 → 2      c1의 mine:  0 → 1 → 2',
+       note:'c1이 두 번 쳤습니다. 여기까진 둘이 나란히 오르죠.'},
+      {line:6,secs:[sec('스택','','var(--cyan)',[v('Counter','c1','@a10',{ptr:1}),v('Counter','c2','@b20',{cls:'tgt',ptr:1})]),sec('힙','','var(--amber)',[v('@a10','mine','2',{grp:true}),v('@b20','mine','1',{cls:'hot'})]),sec('메서드 영역','','var(--violet)',[v('static int','total','3',{cls:'hot'})])],
+       calc:'c2.hit()\ntotal:  2 → 3  (공유!)      c2의 mine:  0 → 1',
+       note:'결정적 순간 — c2가 쳤는데 total이 3이 됐습니다. 모든 객체가 메서드 영역의 같은 total을 봅니다.'},
+      {line:7,secs:[sec('스택','','var(--cyan)',[v('Counter','c1','@a10',{ptr:1}),v('Counter','c2','@b20',{ptr:1})]),sec('힙','','var(--amber)',[v('@a10','mine','2',{cls:'good',grp:true}),v('@b20','mine','1',{cls:'good'})]),sec('메서드 영역','','var(--violet)',[v('static int','total','3',{cls:'good'})])],
+       calc:'출력:  3 2 1',cgood:true,
+       note:'접근도 Counter.total처럼 클래스 이름으로 하는 게 정석입니다 — 객체 없이도 존재하니까요. 정처기 static 기출은 "공유냐 개별이냐"만 가려내면 끝납니다.'}
+    ]
+  }],
+  quiz:{code:'class A { static int x = 0; A() { x++; } }  new A(); new A(); new A(); System.out.println(A.x);',q:'출력값은?',opts:['0','1','3','컴파일 에러'],ans:2,
+    exp:'생성자가 실행될 때마다 공유 변수 x가 하나씩 늘어 — 만든 객체 수가 곧 x입니다. "객체가 몇 개 만들어졌나 세기"가 static 카운터의 대표 용법이자 기출 단골. 1을 골랐다면 x가 객체마다 따로라고 본 오답입니다.'}
+},
+/* ===== J07 : constructor order ===== */
+{
+  id:'p7', num:'PROBLEM 07', title:'생성자 — 부모가 먼저 지어진다', tag:'super() · static 블록 · 초기화 순서',
+  modes:[
+   {label:'super() — 자동 호출',
+    lines:['class A { A() { System.out.print("A"); } }','class B extends A { B() { System.out.print("B"); } }','new B();   // 출력은?'],
+    steps:[
+      {line:2,frames:[fr('B() 생성자 프레임',false,[]),fr('힙 · 객체',false,[v('@a10','','B 객체 — 건축 중',{cls:'tgt'})]),fr('main 프레임',true,[])],
+       note:'new B()의 첫 일은 B() 실행 — 그런데 B() 첫 줄에는 우리가 쓰지 않은 super()가 자동으로 숨어 있습니다.'},
+      {line:0,frames:[fr('A() 프레임 — super()로 호출됨',false,[]),fr('B() — 대기',true,[]),fr('힙 · 객체',false,[v('@a10','','B 객체 — 건축 중',{cls:'tgt'})]),fr('main 프레임',true,[])],
+       calc:'B() 첫 줄  →  super()  →  A() 먼저 실행\n→  "A" 출력',
+       note:'부모가 먼저 지어져야 자식이 올라갑니다 — 1층 없이 2층을 올릴 수 없으니까요. 프레임이 쌓이는 원리는 2편 M02의 재귀 탑과 같습니다.'},
+      {line:1,frames:[fr('B() — 재개',false,[]),fr('힙 · 객체',false,[v('@a10','','B 객체 — 건축 중',{cls:'tgt'})]),fr('main 프레임',true,[])],
+       calc:'A() 반환  →  B() 이어서  →  "B" 출력\n\n출력:  AB',cgood:true,
+       note:'A층이 완성된 뒤에야 B층 공사가 진행됩니다.'},
+      {line:2,frames:[fr('main 프레임',false,[]),fr('힙 · 객체',false,[v('@a10','','B 객체 — 완공',{cls:'good'})])],
+       note:'어떤 생성자든 순서는 언제나 부모 → 자식. 기출은 이 순서에 print를 심어 출력 순서를 묻습니다.'}
+    ]},
+   {label:'static 블록 → 인스턴스 블록 → 생성자',
+    lines:['class C {','    static { System.out.print("S"); }','    { System.out.print("I"); }','    C() { System.out.print("C"); }','}','new C();  new C();   // 출력은?'],
+    steps:[
+      {line:1,secs:[sec('메서드 영역','클래스 첫 사용 시 1회','var(--violet)',[v('class','C','로딩됨',{cls:'hot'})]),sec('힙','아직 비어 있음','var(--amber)',[])],
+       calc:'클래스 첫 사용  →  로딩  →  static 블록\n→  "S"   (클래스당 딱 한 번)',
+       note:'static 블록은 객체가 아니라 클래스의 것 — J06의 "클래스에 하나" 규칙이 실행 순서에도 적용됩니다.'},
+      {line:5,secs:[sec('메서드 영역','','var(--violet)',[v('class','C','로딩됨')]),sec('힙','','var(--amber)',[v('@a10','C','1호 객체',{cls:'hot'})])],
+       calc:'첫 new C()  →  인스턴스 블록 "I"  →  생성자 "C"',
+       note:'객체가 만들어질 때마다 인스턴스 블록 → 생성자 순서로 실행됩니다.'},
+      {line:5,secs:[sec('메서드 영역','','var(--violet)',[v('class','C','로딩됨',{cls:'tgt'})]),sec('힙','','var(--amber)',[v('@a10','C','1호 객체'),v('@b20','C','2호 객체',{cls:'hot'})])],
+       calc:'둘째 new C()  →  "I"  →  "C"\n("S"는 다시 나오지 않는다!)',
+       note:'클래스는 이미 로딩돼 있으니 static 블록은 건너뜁니다.'},
+      {line:5,secs:[sec('메서드 영역','','var(--violet)',[v('class','C','로딩됨')]),sec('힙','','var(--amber)',[v('@a10','C','1호 객체',{cls:'good'}),v('@b20','C','2호 객체',{cls:'good'})])],
+       calc:'출력:  SICIC',cgood:true,
+       note:'정리 — static 블록: 클래스당 1회 / 인스턴스 블록·생성자: 객체당 1회. 상속이 끼면 왼쪽 탭의 "부모 먼저"까지 조합됩니다.'}
+    ]}
+  ],
+  quiz:{code:'class P { P() { System.out.print("P"); } }  class C extends P { C() { System.out.print("C"); } }  new C(); new C();',q:'출력값은?',opts:['PCPC','PPCC','CPCP','PC'],ans:0,
+    exp:'new마다 부모 생성자 → 자식 생성자 순서로 실행됩니다 — "PC"가 두 번, PCPC. PPCC는 클래스 단위로 묶어 실행된다고 본 오답이고, CPCP는 자식이 먼저라고 본 오답입니다. 객체 하나 = PC 한 세트.'}
+},
+/* ===== J08 : overloading vs overriding ===== */
+{
+  id:'p8', num:'PROBLEM 08', title:'오버로딩 vs 오버라이딩 — 같은 이름, 다른 선택 시점', tag:'overloading · overriding · 결정 시점',
+  modes:[
+   {label:'오버로딩 — 컴파일러가 고른다',
+    lines:['static void p(int x)    { System.out.print("int "); }','static void p(double x) { System.out.print("double "); }','static void p(String x) { System.out.print("Str"); }','p(1);  p(1.5);  p("hi");   // 출력은?'],
+    steps:[
+      {line:2,secs:[sec('메서드 영역','같은 이름 p가 세 개 공존','var(--violet)',[v('','p(int)','…',{grp:true}),v('','p(double)','…',{grp:true}),v('','p(String)','…')])],
+       note:'같은 이름의 메서드가 셋 — 매개변수 타입이 다르면 공존할 수 있습니다. 이게 오버로딩(overloading)입니다.'},
+      {line:3,secs:[sec('메서드 영역','','var(--violet)',[v('','p(int)','선택!',{cls:'hot',grp:true}),v('','p(double)','…',{grp:true}),v('','p(String)','…')])],
+       calc:'p(1)  →  1 은 int  →  p(int) 선택\n(컴파일 시점에 이미 결정되어 있음)',
+       note:'컴파일러가 호출문의 인자 타입을 보고 어느 p인지 못 박아둡니다.'},
+      {line:3,secs:[sec('메서드 영역','','var(--violet)',[v('','p(int)','…',{grp:true}),v('','p(double)','선택!',{cls:'hot',grp:true}),v('','p(String)','…')])],
+       calc:'p(1.5)  →  double  →  p(double)',
+       note:'인자만 바뀌면 목적지도 바뀝니다.'},
+      {line:3,secs:[sec('메서드 영역','','var(--violet)',[v('','p(int)','…',{grp:true}),v('','p(double)','…',{grp:true}),v('','p(String)','선택!',{cls:'hot'})])],
+       calc:'p("hi")  →  String  →  p(String)\n\n출력:  int double Str',cgood:true,
+       note:'고르는 기준 = 넘긴 값의 타입, 고르는 시점 = 컴파일 타임. 실행 전에 전부 결정돼 있습니다.'}
+    ]},
+   {label:'오버라이딩 — 객체가 고른다',
+    lines:['class Animal { void cry() { System.out.print("..."); } }','class Cat extends Animal { void cry() { System.out.print("야옹"); } }','Animal a = new Cat();','a.cry();   // 출력은?'],
+    steps:[
+      {line:2,secs:[sec('스택','부모 타입 안경','var(--cyan)',[v('Animal','a','@a10',{cls:'hot',ptr:1})]),sec('힙','','var(--amber)',[v('@a10','','Cat 객체',{cls:'hot',grp:true}),v('@a10','cry()','Cat 버전 탑재')])],
+       note:'부모(Animal) 안경을 쓴 참조가 자식(Cat) 객체를 가리킵니다 — 자바 다형성의 표준 자세. 시그니처가 완전히 같은 재정의가 오버라이딩(overriding)입니다.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('Animal','a','@a10',{ptr:1})]),sec('힙','','var(--amber)',[v('@a10','','Cat 객체',{grp:true}),v('@a10','cry()','Cat 버전 실행!',{cls:'good'})])],
+       calc:'a.cry()  →  힙의 "실제 객체"가 고른다\n→  Cat의 cry  →  야옹   (런타임 결정)',cgood:true,
+       note:'왼쪽 탭과 정반대 — 여긴 참조 타입(Animal)이 아니라 실제 객체(Cat)가 고릅니다.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('Animal','a','@a10',{ptr:1})]),sec('힙','','var(--amber)',[v('@a10','','Cat 객체',{grp:true}),v('@a10','cry()','Cat 버전')])],
+       calc:'오버로딩:  컴파일러가 고른다 (인자 타입)\n오버라이딩:  객체가 고른다 (런타임)',
+       note:'이 표 한 장이 개념 문제의 전부입니다. 그리고 "객체가 고른다"는 규칙엔 유명한 함정이 하나 있는데 — 바로 다음 문제입니다.'}
+    ]}
+  ],
+  quiz:{code:'/* 개념 구분 */',q:'오버로딩·오버라이딩 설명으로 옳은 것은?',opts:['오버로딩은 런타임에, 오버라이딩은 컴파일 타임에 결정된다','오버로딩은 매개변수가 달라야 하고, 오버라이딩은 시그니처가 같아야 한다','둘 다 반드시 상속 관계가 필요하다','오버라이딩은 메서드 이름만 같으면 성립한다'],ans:1,
+    exp:'오버로딩 = 같은 이름 + 다른 매개변수(한 클래스 안에서도 가능), 오버라이딩 = 같은 시그니처 + 상속 관계. 결정 시점은 첫 번째 보기와 정반대(오버로딩=컴파일, 오버라이딩=런타임)이고, 상속이 필요한 건 오버라이딩뿐입니다.'}
+},
+/* ===== J09 : polymorphism ===== */
+{
+  id:'p9', num:'PROBLEM 09', title:'다형성의 심장 — Parent p = new Child()', tag:'동적 바인딩 · 필드는 안경 · 기출 1순위',
+  modes:[{
+    lines:['class Parent {','    int x = 1;','    void who() { System.out.print("부모"); }','}','class Child extends Parent {','    int x = 2;','    void who() { System.out.print("자식"); }','}','Parent p = new Child();  p.who();   // ?','System.out.print(p.x);              // ?'],
+    steps:[
+      {line:8,secs:[sec('스택','Parent 안경을 쓴 참조','var(--cyan)',[v('Parent','p','@a10',{cls:'hot',ptr:1})]),sec('힙','Child 객체 — x가 두 개!','var(--amber)',[v('@a10','Parent.x','1',{grp:true}),v('@a10','Child.x','2',{grp:true}),v('@a10','who()','Child 버전 탑재')])],
+       note:'두 가지를 확인하세요. ① 자식 객체 안에는 부모 x와 자식 x가 둘 다 삽니다 — 가려질 뿐 사라지지 않아요. ② 스택의 p는 Parent 안경(1편 문제 12)을 쓴 참조입니다. 이제 이 안경과 몸이 서로 다른 대답을 내놓습니다.'},
+      {line:8,secs:[sec('스택','','var(--cyan)',[v('Parent','p','@a10',{ptr:1})]),sec('힙','','var(--amber)',[v('@a10','Parent.x','1',{grp:true}),v('@a10','Child.x','2',{grp:true}),v('@a10','who()','Child 버전 실행!',{cls:'hot'})])],
+       calc:'p.who()  →  메서드는 "몸(힙의 실제 객체)"이 고른다\n→  Child의 who  →  자식   (동적 바인딩)',
+       note:'참조 타입이 Parent라도 실행되는 건 Child의 메서드입니다 — J08 탭2에서 본 규칙.'},
+      {line:9,secs:[sec('스택','','var(--cyan)',[v('Parent','p','@a10',{cls:'tgt',ptr:1})]),sec('힙','','var(--amber)',[v('@a10','Parent.x','1',{cls:'good',grp:true}),v('@a10','Child.x','2',{grp:true}),v('@a10','who()','Child 버전')])],
+       calc:'p.x  →  필드는 "안경(참조 타입)"이 고른다\n→  Parent의 x  →  1\n\n필드는 오버라이딩되지 않는다!',
+       note:'여기가 당락 포인트입니다. 같은 p인데 메서드는 자식 것, 필드는 부모 것 — 필드 접근은 컴파일 타임에 참조 타입으로 결정됩니다.'},
+      {line:9,secs:[sec('스택','','var(--cyan)',[v('Parent','p','@a10',{ptr:1})]),sec('힙','','var(--amber)',[v('@a10','Parent.x','1',{grp:true}),v('@a10','Child.x','2',{grp:true}),v('@a10','who()','Child 버전')])],
+       calc:'출력:  자식1\n\n메서드 = 런타임 객체  (동적 바인딩)\n필드   = 컴파일 타임 타입  (정적 바인딩)',cgood:true,
+       note:'이 비대칭이 실기 최다 기출입니다. 한 줄로 암기 — "메서드는 몸을, 필드는 안경을 따른다". 모든 변형 문제가 이 한 줄로 풀립니다.'}
+    ]
+  }],
+  quiz:{code:'class A { int n = 10; int get() { return n; } }  class B extends A { int n = 20; int get() { return n; } }  A a = new B(); System.out.println(a.n + a.get());',q:'출력값은?',opts:['20','30','40','10'],ans:1,
+    exp:'a.n은 안경(A 타입) → 10. a.get()은 몸(B 객체) → B의 get이 실행되고, 그 안의 n은 B의 n → 20. 합쳐서 30입니다. 40은 둘 다 B로 본 오답, 20은 둘 다 A로 본 오답 — 필드와 메서드의 규칙이 서로 다르다는 게 이 유형의 전부예요.'}
+},
+/* ===== J10 : abstract & interface ===== */
+{
+  id:'p10', num:'PROBLEM 10', title:'추상과 인터페이스 — 몸 없는 설계도', tag:'abstract · interface · 템플릿',
+  modes:[
+   {label:'abstract — 미완성 설계도',
+    lines:['abstract class Shape {','    abstract int area();              // 몸이 없다','    void show() { System.out.print(area()); }','}','class Box extends Shape {','    int area() { return 12; }','}','new Box().show();   // 출력은?'],
+    steps:[
+      {line:1,secs:[sec('메서드 영역','Shape — 미완성','var(--violet)',[v('','area()','몸 없음 — 서명뿐',{cls:'bad',grp:true}),v('','show()','몸 있음')])],
+       note:'abstract 메서드는 "자식이 반드시 채워야 할 빈칸"입니다. 빈칸이 있는 클래스는 미완성이라 new Shape() 자체가 컴파일 에러 — 설계도로만 존재합니다.'},
+      {line:5,secs:[sec('메서드 영역','Box — 완성품','var(--violet)',[v('','area()','return 12',{cls:'good',grp:true}),v('','show()','Shape에서 상속')])],
+       note:'자식 Box가 빈칸을 채웠습니다. 이제 완성품이라 new가 가능해요.'},
+      {line:7,secs:[sec('스택','','var(--cyan)',[v('Shape','(임시)','@a10',{cls:'hot',ptr:1})]),sec('힙','','var(--amber)',[v('@a10','','Box 객체',{grp:true}),v('@a10','area()','Box 버전 실행!',{cls:'hot'})])],
+       calc:'show() (부모의 몸) 안에서 area() 호출\n→  J09 규칙: 몸이 고른다  →  Box의 area  →  12',
+       note:'묘한 구조죠 — 부모가 흐름(show)을 정하고, 자식이 내용(area)을 채웁니다. 템플릿 메서드 패턴의 원형이자 추상 메서드의 존재 이유입니다.'},
+      {line:7,secs:[sec('스택','','var(--cyan)',[]),sec('힙','','var(--amber)',[v('@a10','','Box 객체',{cls:'good'})])],
+       calc:'출력:  12',cgood:true,
+       note:'"빈칸 채우기 강제 + 다형성 호출" — 이 조합이 추상 클래스의 쓸모입니다.'}
+    ]},
+   {label:'interface — 약속의 목록',
+    lines:['interface Sound { void play(); }   // 전부 빈칸','class Bell implements Sound {','    public void play() { System.out.print("딸랑"); }','}','Sound s = new Bell();','s.play();   // 출력은?'],
+    steps:[
+      {line:0,secs:[sec('메서드 영역','Sound — 순수 약속','var(--violet)',[v('','play()','몸 없음',{cls:'bad'})])],
+       note:'인터페이스는 빈칸만 모아 놓은 "약속 목록"입니다. implements = "이 약속을 전부 지키겠다"는 서명. 클래스 상속(extends)은 하나뿐이지만, 약속은 여러 개 동시에 할 수 있어요.'},
+      {line:2,secs:[sec('메서드 영역','Bell — 약속 이행','var(--violet)',[v('','play()','"딸랑" 구현',{cls:'good'})])],
+       note:'Bell이 약속을 지켰습니다. 구현 메서드는 public이어야 한다는 것도 시험 포인트.'},
+      {line:4,secs:[sec('스택','인터페이스 타입 안경','var(--cyan)',[v('Sound','s','@a10',{cls:'hot',ptr:1})]),sec('힙','','var(--amber)',[v('@a10','','Bell 객체',{grp:true}),v('@a10','play()','Bell 버전 탑재')])],
+       note:'인터페이스 타입으로도 참조할 수 있습니다 — J09와 완전히 같은 구조.'},
+      {line:5,secs:[sec('스택','','var(--cyan)',[v('Sound','s','@a10',{ptr:1})]),sec('힙','','var(--amber)',[v('@a10','','Bell 객체',{grp:true}),v('@a10','play()','Bell 버전 실행!',{cls:'good'})])],
+       calc:'s.play()  →  몸(Bell)이 고른다  →  딸랑',cgood:true,
+       note:'정리 — 추상 클래스는 "미완성 부모"(몸 일부 + 빈칸), 인터페이스는 "순수 약속"(빈칸만). 자바 API의 절반이 이 두 형태로 설계되어 있습니다.'}
+    ]}
+  ],
+  quiz:{code:'/* 개념 구분 */',q:'추상 클래스·인터페이스 설명으로 틀린 것은?',opts:['추상 클래스는 new로 인스턴스를 만들 수 없다','인터페이스는 여러 개를 동시에 구현할 수 있다','추상 메서드는 선언만 있고 몸이 없다','추상 메서드를 구현하지 않은 자식도 항상 new 할 수 있다'],ans:3,
+    exp:'빈칸(추상 메서드)을 채우지 않은 자식은 그 자신도 미완성 — abstract를 붙여야 하고 역시 new 불가입니다. 나머지 셋은 전부 옳은 설명. "빈칸을 다 채워야 완성품"이라는 그림 하나로 정리됩니다.'}
+},
+/* ===== J11 : exceptions ===== */
+{
+  id:'p11', num:'PROBLEM 11', title:'예외 처리 — finally는 반드시', tag:'try · catch · finally · 실행 경로',
+  modes:[
+   {label:'예외 발생 — catch로 점프',
+    lines:['try {','    System.out.print("A");','    int r = 10 / 0;        // 예외!','    System.out.print("B");','} catch (ArithmeticException e) {','    System.out.print("C");','} finally {','    System.out.print("D");','}'],
+    steps:[
+      {line:1,secs:[sec('스택','','var(--cyan)',[]),sec('힙','','var(--amber)',[])],
+       calc:'출력:  A',
+       note:'try 블록이 평범하게 실행됩니다. 아직 아무 일도 없어요.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',[]),sec('힙','예외도 객체다!','var(--amber)',[v('@e01','','ArithmeticException',{cls:'bad'})])],
+       calc:'10 / 0  →  예외 발생!\n힙에 ArithmeticException "객체"가 만들어져 던져진다',cbad:true,
+       note:'자바에서 예외도 객체입니다 — 문제 상황을 담은 객체가 힙에 만들어져 위로 던져져요(throw). C의 "그냥 죽음"(1편 4의 Segfault)과 달리, 받아서 처리할 기회가 생깁니다.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[]),sec('힙','','var(--amber)',[v('@e01','','ArithmeticException',{cls:'bad'})])],
+       calc:'"B" 는 실행되지 않는다',
+       note:'예외가 난 순간 try의 나머지는 통째로 버려집니다. B는 영영 출력되지 않아요 — 기출이 가장 좋아하는 지점.'},
+      {line:4,secs:[sec('스택','','var(--cyan)',[]),sec('힙','','var(--amber)',[v('@e01','e','catch가 받음',{cls:'good'})])],
+       calc:'ArithmeticException 타입과 맞는 catch  →  "C"',
+       note:'던져진 객체의 타입과 맞는 catch가 e라는 이름으로 받습니다.'},
+      {line:7,secs:[sec('스택','','var(--cyan)',[]),sec('힙','','var(--amber)',[v('@e01','e','처리 완료',{cls:'good'})])],
+       calc:'finally  →  "D"\n\n출력:  ACD',cgood:true,
+       note:'finally는 예외가 났든 안 났든 반드시 실행됩니다.'}
+    ]},
+   {label:'예외 없음 — 그래도 finally',
+    lines:['try {','    System.out.print("A");','} catch (Exception e) {','    System.out.print("B");','} finally {','    System.out.print("C");','}','System.out.print("D");'],
+    steps:[
+      {line:1,secs:[sec('스택','','var(--cyan)',[]),sec('힙','예외 객체 없음','var(--amber)',[])],
+       calc:'출력:  A',
+       note:'이번엔 아무 사고도 없습니다.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',[]),sec('힙','','var(--amber)',[])],
+       calc:'예외가 없으면 catch 는 "없는 코드"',
+       note:'catch 블록은 통째로 건너뜁니다. B는 출력되지 않아요.'},
+      {line:5,secs:[sec('스택','','var(--cyan)',[]),sec('힙','','var(--amber)',[])],
+       calc:'예외가 없어도 finally 는 실행  →  "C"',cgood:true,
+       note:'finally의 존재 이유 — 파일 닫기, 자원 반납처럼 "무슨 일이 있어도" 해야 하는 뒷정리. C에서 free를 잊던 문제(2편 11)를 자바는 finally와 try-with-resources라는 언어 구조로 막습니다.'},
+      {line:7,secs:[sec('스택','','var(--cyan)',[]),sec('힙','','var(--amber)',[])],
+       calc:'출력:  ACD',cgood:true,
+       note:'왼쪽 탭과 출력이 같죠(ACD)? 경로는 완전히 다릅니다 — 왼쪽은 예외→catch→finally, 여긴 무사통과→finally. 기출은 이 경로 구분을 묻습니다.'}
+    ]}
+  ],
+  quiz:{code:'try { System.out.print(1); int[] a = new int[2]; a[5] = 0; System.out.print(2); } catch (ArithmeticException e) { System.out.print(3); } catch (ArrayIndexOutOfBoundsException e) { System.out.print(4); } finally { System.out.print(5); }',q:'출력값은?',opts:['125','145','135','15'],ans:1,
+    exp:'a[5]는 배열 범위 초과 — 산술 예외(3)가 아니라 ArrayIndexOutOfBounds를 받는 catch(4)가 잡습니다. 1 → (2는 예외 순간 버려짐) → 4 → 5(finally는 반드시). catch는 위에서부터 "타입이 맞는 것 하나만" 실행됩니다.'}
+},
+/* ===== J12 : substring ===== */
+{
+  id:'p12', num:'PROBLEM 12', title:'substring의 [이상, 미만)', tag:'String 메서드 · KOREA 자바 버전',
+  modes:[{
+    lines:['String s = "KOREA";','System.out.println(s.length());        // ?','System.out.println(s.charAt(1));       // ?','System.out.println(s.substring(1, 4)); // ?','System.out.println(s.substring(2));    // ?','System.out.println(s.indexOf(\'E\'));    // ?'],
+    steps:[
+      {line:0,secs:[sec('스택','','var(--cyan)',[v('String','s','@c01',{cls:'hot',ptr:1})]),sec('메서드 영역 · 상수 풀','\\0이 없다!','var(--violet)',koreaRows({}))],
+       note:'2편 E09의 KOREA가 자바 옷을 입었습니다. C와의 결정적 차이 — \\0이 없어요! 길이는 String 객체가 따로 기억합니다. 인덱스는 0부터.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',[v('String','s','@c01',{ptr:1})]),sec('메서드 영역 · 상수 풀','','var(--violet)',koreaRows({}))],
+       calc:'s.length()  →  저장된 길이를 읽음  →  5',
+       note:'2편 M05의 strlen은 \\0까지 직접 걸어야 했지만, 자바는 적어둔 값을 읽을 뿐입니다. 그래서 length()는 즉시, C의 strlen은 길이에 비례해요.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',[v('String','s','@c01',{ptr:1})]),sec('메서드 영역 · 상수 풀','','var(--violet)',koreaRows({1:'good'}))],
+       calc:"s.charAt(1)  →  [1]  →  O",
+       note:'*(p+1)의 자바 옷입니다. 산술 대신 메서드일 뿐, 그림은 같아요.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('String','s','@c01',{ptr:1})]),sec('메서드 영역 · 상수 풀','','var(--violet)',koreaRows({1:'good',2:'good',3:'good'}))],
+       calc:'s.substring(1, 4)  →  [1] "이상"  [4] "미만"\n→  ORE    (길이 = 4 − 1 = 3)',
+       note:'함정의 90%가 이 "미만"입니다. 끝 인덱스는 포함되지 않아요 — [4]의 A는 잘려나갑니다.'},
+      {line:4,secs:[sec('스택','','var(--cyan)',[v('String','s','@c01',{ptr:1})]),sec('메서드 영역 · 상수 풀','','var(--violet)',koreaRows({2:'good',3:'good',4:'good'}))],
+       calc:'s.substring(2)  →  [2] 부터 끝까지  →  REA',
+       note:'2편 E09의 p + 2와 같은 그림 — 시작점을 옮기는 것.'},
+      {line:5,secs:[sec('스택','','var(--cyan)',[v('String','s','@c01',{ptr:1})]),sec('메서드 영역 · 상수 풀','','var(--violet)',koreaRows({3:'good'}))],
+       calc:"s.indexOf('E')  →  'E'는 어디?  →  3",cgood:true,
+       note:'출력 정리: 5 / O / ORE / REA / 3. 기출 문자열 문제는 "자르기 전에 [이상, 미만) 확인" — 이 습관 하나로 끝납니다.'}
+    ]
+  }],
+  quiz:{code:'String s = "INFORMATION"; System.out.println(s.substring(2, 5));',q:'출력값은?',opts:['FOR','NFO','FORM','ORM'],ans:0,
+    exp:'[2] 이상 [5] 미만 → 인덱스 2, 3, 4 → F, O, R. FORM은 [5]까지 포함해 읽은 최다 오답 — "미만"을 놓친 것입니다. 글자에 인덱스를 달아 놓고 세면 절대 안 틀려요: I(0) N(1) F(2) O(3) R(4) M(5)…'}
+},
+/* ===== J13 : final boss ===== */
+{
+  id:'p13', num:'PROBLEM 13', title:'졸업 모의고사 — 상속 × static × 다형성', tag:'생성 중 동적 바인딩 · 기본값 0 · 기출 최고난도',
+  modes:[{
+    lines:['class Parent {','    static int cnt = 0;','    Parent() { cnt++; who(); }','    void who() { System.out.print("P" + cnt); }','}','class Child extends Parent {','    int v = 5;','    Child() { who(); }','    void who() { System.out.print("C" + v); }','}','new Child();  System.out.print(Parent.cnt);   // ?'],
+    steps:[
+      {line:10,frames:[fr('Child() 프레임',false,[]),fr('힙 · 객체',false,[v('@a10','v','0 (아직!)',{cls:'tgt'})]),fr('메서드 영역',false,[v('static int','cnt','0',{cls:'tgt'})]),fr('main 프레임',true,[])],
+       note:'마지막 문제 — J06(static) × J07(생성자 순서) × J09(다형성)가 합쳐진 실기 최고난도 유형입니다. 핵심 한 줄: 힙에 객체가 잡히는 순간 필드 v는 일단 기본값 0이고, "v = 5"는 super()가 끝난 "다음"에야 실행됩니다.'},
+      {line:2,frames:[fr('Parent() — super()로',false,[]),fr('Child() — 대기',true,[]),fr('힙 · 객체',false,[v('@a10','v','0 (아직!)',{cls:'tgt'})]),fr('메서드 영역',false,[v('static int','cnt','1',{cls:'hot'})]),fr('main 프레임',true,[])],
+       calc:'super()  →  Parent():  cnt 0 → 1',
+       note:'부모 공사가 시작됩니다(J07). static cnt는 메서드 영역에서 누적(J06).'},
+      {line:2,frames:[fr('Parent() — who() 호출',false,[]),fr('Child() — 대기',true,[]),fr('힙 · 객체',false,[v('@a10','v','0 인데 읽힘!',{cls:'bad'}),v('@a10','who()','Child 버전 실행!',{cls:'bad'})]),fr('메서드 영역',false,[v('static int','cnt','1')]),fr('main 프레임',true,[])],
+       calc:'Parent() 안의 who()  →  몸이 고른다 (J09)\n→  Child의 who  →  "C" + v  →  v는 아직 0!\n→  출력:  C0',cbad:true,
+       note:'졸업 문제의 심장입니다. 부모가 지어지는 도중에도 동적 바인딩은 작동해서 자식 메서드가 실행되는데, 자식 필드는 아직 기본값 0이에요. 이 "C0"을 맞히면 합격권입니다.'},
+      {line:6,frames:[fr('Child() — 재개',false,[]),fr('힙 · 객체',false,[v('@a10','v','5',{cls:'hot'})]),fr('메서드 영역',false,[v('static int','cnt','1')]),fr('main 프레임',true,[])],
+       calc:'Parent() 완료  →  이제서야 필드 초기화:  v = 5',
+       note:'super()가 끝난 뒤에 필드 초기화가 실행됩니다 — 순서가 전부예요.'},
+      {line:7,frames:[fr('Child() — 몸 실행',false,[]),fr('힙 · 객체',false,[v('@a10','v','5',{cls:'good'}),v('@a10','who()','Child 버전',{cls:'hot'})]),fr('메서드 영역',false,[v('static int','cnt','1')]),fr('main 프레임',true,[])],
+       calc:'Child() 의 who()  →  "C" + 5  →  출력:  C5',
+       note:'이번엔 v가 5라서 제값이 나옵니다.'},
+      {line:10,frames:[fr('main 프레임',false,[]),fr('힙 · 객체',false,[v('@a10','v','5')]),fr('메서드 영역',false,[v('static int','cnt','1',{cls:'good'})])],
+       calc:'Parent.cnt 출력  →  1\n\n최종 출력:  C0C51',cgood:true,
+       note:'생성자 순서(J07) × 다형성(J09) × static(J06) × 기본값 0 — 네 규칙이 한 문제에 들어 있었습니다. C의 주소에서 출발해 자바의 참조까지, 이걸 손으로 추적해냈다면 정처기 코드 추적은 준비 완료. 졸업을 축하합니다!'}
+    ]
+  }],
+  quiz:{code:'class A { A() { f(); } void f() { System.out.print("A"); } }  class B extends A { int n = 3; B() { f(); } void f() { System.out.print("B" + n); } }  new B();',q:'출력값은?',opts:['B3B3','B0B3','AB3','B0B0'],ans:1,
+    exp:'A() 안의 f()도 몸(B)이 고릅니다 — 그러나 n은 아직 기본값 0이라 "B0". 그 뒤 n = 3이 초기화되고 B()의 f()가 "B3". 답은 B0B3. AB3는 부모 생성자에선 부모 f가 실행된다고 본 오답 — 오버라이드된 메서드는 부모 생성자 안에서도 자식 것이 실행됩니다.'}
+}
+];
+
+/* ---------- render engine ---------- */
+const state={}; // id -> {mode, step}
+const solved={}; // id -> bool
+
+/* ---------- part dividers & progress persistence ---------- */
+const PARTS={
+  p1:['PART 1','참조의 나라 — C에서 자바로 (01–06)'],
+  p7:['PART 2','정처기 실전 자바 — 상속·생성자·예외 (07–13)']
+};
+const STORE_KEY='jlab-progress-v1';
+function saveProgress(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify({solved:solved,state:state})); }catch(e){}
+}
+function loadProgress(){
+  try{
+    const d=JSON.parse(localStorage.getItem(STORE_KEY)||'null');
+    if(!d) return;
+    PROBLEMS.forEach(p=>{
+      if(d.solved && d.solved[p.id]) solved[p.id]=true;
+      const s=d.state && d.state[p.id];
+      if(s && state[p.id]){
+        const m=Math.min(Math.max(0,s.mode|0), p.modes.length-1);
+        state[p.id].mode=m;
+        state[p.id].step=Math.min(Math.max(0,s.step|0), p.modes[m].steps.length-1);
+      }
+    });
+  }catch(e){}
+}
+
+function cellEl(x,dim){
+  const d=document.createElement('div');
+  d.className='cellrow'+(x.cls?' '+x.cls:'')+(x.ptr?' ptr':'')+(x.grp?' grp':'');
+  if(dim) d.style.opacity='0.5';
+  const a=document.createElement('span');a.className='addr';a.textContent=x.addr;
+  const n=document.createElement('span');n.className='nm';n.textContent=x.name;
+  const val=document.createElement('span');val.className='val';val.textContent=x.val+(x.ptr?' →':'');
+  d.appendChild(a);d.appendChild(n);d.appendChild(val);
+  if(x.lock){const l=document.createElement('span');l.className='lock';l.textContent='🔒';l.setAttribute('aria-label','읽기 전용');d.appendChild(l);}
+  return d;
+}
+
+function renderStage(prob){
+  const st=state[prob.id];
+  const mode=prob.modes[st.mode];
+  const step=mode.steps[st.step];
+  const root=document.getElementById('stage-'+prob.id);
+
+  // mode tabs
+  let modeHtml='';
+  if(prob.modes.length>1){
+    modeHtml='<div class="modes">'+prob.modes.map((m,i)=>
+      '<button class="btn mode-btn'+(i===st.mode?' on':'')+'" data-mode="'+i+'">'+m.label+'</button>'
+    ).join('')+'</div>';
+  }
+
+  // controls
+  const ctrl='<div class="steps-ctrl">'
+    +'<button class="btn nav-prev">← 이전</button>'
+    +'<button class="btn nav-next">다음 →</button>'
+    +'<span class="stepn">'+(st.step+1)+' / '+mode.steps.length+'</span></div>';
+
+  // code
+  const codeHtml='<pre class="code">'+mode.lines.map((l,i)=>{
+    const cls=(i===step.line?'ln on':(i<=step.line?'ln seen':'ln'));
+    return '<span class="'+cls+'">'+escapeHtml(l||' ')+'</span>';
+  }).join('')+'</pre>';
+
+  // memory
+  let memHtml='';
+  if(step.frames){
+    memHtml=step.frames.map(f=>{
+      return '<div class="memsec"><div class="sh">'+escapeHtml(f.title)+'</div>'
+        + f.rows.map(r=>cellEl(r,f.dim).outerHTML).join('')+'</div>';
+    }).join('');
+  } else if(step.secs){
+    memHtml=step.secs.map(s=>{
+      const tag=s.tag?'<span class="tag" style="background:'+s.tag+'"></span>':'';
+      const badge=s.badge?'<span class="badge">— '+escapeHtml(s.badge)+'</span>':'';
+      const body=s.rows.length? s.rows.map(r=>cellEl(r,false).outerHTML).join('') : '<div class="empty">(비어 있음)</div>';
+      return '<div class="memsec"><div class="sh">'+tag+escapeHtml(s.sh)+' '+badge+'</div>'+body+'</div>';
+    }).join('');
+  }
+
+  const calcHtml = step.calc ? '<div class="calc'+(step.cbad?' bad':(step.cgood?' good':''))+'">'+escapeHtml(step.calc)+'</div>' : '';
+  const noteHtml = '<div class="note">'+escapeHtml(step.note)+'</div>';
+
+  root.innerHTML = modeHtml + ctrl
+    + '<div class="stage">'
+    +   '<div class="pane"><div class="pane-label">코드</div>'+codeHtml+'</div>'
+    +   '<div class="pane"><div class="pane-label">메모리</div>'+memHtml+'</div>'
+    + '</div>' + calcHtml + noteHtml;
+
+  // wire
+  root.querySelectorAll('.mode-btn').forEach(b=>b.onclick=()=>{st.mode=+b.dataset.mode;st.step=0;renderStage(prob);saveProgress();});
+  root.querySelector('.nav-prev').onclick=()=>{const n=mode.steps.length;st.step=(st.step-1+n)%n;renderStage(prob);saveProgress();};
+  root.querySelector('.nav-next').onclick=()=>{const n=mode.steps.length;st.step=(st.step+1)%n;renderStage(prob);saveProgress();};
+}
+
+function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+function renderQuiz(prob){
+  const root=document.getElementById('quiz-'+prob.id);
+  const qz=prob.quiz;
+  root.innerHTML=''
+    +'<div class="q"><span class="qmono">'+escapeHtml(qz.code)+'</span><br>'+escapeHtml(qz.q)+'</div>'
+    +'<div class="opts">'+qz.opts.map((o,i)=>'<button class="opt" data-i="'+i+'">'+escapeHtml(o)+'</button>').join('')+'</div>'
+    +'<div class="exp" id="exp-'+prob.id+'"></div>';
+  const opts=[...root.querySelectorAll('.opt')];
+  const exp=root.querySelector('.exp');
+  opts.forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i, ok=(i===qz.ans);
+    opts.forEach(o=>o.disabled=true);
+    if(ok){ b.classList.add('correct'); if(!solved[prob.id]){solved[prob.id]=true;updateScore();} }
+    else { b.classList.add('wrong'); opts[qz.ans].classList.add('correct'); }
+    exp.classList.add('show');
+    exp.innerHTML=(ok?'<b>정답.</b> ':'<b class="no">정답은 '+escapeHtml(qz.opts[qz.ans])+'.</b> ')+escapeHtml(qz.exp);
+    saveProgress();
+  });
+  if(solved[prob.id]){
+    opts.forEach(o=>o.disabled=true);
+    opts[qz.ans].classList.add('correct');
+    exp.classList.add('show');
+    exp.innerHTML='<b>정답.</b> '+escapeHtml(qz.exp);
+  }
+}
+
+function updateScore(){
+  const n=Object.values(solved).filter(Boolean).length;
+  document.getElementById('score').textContent=n;
+  const sn=document.getElementById('snScore'); if(sn) sn.textContent=n;
+  const bar=document.getElementById('snBar'); if(bar) bar.style.width=(PROBLEMS.length?(n/PROBLEMS.length*100):0)+'%';
+  document.querySelectorAll('.pip,.sn-item').forEach(p=>{
+    p.classList.toggle('done', !!solved[p.dataset.id]);
+  });
+}
+
+function buildSideNav(){
+  const nav=document.getElementById('snList');
+  if(!nav) return;
+  nav.innerHTML=PROBLEMS.map((p,i)=>{
+    const part=PARTS[p.id]?'<div class="sn-part">'+escapeHtml(PARTS[p.id][0])+'</div>':'';
+    return part+'<button class="sn-item" data-id="'+p.id+'" role="tab" title="'+escapeHtml(p.title)+'">'
+      +'<span class="sn-num">'+(i+1)+'</span>'
+      +'<span class="sn-txt">'+escapeHtml(p.title)+'</span>'
+      +'<span class="sn-check" aria-hidden="true">✓</span>'
+      +'</button>';
+  }).join('');
+  nav.querySelectorAll('.sn-item').forEach(b=>b.onclick=()=>{
+    document.getElementById(b.dataset.id).scrollIntoView({behavior:'smooth',block:'start'});
+  });
+}
+function ensureVisible(item){
+  const nav=document.getElementById('sidenav');
+  if(!nav||!item) return;
+  const it=item.getBoundingClientRect(), nv=nav.getBoundingClientRect();
+  if(it.top<nv.top) nav.scrollTop-=(nv.top-it.top)+10;
+  else if(it.bottom>nv.bottom) nav.scrollTop+=(it.bottom-nv.bottom)+10;
+}
+
+function buildPips(){
+  const rail=document.getElementById('pips');
+  rail.innerHTML=PROBLEMS.map((p,i)=>'<button class="pip" role="tab" data-id="'+p.id+'" data-idx="'+i+'" aria-label="문제 '+(i+1)+'로 이동">'+(i+1)+'</button>').join('');
+  const pips=[...rail.querySelectorAll('.pip')];
+  pips.forEach(p=>p.onclick=()=>{
+    document.getElementById(p.dataset.id).scrollIntoView({behavior:'smooth',block:'start'});
+  });
+  // active on scroll (progressive enhancement)
+  if(typeof IntersectionObserver!=='undefined'){
+    const obs=new IntersectionObserver(entries=>{
+      entries.forEach(e=>{
+        if(e.isIntersecting){
+          document.querySelectorAll('.pip,.sn-item').forEach(el=>el.classList.toggle('active', el.dataset.id===e.target.id));
+          ensureVisible(document.querySelector('.sn-item.active'));
+        }
+      });
+    },{rootMargin:'-45% 0px -45% 0px'});
+    PROBLEMS.forEach(p=>obs.observe(document.getElementById(p.id)));
+  } else {
+    pips[0].classList.add('active');
+  }
+}
+
+function build(){
+  const main=document.getElementById('problems');
+  main.innerHTML=PROBLEMS.map(p=>{
+    const part=PARTS[p.id]?'<div class="part-head"><span class="pk">'+PARTS[p.id][0]+'</span>'+escapeHtml(PARTS[p.id][1])+'</div>':'';
+    return part
+    +'<section class="prob" id="'+p.id+'">'
+    +  '<div class="prob-head">'
+    +    '<div class="prob-num">'+p.num+'</div>'
+    +    '<div class="prob-title">'+escapeHtml(p.title)+'</div>'
+    +    '<div class="prob-tag">'+escapeHtml(p.tag)+'</div>'
+    +  '</div>'
+    +  '<div class="prob-body">'
+    +    '<div id="stage-'+p.id+'"></div>'
+    +    '<div class="quiz"><div id="quiz-'+p.id+'"></div></div>'
+    +  '</div>'
+    +'</section>';
+  }).join('');
+
+  PROBLEMS.forEach(p=>{ state[p.id]={mode:0,step:0}; });
+  loadProgress();
+  PROBLEMS.forEach(p=>{ renderStage(p); renderQuiz(p); });
+  buildSideNav();
+  buildPips();
+  updateScore();
+  document.getElementById('scoreTotal').textContent=PROBLEMS.length;
+  const snTot=document.getElementById('snTot'); if(snTot) snTot.textContent=PROBLEMS.length;
+}
+
+document.getElementById('resetAll').onclick=()=>{
+  Object.keys(solved).forEach(k=>delete solved[k]);
+  try{ localStorage.removeItem(STORE_KEY); }catch(e){}
+  PROBLEMS.forEach(p=>{state[p.id]={mode:0,step:0};renderStage(p);renderQuiz(p);});
+  updateScore();
+  document.getElementById(PROBLEMS[0].id).scrollIntoView({behavior:'smooth'});
+};
+
+build();
+</script>
+</body>
+</html>

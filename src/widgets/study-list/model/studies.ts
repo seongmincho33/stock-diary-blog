@@ -39,6 +39,25 @@ export function studyHref(study: Study, file?: string): string {
 
 export const studies: Study[] = [
   {
+    slug: 'jeongcheogi-lab',
+    title: '정보처리기사 실전 랩',
+    subtitle: '포인터 · C · 자바 · 디자인 패턴 · 파이썬 + 실기 기출 194문항',
+    description:
+      '정보처리기사 실기를 준비하며 만든 인터랙티브 랩 6편. 포인터 메모리 랩(15문제)에서 주소를 한 줄씩 따라가며 스택·힙·정적 영역을 눈으로 익히고, C 심화(13) → 자바 참조와 객체(13) → GoF 디자인 패턴(13 + 드릴 23) → 파이썬(14 + 드릴)으로 같은 메모리 지도를 언어만 바꿔 가며 다시 그린다. 마지막 기출 실전 랩은 2021–2026 실기 기출을 코드 91 + 이론 103 = 194문항으로 복원해 단답형으로 훈련하는 곳. 코드 문제 출력은 실제 컴파일러·인터프리터로 검증했다. 1편부터 순서대로 보는 걸 추천.',
+    date: '2026-08-23',
+    tags: ['정처기 실기', 'C', '포인터', 'Java', 'Python', '디자인 패턴', '메모리 구조', '기출 2021–2026'],
+    pages: 6,
+    entry: 'clang.html',
+    toc: [
+      { label: '1편 포인터 메모리', file: 'clang.html' },
+      { label: '2편 C 마스터', file: 'clang2.html' },
+      { label: '자바', file: 'java.html' },
+      { label: '디자인 패턴', file: 'patterns.html' },
+      { label: '파이썬', file: 'python.html' },
+      { label: '📝 기출 실전 194문항', file: 'quiz.html' },
+    ],
+  },
+  {
     slug: 'spring-msa',
     title: '스프링 마이크로서비스',
     subtitle: 'Spring Microservices in Action 2판 · 예제 코드 해설',

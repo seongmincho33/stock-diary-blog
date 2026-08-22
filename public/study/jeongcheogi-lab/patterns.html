@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>디자인 패턴 랩 · Design Pattern Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f7f8fa;
+    --panel:#ffffff;
+    --panel-2:#f2f4f7;
+    --cell:#ffffff;
+    --line:#dbe1ea;
+    --line-soft:#e6eaf0;
+    --ink:#1a2230;
+    --ink-dim:#5a6b80;
+    --ink-faint:#93a1b3;
+    --cyan:#0e9e8f;
+    --cyan-bg:rgba(14,158,143,0.10);
+    --cyan-line:rgba(14,158,143,0.45);
+    --amber:#c47a12;
+    --amber-bg:rgba(196,122,18,0.11);
+    --amber-line:rgba(196,122,18,0.42);
+    --red:#d43e5e;
+    --red-bg:rgba(212,62,94,0.10);
+    --red-line:rgba(212,62,94,0.42);
+    --green:#1f9d5a;
+    --green-bg:rgba(31,157,90,0.11);
+    --green-line:rgba(31,157,90,0.42);
+    --violet:#7b5bd6;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --sans:'Space Grotesk',system-ui,sans-serif;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);line-height:1.6;
+    background-image:radial-gradient(circle at 12% 0%, rgba(14,158,143,0.06), transparent 45%),
+                     radial-gradient(circle at 88% 8%, rgba(123,91,214,0.05), transparent 40%);
+  }
+  @media (prefers-reduced-motion: reduce){ *{animation:none!important;transition:none!important;} }
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 80px;}
+
+  header.top{margin-bottom:28px;}
+  .kick{font-family:var(--mono);font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:var(--cyan);margin-bottom:10px;}
+  h1{font-size:clamp(28px,5vw,44px);font-weight:700;line-height:1.05;margin:0 0 12px;letter-spacing:-0.02em;}
+  h1 .sub{display:block;font-family:var(--mono);font-weight:400;font-size:clamp(13px,2.4vw,16px);color:var(--ink-dim);letter-spacing:0;margin-top:8px;}
+  .lede{color:var(--ink-dim);max-width:60ch;font-size:15px;}
+  .xlinks{display:flex;gap:8px;flex-wrap:wrap;}
+  a.xlink{font-family:var(--mono);font-size:12px;color:var(--cyan);text-decoration:none;border:0.5px solid var(--cyan-line);background:var(--cyan-bg);padding:5px 10px;border-radius:6px;display:inline-block;margin-top:14px;}
+  a.xlink:hover{border-color:var(--cyan);}
+
+  .maplegend{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 4px;}
+  .maplegend .seg{font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:6px;border:0.5px solid var(--line);color:var(--ink-dim);display:flex;align-items:center;gap:7px;}
+  .maplegend .dot{width:8px;height:8px;border-radius:2px;display:inline-block;}
+
+  .rail{position:sticky;top:0;z-index:20;background:rgba(247,248,250,0.88);backdrop-filter:blur(10px);border-bottom:0.5px solid var(--line);margin:24px -20px 0;padding:12px 20px;}
+  .rail-inner{max-width:960px;margin:0 auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .pips{display:flex;gap:6px;flex-wrap:wrap;}
+  .pip{font-family:var(--mono);font-size:12px;width:30px;height:30px;border-radius:7px;border:0.5px solid var(--line);background:var(--panel-2);color:var(--ink-dim);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;padding:0;}
+  .pip:hover{border-color:var(--cyan-line);color:var(--ink);}
+  .pip.active{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--cyan);}
+  .pip.done{color:var(--green);border-color:var(--green-line);}
+  .pip.done.active{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--cyan);}
+  .score{margin-left:auto;font-family:var(--mono);font-size:13px;color:var(--ink-dim);}
+  .score b{color:var(--cyan);}
+
+  /* left sidenav */
+  .sidenav{position:fixed;top:0;left:0;bottom:0;width:264px;background:var(--panel);border-right:0.5px solid var(--line);overflow-y:auto;padding:22px 14px 28px;z-index:30;display:none;flex-direction:column;gap:18px;}
+  .sn-head{display:flex;flex-direction:column;gap:10px;}
+  .sn-lab{font-family:var(--mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--cyan);}
+  .sn-title{font-size:16px;font-weight:600;line-height:1.2;letter-spacing:-0.01em;}
+  .sn-switch{display:flex;gap:6px;margin-top:2px;}
+  .sn-switch a{flex:1;text-align:center;font-family:var(--mono);font-size:11.5px;padding:6px 6px;border-radius:7px;border:0.5px solid var(--line);background:var(--panel-2);color:var(--ink-dim);text-decoration:none;transition:all .13s;}
+  .sn-switch a:hover{border-color:var(--cyan-line);color:var(--ink);}
+  .sn-switch a.on{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--cyan);font-weight:500;}
+  .sn-score{font-family:var(--mono);}
+  .sn-score-row{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--ink-dim);margin-bottom:8px;}
+  .sn-score-row b{font-size:15px;color:var(--cyan);}
+  .sn-score-row .tot{color:var(--ink-faint);}
+  .sn-bar{height:5px;background:var(--panel-2);border:0.5px solid var(--line-soft);border-radius:3px;overflow:hidden;}
+  .sn-bar-fill{height:100%;width:0;background:var(--green);border-radius:3px;transition:width .35s ease;}
+  .sn-list{display:flex;flex-direction:column;gap:2px;}
+  .sn-part{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--amber);margin:15px 4px 6px;}
+  .sn-part:first-child{margin-top:0;}
+  .sn-item{display:flex;align-items:center;gap:9px;width:100%;text-align:left;font-family:var(--sans);font-size:12.5px;padding:6px 8px;border-radius:8px;border:0.5px solid transparent;background:transparent;color:var(--ink-dim);cursor:pointer;transition:background .12s,color .12s,border-color .12s;}
+  .sn-item:hover{background:var(--panel-2);color:var(--ink);}
+  .sn-item.active{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--ink);}
+  .sn-num{flex:none;width:22px;height:22px;border-radius:6px;background:var(--panel-2);border:0.5px solid var(--line);font-family:var(--mono);font-size:11px;display:flex;align-items:center;justify-content:center;color:var(--ink-dim);}
+  .sn-item.active .sn-num{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--cyan);}
+  .sn-item.done .sn-num{background:var(--green-bg);border-color:var(--green-line);color:var(--green);}
+  .sn-txt{flex:1;line-height:1.22;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .sn-check{flex:none;color:var(--green);font-size:12px;opacity:0;transition:opacity .12s;}
+  .sn-item.done .sn-check{opacity:1;}
+  @media (min-width:1120px){
+    .sidenav{display:flex;}
+    body{padding-left:264px;}
+    .rail{display:none;}
+  }
+
+  .prob{margin-top:28px;border:0.5px solid var(--line);border-radius:16px;background:var(--panel);overflow:hidden;scroll-margin-top:64px;box-shadow:0 1px 3px rgba(26,34,48,0.04),0 8px 24px rgba(26,34,48,0.05);}
+  .prob-head{padding:18px 20px 16px;border-bottom:0.5px solid var(--line-soft);}
+  .prob-num{font-family:var(--mono);font-size:12px;color:var(--amber);letter-spacing:0.1em;}
+  .prob-title{font-size:19px;font-weight:600;margin:4px 0 2px;}
+  .prob-tag{font-family:var(--mono);font-size:11.5px;color:var(--ink-faint);}
+  .prob-body{padding:20px;}
+
+  .part-head{margin:44px 4px -6px;font-family:var(--mono);font-size:12px;color:var(--ink-dim);display:flex;align-items:center;gap:10px;}
+  .part-head .pk{color:var(--amber);letter-spacing:0.14em;font-weight:700;}
+  .part-head::after{content:'';flex:1;height:0.5px;background:var(--line);}
+
+  .stage{display:grid;grid-template-columns:minmax(0,0.82fr) minmax(0,1fr);gap:16px;align-items:start;}
+  @media (max-width:720px){ .stage{grid-template-columns:1fr;} }
+  .pane{background:var(--panel-2);border:0.5px solid var(--line-soft);border-radius:var(--radius);padding:13px;}
+  .pane-label{font-family:var(--mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px;}
+
+  pre.code{margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.95;white-space:pre;overflow-x:auto;}
+  .code .ln{display:block;padding:1px 8px;border-radius:5px;color:var(--ink-faint);transition:background .12s,color .12s;}
+  .code .ln.seen{color:var(--ink);}
+  .code .ln.on{background:var(--cyan-bg);color:var(--ink);}
+
+  .memsec{margin-bottom:11px;}
+  .memsec:last-child{margin-bottom:0;}
+  .memsec .sh{font-family:var(--mono);font-size:11px;color:var(--ink-dim);margin-bottom:7px;display:flex;align-items:center;gap:7px;}
+  .memsec .sh .badge{font-size:10px;color:var(--ink-faint);}
+  .memsec .sh .tag{width:7px;height:7px;border-radius:2px;}
+
+  .cellrow{display:flex;align-items:center;gap:9px;border:0.5px solid var(--line);background:var(--cell);border-radius:7px;padding:6px 10px;margin-bottom:5px;font-family:var(--mono);}
+  .cellrow.grp{margin-bottom:3px;}
+  .cellrow .addr{font-size:11px;color:var(--ink-faint);min-width:86px;}
+  .cellrow .nm{font-size:12.5px;font-weight:500;color:var(--ink);min-width:44px;}
+  .cellrow .val{font-size:12.5px;margin-left:auto;color:var(--ink);}
+  .cellrow.hot{background:var(--cyan-bg);border-color:var(--cyan-line);}
+  .cellrow.tgt{border-color:var(--cyan-line);}
+  .cellrow.ptr .val{color:var(--cyan);}
+  .cellrow.good{background:var(--green-bg);border-color:var(--green-line);}
+  .cellrow.good .val{color:var(--green);}
+  .cellrow.bad{background:var(--red-bg);border-color:var(--red-line);}
+  .cellrow.bad .val{color:var(--red);}
+  .cellrow .lock{font-size:11px;color:var(--ink-faint);margin-left:4px;}
+  .empty{font-family:var(--mono);font-size:12px;color:var(--ink-faint);padding:5px 2px;}
+
+  .steps-ctrl{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+  .modes{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap;}
+  button.btn{font-family:var(--mono);font-size:12px;padding:7px 12px;border-radius:7px;border:0.5px solid var(--line);background:var(--panel-2);color:var(--ink);cursor:pointer;transition:all .13s;}
+  button.btn:hover:not(:disabled){border-color:var(--cyan-line);}
+  button.btn:disabled{opacity:0.4;cursor:default;}
+  button.btn.on{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--cyan);}
+  .stepn{font-family:var(--mono);font-size:12px;color:var(--ink-dim);}
+
+  .calc{margin-top:12px;border-radius:var(--radius);padding:11px 13px;font-family:var(--mono);font-size:12.5px;white-space:pre;overflow-x:auto;background:var(--cyan-bg);color:var(--cyan);border:0.5px solid var(--cyan-line);}
+  .calc.bad{background:var(--red-bg);color:var(--red);border-color:var(--red-line);}
+  .calc.good{background:var(--green-bg);color:var(--green);border-color:var(--green-line);}
+  .note{margin-top:12px;background:var(--panel-2);border:0.5px solid var(--line-soft);border-radius:var(--radius);padding:12px 14px;font-size:14px;color:var(--ink);}
+
+  .quiz{margin-top:16px;border-top:0.5px dashed var(--line);padding-top:16px;}
+  .quiz .q{font-size:14.5px;font-weight:500;margin-bottom:10px;}
+  .quiz .q .qmono{font-family:var(--mono);color:var(--amber);}
+  .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;}
+  button.opt{font-family:var(--mono);font-size:13px;padding:9px 12px;border-radius:7px;border:0.5px solid var(--line);background:var(--panel-2);color:var(--ink);cursor:pointer;transition:all .13s;text-align:center;}
+  button.opt:hover:not(:disabled){border-color:var(--cyan-line);}
+  button.opt:disabled{cursor:default;}
+  button.opt.correct{background:var(--green-bg);border-color:var(--green-line);color:var(--green);}
+  button.opt.wrong{background:var(--red-bg);border-color:var(--red-line);color:var(--red);}
+  .exp{display:none;margin-top:11px;background:var(--panel-2);border:0.5px solid var(--line-soft);border-radius:var(--radius);padding:11px 13px;font-size:13.5px;line-height:1.65;}
+  .exp.show{display:block;}
+  .exp b{color:var(--green);}
+  .exp b.no{color:var(--red);}
+
+  /* drill zone */
+  .drill-stats{display:flex;gap:16px;font-family:var(--mono);font-size:12px;color:var(--ink-dim);margin-bottom:12px;flex-wrap:wrap;}
+  .drill-stats b{color:var(--cyan);}
+  .drill-code{font-family:var(--sans);font-size:14px;background:var(--panel-2);border:0.5px solid var(--line-soft);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px;line-height:1.6;}
+  .drill-done{text-align:center;padding:14px 0 6px;}
+  .drill-done .big{font-size:28px;font-weight:700;color:var(--cyan);font-family:var(--mono);margin-bottom:6px;}
+  .drill-done .msg{color:var(--ink-dim);font-size:14px;margin-bottom:14px;}
+
+  footer{margin-top:44px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--ink-faint);}
+  .reset-all{margin-top:14px;}
+
+  a.skip{position:absolute;left:-999px;}
+  a.skip:focus{left:8px;top:8px;position:fixed;background:var(--cyan);color:#02110f;padding:8px 12px;border-radius:6px;z-index:99;font-family:var(--mono);}
+</style>
+</head>
+<body>
+<a href="#p1" class="skip">본문으로 건너뛰기</a>
+<aside class="sidenav" id="sidenav" aria-label="문제 목록">
+  <div class="sn-head">
+    <div class="sn-lab">Design Pattern Lab</div>
+    <div class="sn-title">디자인 패턴 랩</div>
+    <div class="sn-switch">
+      <a href="clang.html">C</a>
+      <a href="java.html" class="on">Java</a>
+      <a href="python.html">Python</a>
+    </div>
+    <div class="sn-switch">
+      <a href="java.html">자바 랩</a>
+      <a href="patterns.html" class="on">디자인 패턴</a>
+    </div>
+  </div>
+  <div class="sn-score">
+    <div class="sn-score-row"><span>SCORE</span><span><b id="snScore">0</b> / <span class="tot" id="snTot">13</span></span></div>
+    <div class="sn-bar"><div class="sn-bar-fill" id="snBar"></div></div>
+  </div>
+  <nav class="sn-list" id="snList" role="tablist"></nav>
+  <button class="sn-item" id="snDrill"><span class="sn-num">🔥</span><span class="sn-txt">드릴 존 · 23패턴 정의 매칭</span><span class="sn-check"></span></button>
+</aside>
+<div class="wrap">
+  <header class="top">
+    <div class="kick">Design Pattern Lab</div>
+    <h1>디자인 패턴 랩
+      <span class="sub">13개 문제 + 드릴 23 · GoF를 자바로</span>
+    </h1>
+    <p class="lede">자바 랩에서 배운 다형성(J09)·인터페이스(J10)·참조가 부품이라면, 디자인 패턴은 <b>검증된 조립법 23가지</b>입니다. 생성(만들기)·구조(조립)·행위(협력) 세 분류로 대표 패턴을 코드로 밟고, 드릴 존에서 정처기 단골 "정의 → 패턴 이름" 매칭을 23개 전부 훈련합니다.</p>
+    <div class="xlinks">
+      <a class="xlink" href="java.html">← 자바 랩</a>
+      <a class="xlink" href="quiz.html">🔥 기출 실전 랩 →</a>
+      <a class="xlink" href="#drill">🔥 드릴 존 바로가기</a>
+    </div>
+
+    <div class="maplegend" aria-label="메모리 영역 색상 안내">
+      <span class="seg"><span class="dot" style="background:var(--cyan)"></span>스택 · 참조</span>
+      <span class="seg"><span class="dot" style="background:var(--amber)"></span>힙 · 객체와 조립 구조</span>
+      <span class="seg"><span class="dot" style="background:var(--violet)"></span>메서드 영역 · 클래스와 static</span>
+    </div>
+  </header>
+
+  <div class="rail">
+    <div class="rail-inner">
+      <div class="pips" id="pips" role="tablist" aria-label="문제 바로가기"></div>
+      <div class="score">SCORE <b id="score">0</b> / <span id="scoreTotal">13</span></div>
+    </div>
+  </div>
+
+  <main id="problems"></main>
+
+  <section class="prob" id="drill">
+    <div class="prob-head">
+      <div class="prob-num">DRILL ZONE</div>
+      <div class="prob-title">드릴 존 · 23패턴 정의 매칭</div>
+      <div class="prob-tag">정처기 기출 형식 · "다음 설명에 해당하는 패턴은?" · GoF 23개 전부</div>
+    </div>
+    <div class="prob-body"><div id="drillBody"></div></div>
+  </section>
+
+  <div style="text-align:center;">
+    <button class="btn reset-all" id="resetAll">↺ 전체 다시 풀기</button>
+  </div>
+
+  <footer>
+    패턴은 암기가 아니라 그림이다 — 참조 화살표를 그릴 수 있으면 이름은 따라온다
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- helpers to build memory rows ---------- */
+function v(addr,name,val,o){o=o||{};return{addr:addr,name:name,val:val,cls:o.cls||'',ptr:!!o.ptr,lock:!!o.lock,grp:!!o.grp};}
+function sec(sh,badge,tag,rows){return{sh:sh,badge:badge||'',tag:tag||'',rows:rows};}
+function fr(title,dim,rows){return{title:title,dim:dim,rows:rows};}
+
+/* ---------- PROBLEM DEFINITIONS ---------- */
+const PROBLEMS = [
+/* ===== D01 : Singleton ===== */
+{
+  id:'p1', num:'PROBLEM 01', title:'Singleton — 단 하나의 인스턴스', tag:'생성 · private 생성자 · static',
+  modes:[{
+    lines:['class Config {','    private static Config instance;','    private Config() { }              // 밖에서 new 금지!','    static Config getInstance() {','        if (instance == null)','            instance = new Config();  // 최초 1회만','        return instance;','    }','}','Config a = Config.getInstance();','Config b = Config.getInstance();   // a == b → ?'],
+    steps:[
+      {line:1,secs:[sec('메서드 영역','클래스에 하나 (J06)','var(--violet)',[v('static','instance','null',{cls:'hot'})]),sec('힙','아직 비어 있음','var(--amber)',[])],
+       note:'설계의 핵심 두 가지 — ① static 참조(클래스에 하나), ② private 생성자. 유일한 인스턴스를 담을 자리를 클래스 차원에 마련해 둡니다.'},
+      {line:2,secs:[sec('메서드 영역','','var(--violet)',[v('static','instance','null')]),sec('힙','','var(--amber)',[])],
+       calc:'private Config()  →  new Config() 는\n이 클래스 "안"에서만 가능',
+       note:'생성자를 잠가서 아무나 객체를 못 만들게 합니다. 문은 하나 — getInstance()뿐.'},
+      {line:5,secs:[sec('스택','','var(--cyan)',[v('Config','a','@a10',{cls:'hot',ptr:1})]),sec('메서드 영역','','var(--violet)',[v('static','instance','@a10',{cls:'hot',ptr:1})]),sec('힙','','var(--amber)',[v('@a10','Config','유일한 인스턴스',{cls:'hot'})])],
+       calc:'a = getInstance()\ninstance == null  →  참  →  최초 1회 생성',
+       note:'첫 호출에서만 new가 실행됩니다.'},
+      {line:10,secs:[sec('스택','','var(--cyan)',[v('Config','a','@a10',{ptr:1}),v('Config','b','@a10',{cls:'hot',ptr:1})]),sec('메서드 영역','','var(--violet)',[v('static','instance','@a10',{ptr:1})]),sec('힙','','var(--amber)',[v('@a10','Config','유일한 인스턴스',{cls:'good'})])],
+       calc:'b = getInstance()\ninstance == null  →  거짓  →  "있던 것" 반환\n\na == b  →  true   (J02의 참조 비교!)',cgood:true,
+       note:'몇 번을 불러도 객체는 하나 — 이름표만 늘어납니다. 설정, 로그, 커넥션 풀처럼 "온 프로그램에 하나면 되는 것"에 씁니다.'},
+      {line:10,secs:[sec('메서드 영역','','var(--violet)',[v('static','instance','@a10',{ptr:1})]),sec('힙','','var(--amber)',[v('@a10','Config','유일한 인스턴스')])],
+       calc:'생성 패턴 1/5  —  Singleton',
+       note:'정처기 정의 — "클래스의 인스턴스가 오직 하나임을 보장하고, 이에 대한 전역적 접근점을 제공한다." 열쇠말: 하나 보장 + 전역 접근점.'}
+    ]
+  }],
+  quiz:{code:'/* 기출 정의 매칭 */',q:'"클래스의 인스턴스가 오직 하나임을 보장하고, 이에 대한 전역적 접근점을 제공하는 패턴"은?',opts:['Factory Method','Singleton','Prototype','Builder'],ans:1,
+    exp:'"하나 보장" + "전역 접근점" — 두 열쇠말이 나오면 무조건 Singleton입니다. 구현 공식도 세트로: private 생성자로 문을 잠그고, static getInstance()로 유일한 출입구를 냅니다.'}
+},
+/* ===== D02 : Factory Method ===== */
+{
+  id:'p2', num:'PROBLEM 02', title:'Factory Method — 생성을 자식에게', tag:'생성 · 서브클래스가 결정 · Virtual Constructor',
+  modes:[{
+    lines:['interface Ship { String name(); }','class Oil implements Ship { public String name() { return "유조선"; } }','abstract class Factory {','    abstract Ship create();               // 무엇을 만들지는 자식이','    void order() { System.out.print(create().name() + " 건조!"); }','}','class OilFactory extends Factory {','    Ship create() { return new Oil(); }','}','new OilFactory().order();   // ?'],
+    steps:[
+      {line:4,secs:[sec('메서드 영역','Factory — 골격','var(--violet)',[v('','order()','골격 — new가 없다!',{cls:'tgt',grp:true}),v('','create()','빈칸 (abstract)',{cls:'bad'})])],
+       note:'order()를 보세요 — 주문 절차는 완성돼 있는데 new가 없습니다. "만드는 일"을 추상 메서드 뒤로 밀어냈어요. J10의 템플릿 구조가 "객체 생성"에 적용된 것입니다.'},
+      {line:7,secs:[sec('메서드 영역','OilFactory — 빈칸 채움','var(--violet)',[v('','order()','부모에게서 상속',{grp:true}),v('','create()','return new Oil()',{cls:'good'})])],
+       note:'자식이 빈칸을 채우며 "무엇을 만들지"를 결정합니다. 부모는 절차만, 자식은 제품만.'},
+      {line:9,secs:[sec('힙','','var(--amber)',[v('@a10','OilFactory','공장',{grp:true}),v('@b20','Oil','create()가 만든 제품',{cls:'hot'})])],
+       calc:'order()  →  create()  →  동적 바인딩(J09)\n→  OilFactory의 create  →  new Oil()\n→  "유조선 건조!"',cgood:true,
+       note:'컨테이너선을 만들고 싶으면? ContainerFactory만 추가하면 됩니다 — order()는 한 글자도 안 바뀌어요. 새 제품이 생겨도 기존 코드가 안전한 이유.'},
+      {line:9,secs:[sec('메서드 영역','','var(--violet)',[v('','order()','부모의 절차',{grp:true}),v('','create()','자식의 결정')])],
+       calc:'생성 패턴 2/5  —  Factory Method',
+       note:'정처기 정의 — "객체 생성 인터페이스를 정의하되, 어떤 클래스를 인스턴스화할지는 서브클래스가 결정하게 한다." Virtual Constructor라고도 부릅니다. 열쇠말: 서브클래스가 결정.'}
+    ]
+  }],
+  quiz:{code:'/* 기출 정의 매칭 */',q:'"객체를 생성하기 위한 인터페이스를 정의하되, 어떤 클래스의 인스턴스를 만들지는 서브클래스가 결정하게 하는 패턴"은?',opts:['Abstract Factory','Singleton','Factory Method','Builder'],ans:2,
+    exp:'"서브클래스가 결정" — Factory Method의 열쇠말입니다(별명 Virtual Constructor까지 기출에 나옵니다). 제품군 "세트"가 나오면 Abstract Factory, 제품 "하나"의 생성 위임이면 Factory Method — 다음 문제에서 그 구분을 봅니다.'}
+},
+/* ===== D03 : Abstract Factory ===== */
+{
+  id:'p3', num:'PROBLEM 03', title:'Abstract Factory — 세트로 만든다', tag:'생성 · 제품군(family) · 통째 교체',
+  modes:[{
+    lines:['interface Btn { String ui(); }','class MacBtn implements Btn { public String ui() { return "맥버튼"; } }','class WinBtn implements Btn { public String ui() { return "윈버튼"; } }','interface UIFactory { Btn btn(); }    // + chk(), win()… 제품군','class MacFactory implements UIFactory {','    public Btn btn() { return new MacBtn(); }','}','UIFactory f = new MacFactory();','System.out.print(f.btn().ui());   // ?'],
+    steps:[
+      {line:3,secs:[sec('메서드 영역','공장의 약속','var(--violet)',[v('','UIFactory','btn() + chk() + win()…',{cls:'tgt'})])],
+       note:'Factory Method(앞 문제)가 제품 "하나"였다면, 여기선 공장 인터페이스가 버튼·체크박스·창… 서로 어울려야 하는 제품 "세트(군)"를 통째로 책임집니다.'},
+      {line:5,secs:[sec('메서드 영역','','var(--violet)',[v('','MacFactory','맥 제품군 전담 공장',{cls:'good'})])],
+       note:'MacFactory는 맥 스타일 제품만, WinFactory는 윈도우 스타일만 — 세트가 섞일 일이 없습니다.'},
+      {line:8,secs:[sec('스택','','var(--cyan)',[v('UIFactory','f','@a10',{cls:'tgt',ptr:1})]),sec('힙','','var(--amber)',[v('@a10','MacFactory','공장',{grp:true}),v('@b20','MacBtn','제품',{cls:'hot'})])],
+       calc:'f.btn()  →  MacBtn  →  "맥버튼"\n\n윈도우로 바꾸려면?\nnew MacFactory() → new WinFactory()  한 줄 끝\n(버튼·체크박스·창… 세트가 통째로 교체)',cgood:true,
+       note:'클라이언트 코드는 UIFactory와 Btn만 압니다 — 구체 클래스(Mac인지 Win인지)는 공장 선택 한 줄에만 등장해요.'},
+      {line:8,secs:[sec('메서드 영역','','var(--violet)',[v('','UIFactory','제품군의 인터페이스')])],
+       calc:'생성 패턴 3/5  —  Abstract Factory',
+       note:'정처기 정의 — "구체 클래스를 지정하지 않고, 서로 관련된 객체들의 군(family)을 생성하는 인터페이스를 제공한다." 구분 암기: Factory Method는 제품 하나·상속으로, Abstract Factory는 제품군 세트·조합으로.'}
+    ]
+  }],
+  quiz:{code:'/* 기출 정의 매칭 */',q:'"구체적인 클래스를 지정하지 않고, 서로 관련된 객체들의 군(family)을 생성하기 위한 인터페이스를 제공하는 패턴"은?',opts:['Abstract Factory','Factory Method','Facade','Composite'],ans:0,
+    exp:'"관련된 객체들의 군(제품군)" — Abstract Factory의 열쇠말입니다. 맥 세트 ↔ 윈 세트처럼 통째로 갈아끼우죠. Factory Method(하나·서브클래스 결정)와의 구분이 기출 단골 — 세트인가 하나인가만 보면 됩니다.'}
+},
+/* ===== D04 : Builder ===== */
+{
+  id:'p4', num:'PROBLEM 04', title:'Builder — 단계별로 조립한다', tag:'생성 · return this · 체이닝',
+  modes:[{
+    lines:['class Pizza {','    private String size = "M", top = "치즈";','    Pizza size(String s) { this.size = s; return this; }   // 자기 반환!','    Pizza top(String t)  { this.top = t;  return this; }','    String bake() { return size + " " + top + " 피자"; }','}','String p = new Pizza().size("L").top("불고기").bake();','System.out.print(p);   // ?'],
+    steps:[
+      {line:1,secs:[sec('힙','기본값으로 시작','var(--amber)',[v('@a10','size','"M"',{grp:true}),v('@a10','top','"치즈"')])],
+       note:'옵션이 많은 객체는 생성자 인자가 끝없이 길어집니다(size, top, 도우, 소스…). 빌더는 그걸 단계별 조립로 바꿉니다.'},
+      {line:2,secs:[sec('힙','','var(--amber)',[v('@a10','size','"M"',{grp:true}),v('@a10','top','"치즈"')])],
+       calc:'return this  →  "자기 자신의 참조"를 반환\n그래서 점(.)을 계속 이어 쓸 수 있다',
+       note:'this는 지금 이 객체의 참조(파이썬 P13의 self가 숨겨진 버전) — 그걸 되돌려주니 다음 메서드를 같은 객체에 바로 이어 부를 수 있습니다. 체이닝의 비밀 전부.'},
+      {line:6,secs:[sec('스택','','var(--cyan)',[v('String','p','@s90',{cls:'tgt',ptr:1})]),sec('힙','전부 같은 @a10에서','var(--amber)',[v('@a10','size','"L"',{cls:'hot',grp:true}),v('@a10','top','"불고기"',{cls:'hot'})])],
+       calc:'new Pizza()      →  @a10\n.size("L")       →  @a10  (같은 객체!)\n.top("불고기")    →  @a10\n.bake()          →  "L 불고기 피자"',cgood:true,
+       note:'한 객체가 단계를 거치며 완성됩니다. 자바의 StringBuilder(J03)가 정확히 이 패턴이었어요 — append가 계속 이어지던 이유.'},
+      {line:7,secs:[sec('힙','','var(--amber)',[v('@a10','Pizza','조립 완료')])],
+       calc:'생성 패턴 4/5  —  Builder',
+       note:'정처기 정의 — "복잡한 객체의 생성 과정과 표현 방법을 분리하여, 동일한 생성 절차가 서로 다른 표현을 만들 수 있게 한다." 나머지 하나 Prototype은 "원형을 복제(clone)해 생성" — 드릴 존에서 만납니다. 생성 5형제 완성!'}
+    ]
+  }],
+  quiz:{code:'/* 기출 정의 매칭 */',q:'"복잡한 객체의 생성 과정과 표현 방법을 분리하여, 동일한 생성 절차가 서로 다른 표현을 만들 수 있게 하는 패턴"은?',opts:['Prototype','Builder','Factory Method','Decorator'],ans:1,
+    exp:'"생성 과정과 표현의 분리" + "단계적 조립" — Builder입니다. return this 체이닝으로 옵션을 하나씩 쌓는 구현과 함께 기억하세요. Prototype은 복제(clone)로 생성하는 패턴이라 열쇠말부터 다릅니다.'}
+},
+/* ===== D05 : Adapter ===== */
+{
+  id:'p5', num:'PROBLEM 05', title:'Adapter — 돼지코 변환기', tag:'구조 · 인터페이스 변환 · Wrapper',
+  modes:[{
+    lines:['class Volt220 { String plug() { return "220V"; } }   // 옛 규격','interface Usb { String charge(); }                   // 새 규격','class Adapter implements Usb {','    private Volt220 old = new Volt220();','    public String charge() { return old.plug() + "→5V 변환"; }','}','Usb usb = new Adapter();','System.out.print(usb.charge());   // ?'],
+    steps:[
+      {line:1,secs:[sec('메서드 영역','규격이 안 맞는다','var(--violet)',[v('','Volt220','plug() — 옛 규격',{cls:'bad',grp:true}),v('','Usb','charge() — 새 규격',{cls:'tgt'})])],
+       note:'옛 클래스는 고칠 수 없고(남의 라이브러리), 새 코드는 Usb만 받는 상황 — 인터페이스가 어긋나 있습니다.'},
+      {line:4,secs:[sec('메서드 영역','','var(--violet)',[v('','Adapter','Usb인 척 + 안에 Volt220',{cls:'hot'})])],
+       calc:'어댑터의 일 = 새 규격으로 받아서(charge)\n→ 옛것을 호출하고(plug) → 변환해 돌려준다',
+       note:'겉은 새 규격(implements Usb), 속은 옛 물건(Volt220 참조) — 여행용 돼지코 그 자체입니다.'},
+      {line:7,secs:[sec('스택','','var(--cyan)',[v('Usb','usb','@a10',{cls:'tgt',ptr:1})]),sec('힙','감싸는 구조','var(--amber)',[v('@a10','Adapter','old →',{cls:'hot',grp:true}),v('@b20','Volt220','옛 물건 그대로')])],
+       calc:'usb.charge()  →  Adapter가 중개\n→  "220V→5V 변환"',cgood:true,
+       note:'새 코드는 Usb만 알고, 옛 클래스는 한 글자도 안 고쳤습니다 — 어댑터가 사이를 잇습니다.'},
+      {line:7,secs:[sec('메서드 영역','','var(--violet)',[v('','Adapter','변환기')])],
+       calc:'구조 패턴  —  Adapter',
+       note:'정처기 정의 — "클래스의 인터페이스를 클라이언트가 기대하는 다른 인터페이스로 변환하여, 호환되지 않던 클래스들을 함께 동작시킨다." 별명 Wrapper. 열쇠말: 인터페이스 변환 + 호환.'}
+    ]
+  }],
+  quiz:{code:'/* 기출 정의 매칭 */',q:'"클래스의 인터페이스를 클라이언트가 기대하는 다른 인터페이스로 변환하여, 호환되지 않던 클래스들을 함께 동작시키는 패턴"은?',opts:['Bridge','Proxy','Adapter','Facade'],ans:2,
+    exp:'"인터페이스 변환" + "호환" — Adapter(Wrapper)입니다. 220V→USB 돼지코를 떠올리세요. Bridge는 기능-구현의 "분리", Facade는 복잡한 것 앞의 "단순 창구"라 열쇠말이 다릅니다.'}
+},
+/* ===== D06 : Decorator ===== */
+{
+  id:'p6', num:'PROBLEM 06', title:'Decorator — 겹겹이 포장', tag:'구조 · 동적 기능 추가 · 사슬',
+  modes:[{
+    lines:['interface Coffee { int cost(); }','class Base implements Coffee { public int cost() { return 3000; } }','class Shot implements Coffee {','    private Coffee inner;                 // 안에 커피를 품는다','    Shot(Coffee c) { inner = c; }','    public int cost() { return inner.cost() + 500; }','}','Coffee c = new Shot(new Shot(new Base()));','System.out.print(c.cost());   // ?'],
+    steps:[
+      {line:3,secs:[sec('메서드 영역','장식자의 조건','var(--violet)',[v('','Shot','Coffee이면서, Coffee를 품는다',{cls:'tgt'})])],
+       note:'장식자 자신도 Coffee이고, 안에 Coffee를 품습니다 — 같은 타입이라서 겹겹이 쌀 수 있어요. 이 이중 신분이 패턴의 핵심입니다.'},
+      {line:7,secs:[sec('스택','','var(--cyan)',[v('Coffee','c','@a10',{cls:'hot',ptr:1})]),sec('힙','삼중 포장','var(--amber)',[v('@a10','Shot','inner → @b20',{cls:'hot',ptr:1,grp:true}),v('@b20','Shot','inner → @c30',{ptr:1,grp:true}),v('@c30','Base','cost = 3000')])],
+       calc:'new Shot( new Shot( new Base() ) )\n@a10 → @b20 → @c30  사슬 완성',
+       note:'1편 15의 연결 리스트 사슬이 여기서 부활합니다 — 참조가 참조를 물고 층층이.'},
+      {line:8,secs:[sec('스택','','var(--cyan)',[v('Coffee','c','@a10',{ptr:1})]),sec('힙','','var(--amber)',[v('@a10','Shot','+500',{cls:'good',grp:true}),v('@b20','Shot','+500',{cls:'good',grp:true}),v('@c30','Base','3000',{cls:'good'})])],
+       calc:'c.cost()\n= 500 + ( 500 + 3000 )\n= 4000    (바깥부터 사슬을 타고 합산)',cgood:true,
+       note:'샷 하나 더? new Shot(...)으로 한 겹 더 싸면 끝 — 클래스를 새로 만들지 않고 실행 중에 기능이 쌓입니다.'},
+      {line:8,secs:[sec('메서드 영역','','var(--violet)',[v('','Decorator','포장의 기술')])],
+       calc:'구조 패턴  —  Decorator',
+       note:'정처기 정의 — "객체에 동적으로 새로운 책임(기능)을 추가한다. 상속보다 유연한 확장." 실물 예: 자바 IO의 new BufferedReader(new FileReader(...)) — 그게 바로 이 패턴이었습니다.'}
+    ]
+  }],
+  quiz:{code:'/* 기출 정의 매칭 */',q:'"객체에 동적으로 새로운 책임(기능)을 추가할 수 있게 하는 패턴"은?',opts:['Proxy','Adapter','Composite','Decorator'],ans:3,
+    exp:'"동적으로 기능 추가" — Decorator입니다. 같은 타입을 품고 겹겹이 싸는 구조(샷 추가의 샷 추가)가 특징이에요. Proxy는 기능 추가가 아니라 접근 "제어"가 목적이라는 게 다음 문제의 구분 포인트.'}
+},
+/* ===== D07 : Proxy ===== */
+{
+  id:'p7', num:'PROBLEM 07', title:'Proxy — 대리인을 먼저 만난다', tag:'구조 · 접근 제어 · 지연 로딩',
+  modes:[{
+    lines:['interface Image { String show(); }','class RealImage implements Image {','    RealImage() { System.out.print("[로딩!]"); }    // 무겁다','    public String show() { return "사진"; }','}','class ProxyImage implements Image {','    private RealImage real;                         // 아직 null','    public String show() {','        if (real == null) real = new RealImage();','        return real.show(); } }','Image img = new ProxyImage();   // 로딩 없음!','System.out.print(img.show());   // ?'],
+    steps:[
+      {line:10,secs:[sec('스택','','var(--cyan)',[v('Image','img','@a10',{cls:'hot',ptr:1})]),sec('힙','실물은 아직 없다','var(--amber)',[v('@a10','Proxy','real: null',{cls:'hot'})])],
+       calc:'new ProxyImage()  →  "[로딩!]"이 안 찍혔다!\n무거운 실제 객체는 아직 만들지 않음',
+       note:'대리인만 세워두고 실물 생성은 미룹니다 — 지연 로딩(lazy loading). 갤러리 썸네일 1000장을 전부 원본 로딩하지 않는 이유.'},
+      {line:8,secs:[sec('스택','','var(--cyan)',[v('Image','img','@a10',{ptr:1})]),sec('힙','첫 사용 순간!','var(--amber)',[v('@a10','Proxy','real → @b20',{ptr:1,grp:true}),v('@b20','RealImage','"[로딩!]" 출력하며 생성',{cls:'hot'})])],
+       calc:'첫 show()  →  real == null  →  그때서야 생성\n(D01 싱글턴의 if null과 같은 수법)',
+       note:'프록시가 문지기처럼 서서 "정말 필요해질 때"까지 실물을 막아둡니다.'},
+      {line:11,secs:[sec('스택','','var(--cyan)',[v('Image','img','@a10',{ptr:1})]),sec('힙','','var(--amber)',[v('@a10','Proxy','위임',{cls:'good',grp:true}),v('@b20','RealImage','"사진"',{cls:'good'})])],
+       calc:'img.show()  →  프록시가 받아 실물에 위임\n→  출력:  [로딩!]사진',cgood:true,
+       note:'클라이언트는 Image 인터페이스만 봅니다 — 상대가 실물인지 대리인인지 모른 채로요.'},
+      {line:11,secs:[sec('메서드 영역','','var(--violet)',[v('','Proxy','접근 제어의 대리자')])],
+       calc:'구조 패턴  —  Proxy',
+       note:'정처기 정의 — "어떤 객체에 대한 접근을 제어하기 위해 그 객체의 대리자(surrogate)를 제공한다." 용도 3형제: 지연 로딩(가상), 권한 검사(보호), 원격 접근(원격). Decorator와 구분 — 추가 vs 제어.'}
+    ]
+  }],
+  quiz:{code:'/* 기출 정의 매칭 */',q:'"어떤 객체에 대한 접근을 제어하기 위해 그 객체의 대리자(surrogate)를 제공하는 패턴"은?',opts:['Proxy','Decorator','Facade','Flyweight'],ans:0,
+    exp:'"접근 제어" + "대리자" — Proxy입니다. 지연 로딩·권한 검사·원격 접근이 대표 용도. Decorator와 겉 구조(같은 인터페이스 + 안에 품기)는 닮았지만 목적이 다릅니다 — Decorator는 기능을 "더하고", Proxy는 접근을 "다스립니다".'}
+},
+/* ===== D08 : Facade ===== */
+{
+  id:'p8', num:'PROBLEM 08', title:'Facade — 카운터 하나로 주문', tag:'구조 · 통합 창구 · 단순화',
+  modes:[{
+    lines:['class Bean  { String grind() { return "원두 갈기→"; } }','class Water { String boil()  { return "물 끓이기→"; } }','class Cup   { String pour()  { return "붓기"; } }','class CafeFacade {','    String order() { return new Bean().grind() + new Water().boil() + new Cup().pour(); }','}','System.out.print(new CafeFacade().order());   // ?'],
+    steps:[
+      {line:2,secs:[sec('힙','서브시스템 셋','var(--amber)',[v('@a10','Bean','그라인더',{grp:true}),v('@b20','Water','보일러',{grp:true}),v('@c30','Cup','컵')])],
+       note:'커피 한 잔에 기계가 세 대 — 손님이 셋의 사용법과 순서를 다 알아야 한다면 재앙입니다.'},
+      {line:4,secs:[sec('힙','','var(--amber)',[v('@f00','Facade','카운터',{cls:'hot',grp:true}),v('@a10','Bean','①',{cls:'tgt',grp:true}),v('@b20','Water','②',{cls:'tgt',grp:true}),v('@c30','Cup','③',{cls:'tgt'})])],
+       calc:'order() 하나가 세 서브시스템을\n올바른 순서로 조율',
+       note:'복잡함은 사라진 게 아니라 카운터 뒤로 숨었습니다 — 손님이 몰라도 되게.'},
+      {line:6,secs:[sec('힙','','var(--amber)',[v('@f00','Facade','주문 완료',{cls:'good'})])],
+       calc:'출력:  원두 갈기→물 끓이기→붓기',cgood:true,
+       note:'손님(클라이언트)은 카운터(퍼사드)만 압니다. 서브시스템이 바뀌어도 손님 코드는 안전해요.'},
+      {line:6,secs:[sec('메서드 영역','','var(--violet)',[v('','Facade','정면(건물의 앞면)이라는 뜻')])],
+       calc:'구조 패턴  —  Facade',
+       note:'정처기 정의 — "서브시스템의 인터페이스 집합에 통합된 상위 인터페이스를 제공하여 서브시스템을 쓰기 쉽게 만든다." 나머지 구조 3형제 한 줄씩: Composite(부분-전체 트리를 동일 취급) · Bridge(기능-구현 분리) · Flyweight(공유로 메모리 절약 — J02의 String 상수 풀이 바로 이것!). 드릴 존에서 훈련합니다.'}
+    ]
+  }],
+  quiz:{code:'/* 기출 정의 매칭 */',q:'"서브시스템의 인터페이스 집합에 대해 하나의 통합된 상위 인터페이스를 제공하여 서브시스템을 쓰기 쉽게 만드는 패턴"은?',opts:['Composite','Facade','Bridge','Mediator'],ans:1,
+    exp:'"통합된 상위 인터페이스" = 단순한 창구 하나 — Facade입니다(건물의 정면이라는 뜻). Mediator도 "가운데서 모은다"는 그림이라 헷갈리는데, Mediator는 객체들 "사이의 상호작용"을 중재하는 행위 패턴이라 분류부터 다릅니다.'}
+},
+/* ===== D09 : Strategy ===== */
+{
+  id:'p9', num:'PROBLEM 09', title:'Strategy — 알고리즘 갈아끼우기', tag:'행위 · 캡슐화 · 상호 교체',
+  modes:[{
+    lines:['interface Pay { String go(int won); }','class Card implements Pay { public String go(int w) { return "카드 " + w + "원"; } }','class Cash implements Pay { public String go(int w) { return "현금 " + w + "원"; } }','Pay pay = new Card();','System.out.print(pay.go(5000) + " / ");','pay = new Cash();                 // 실행 중 교체!','System.out.print(pay.go(5000));   // ?'],
+    steps:[
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('Pay','pay','@a10',{cls:'hot',ptr:1})]),sec('힙','','var(--amber)',[v('@a10','Card','카드 결제 알고리즘',{cls:'hot'})])],
+       note:'결제 방법(알고리즘)이 각각 객체로 캡슐화되어 있고, pay는 그중 하나를 가리킵니다.'},
+      {line:4,secs:[sec('스택','','var(--cyan)',[v('Pay','pay','@a10',{ptr:1})]),sec('힙','','var(--amber)',[v('@a10','Card','실행!',{cls:'good'})])],
+       calc:'pay.go(5000)  →  몸이 고른다(J09)\n→  "카드 5000원"',
+       note:'호출하는 쪽은 Pay 인터페이스만 압니다.'},
+      {line:5,secs:[sec('스택','','var(--cyan)',[v('Pay','pay','@b20',{cls:'hot',ptr:1})]),sec('힙','','var(--amber)',[v('@a10','Card','참조 0 — 수거 대상',{cls:'bad',grp:true}),v('@b20','Cash','현금 결제 알고리즘',{cls:'hot'})])],
+       calc:'참조 갈아타기  =  알고리즘 교체\n(C 2편 P13 함수 포인터의 "채널 변경", 객체판)',
+       note:'if (card) … else if (cash) … 분기 덩어리가 사라지고, 참조 하나 바꾸는 일이 됐습니다.'},
+      {line:6,secs:[sec('스택','','var(--cyan)',[v('Pay','pay','@b20',{ptr:1})]),sec('힙','','var(--amber)',[v('@b20','Cash','실행!',{cls:'good'})])],
+       calc:'→  "현금 5000원"\n\n출력:  카드 5000원 / 현금 5000원\n\n행위 패턴  —  Strategy',cgood:true,
+       note:'정처기 정의 — "알고리즘 군을 정의하고 각각 캡슐화하여 상호 교체 가능하게 만든다. 알고리즘을 사용하는 클라이언트와 독립적으로 알고리즘을 변경할 수 있다." 정렬 방식·결제 수단·압축 방식 교체가 실물.'}
+    ]
+  }],
+  quiz:{code:'/* 기출 정의 매칭 */',q:'"알고리즘 군을 정의하고 각각 캡슐화하여 상호 교체 가능하게 만드는 패턴"은?',opts:['State','Template Method','Strategy','Command'],ans:2,
+    exp:'"알고리즘 교체" — Strategy입니다. 실행 중 참조를 갈아타며 방법을 바꾸죠. 구분 3종: State는 스스로 상태 전이, Template Method는 상속으로 일부만 재정의, Strategy는 위임으로 통째 교체 — 이 셋의 구분이 기출 최다 포인트.'}
+},
+/* ===== D10 : Observer ===== */
+{
+  id:'p10', num:'PROBLEM 10', title:'Observer — 구독과 알림', tag:'행위 · 1:N · 자동 통지',
+  modes:[{
+    lines:['import java.util.*;','class Channel {','    private List<String> subs = new ArrayList<>();','    void sub(String name) { subs.add(name); }','    void notice(String msg) {','        for (String s : subs) System.out.print(s + "에게 " + msg + "! ");','    }','}','Channel ch = new Channel();  ch.sub("김");  ch.sub("이");','ch.notice("새 영상");   // ?'],
+    steps:[
+      {line:2,secs:[sec('힙','구독자 명단','var(--amber)',[v('@a10','Channel','subs → @b20',{ptr:1,grp:true}),v('@b20','List','[ ]',{cls:'hot'})])],
+       note:'채널(주제)이 구독자 명단 — 참조 리스트를 들고 있습니다. 관찰당하는 쪽이 관찰자 목록을 관리하는 구조.'},
+      {line:8,secs:[sec('힙','','var(--amber)',[v('@a10','Channel','subs → @b20',{ptr:1,grp:true}),v('@b20','List','["김", "이"]',{cls:'hot'})])],
+       calc:'sub("김"), sub("이")  →  명단 등록 (구독)',
+       note:'구독자는 등록만 해두고 자기 일을 하러 갑니다 — 새 영상이 왔는지 매번 확인(폴링)하지 않아요.'},
+      {line:9,secs:[sec('힙','','var(--amber)',[v('@a10','Channel','notice!',{cls:'good',grp:true}),v('@b20','List','["김", "이"] 순회',{cls:'good'})])],
+       calc:'notice("새 영상")  →  명단 순회, 전원 호출\n→  "김에게 새 영상! 이에게 새 영상!"',cgood:true,
+       note:'상태 변화(새 영상)가 생기면 주제가 구독자를 "찾아가" 알립니다 — 방향이 뒤집힌 것이 이 패턴의 전부.'},
+      {line:9,secs:[sec('메서드 영역','','var(--violet)',[v('','Observer','1 : N 자동 통지')])],
+       calc:'행위 패턴  —  Observer',
+       note:'정처기 정의 — "한 객체의 상태가 변하면 그 객체에 의존하는 모든 객체에게 자동으로 통지되어 갱신되는 1:N 의존 관계를 정의한다." 유튜브 알림, GUI 이벤트 리스너가 실물. 행위 패턴 기출 1순위입니다.'}
+    ]
+  }],
+  quiz:{code:'/* 기출 정의 매칭 */',q:'"한 객체의 상태가 변하면 그 객체에 의존하는 모든 객체에게 자동으로 통지되어 갱신되는 1:N 의존 관계를 정의하는 패턴"은?',opts:['Mediator','Observer','Chain of Responsibility','Visitor'],ans:1,
+    exp:'"1:N" + "자동 통지" — Observer입니다. 유튜브 구독 알림을 떠올리세요. Mediator는 M:N의 복잡한 상호작용을 중재자 "하나로 모으는" 패턴이라 방향이 다릅니다 — 1:N 방송 vs M:N 중재.'}
+},
+/* ===== D11 : Template Method ===== */
+{
+  id:'p11', num:'PROBLEM 11', title:'Template Method — 뼈대는 부모, 속은 자식', tag:'행위 · 골격 · 훅 메서드',
+  modes:[{
+    lines:['abstract class Game {','    void play() { System.out.print("시작→" + rule() + "→끝"); }','    abstract String rule();              // 빈칸(훅)','}','class Chess extends Game { String rule() { return "체스 규칙"; } }','new Chess().play();   // ?'],
+    steps:[
+      {line:1,secs:[sec('메서드 영역','Game — 골격','var(--violet)',[v('','play()','시작→ ? →끝  (순서 고정)',{cls:'tgt',grp:true}),v('','rule()','빈칸 (abstract)',{cls:'bad'})])],
+       note:'자바 랩 J10 탭1에서 이미 만든 구조입니다 — 그게 사실 이 패턴이었어요. 절차(시작→규칙→끝)는 부모가 고정하고, 한 칸만 비워둡니다.'},
+      {line:4,secs:[sec('메서드 영역','Chess — 빈칸 채움','var(--violet)',[v('','play()','부모 것 그대로',{grp:true}),v('','rule()','"체스 규칙"',{cls:'good'})])],
+       note:'자식은 빈칸만 채웁니다 — 절차를 바꿀 권한은 없어요. "흐름의 주도권은 부모에게".'},
+      {line:5,secs:[sec('힙','','var(--amber)',[v('@a10','Chess','객체',{cls:'good'})])],
+       calc:'play() (부모의 골격) 속 rule() 호출\n→  몸이 고른다(J09)  →  Chess의 rule\n→  "시작→체스 규칙→끝"',cgood:true,
+       note:'바둑을 추가하려면 Baduk 클래스에서 rule()만 채우면 됩니다 — play()는 재사용.'},
+      {line:5,secs:[sec('메서드 영역','','var(--violet)',[v('','Template Method','골격 + 빈칸')])],
+       calc:'행위 패턴  —  Template Method',
+       note:'정처기 정의 — "알고리즘의 골격을 상위 클래스에서 정의하고, 일부 단계를 서브클래스에서 재정의하게 한다." D02 Factory Method가 이 패턴의 "생성 특화판"이라는 관계까지 기억하면 두 문제를 한 번에 잡습니다.'}
+    ]
+  }],
+  quiz:{code:'/* 기출 정의 매칭 */',q:'"알고리즘의 골격을 상위 클래스에서 정의하고, 일부 단계를 서브클래스에서 재정의하게 하는 패턴"은?',opts:['Strategy','Factory Method','Builder','Template Method'],ans:3,
+    exp:'"골격은 부모, 단계는 자식" — Template Method입니다. 상속 기반이라는 것이 Strategy(위임·통째 교체)와의 차이. Factory Method는 이 구조를 "객체 생성" 단계에 특화시킨 동생입니다.'}
+},
+/* ===== D12 : State ===== */
+{
+  id:'p12', num:'PROBLEM 12', title:'State — 상태가 행동을 바꾼다', tag:'행위 · 상태 객체 · 스스로 전이',
+  modes:[{
+    lines:['interface Mode { String press(); }','class Off implements Mode { public String press() { return "켜짐!"; } }','class On  implements Mode { public String press() { return "꺼짐!"; } }','class Tv {','    Mode mode = new Off();','    String btn() {','        String r = mode.press();','        mode = (mode instanceof Off) ? new On() : new Off();','        return r; } }','Tv tv = new Tv();','System.out.print(tv.btn() + tv.btn() + tv.btn());   // ?'],
+    steps:[
+      {line:4,secs:[sec('힙','','var(--amber)',[v('@a10','Tv','mode → @b20',{ptr:1,grp:true}),v('@b20','Off','현재 상태',{cls:'hot'})])],
+       note:'같은 버튼인데 TV 상태에 따라 결과가 다릅니다. if (off) … else if (on) … 덩어리 대신, 상태 자체를 객체로 만들었어요.'},
+      {line:7,secs:[sec('힙','','var(--amber)',[v('@a10','Tv','mode → @c30',{ptr:1,grp:true}),v('@b20','Off','"켜짐!" 반환 후 은퇴',{cls:'tgt',grp:true}),v('@c30','On','새 상태',{cls:'hot'})])],
+       calc:'1번째 btn():  Off.press → "켜짐!"\n→  mode는 On으로 "스스로" 전이',
+       note:'행동과 동시에 다음 상태로 넘어갑니다 — 전이 규칙이 상태 쪽에 붙어 있어요.'},
+      {line:10,secs:[sec('힙','','var(--amber)',[v('@a10','Tv','Off → On → Off → On',{cls:'good'})])],
+       calc:'2번째:  On.press → "꺼짐!" → Off로\n3번째:  Off.press → "켜짐!"\n\n출력:  켜짐!꺼짐!켜짐!',cgood:true,
+       note:'같은 tv.btn() 세 번이 전부 다른 결과 — 내부 상태가 행동을 결정했습니다.'},
+      {line:10,secs:[sec('메서드 영역','','var(--violet)',[v('','State','상태 = 객체')])],
+       calc:'행위 패턴  —  State',
+       note:'정처기 정의 — "객체의 내부 상태가 바뀜에 따라 행위를 바꾸며, 상태를 별도의 객체로 캡슐화한다." Strategy와의 구분이 최다 기출: Strategy는 "밖"에서 갈아끼우고, State는 "스스로" 전이합니다.'}
+    ]
+  }],
+  quiz:{code:'/* 기출 정의 매칭 */',q:'"객체의 내부 상태가 바뀜에 따라 행위를 바꾸며, 상태를 별도의 객체로 캡슐화하는 패턴"은?',opts:['State','Strategy','Memento','Observer'],ans:0,
+    exp:'"내부 상태에 따라 행위 변경" — State입니다. TV 버튼처럼 행동하면서 스스로 다음 상태로 넘어가죠. Strategy는 밖에서 갈아끼우는 것, Memento는 상태를 "저장했다 복원"(undo)하는 것 — 열쇠말로 구분하세요.'}
+},
+/* ===== D13 : Command + 졸업 정리 ===== */
+{
+  id:'p13', num:'PROBLEM 13', title:'Command — 요청을 객체로, 그리고 졸업', tag:'행위 · 요청 캡슐화 · 3분류 완성',
+  modes:[{
+    lines:['interface Command { String run(); }','class LightOn implements Command { public String run() { return "불 켜기"; } }','class DoorLock implements Command { public String run() { return "문 잠금"; } }','class Button {','    private Command cmd;','    Button(Command c) { cmd = c; }','    String click() { return cmd.run() + " 실행!"; }','}','System.out.print(new Button(new LightOn()).click());   // ?'],
+    steps:[
+      {line:0,secs:[sec('메서드 영역','요청이 객체가 된다','var(--violet)',[v('','Command','run() — "할 일" 하나를 담는 그릇',{cls:'tgt'})])],
+       note:'"불을 켜라"는 요청 자체가 객체가 됩니다 — 그래야 담아두고, 바꿔 끼우고, 취소(undo)하고, 줄 세울(큐) 수 있으니까요.'},
+      {line:6,secs:[sec('힙','리모컨 버튼에 기능 꽂기','var(--amber)',[v('@a10','Button','cmd → @b20',{ptr:1,grp:true}),v('@b20','LightOn','"불 켜기" 요청',{cls:'hot'})])],
+       calc:'버튼은 "무슨 일인지" 모른다\n— cmd.run()만 호출할 뿐\n(요청하는 쪽과 실행되는 일의 분리)',
+       note:'버튼(호출자)과 실제 일(수신자)이 분리됐습니다. 버튼에 DoorLock을 꽂으면 같은 버튼이 문을 잠가요.'},
+      {line:8,secs:[sec('힙','','var(--amber)',[v('@a10','Button','click!',{cls:'good',grp:true}),v('@b20','LightOn','실행됨',{cls:'good'})])],
+       calc:'출력:  불 켜기 실행!\n\n행위 패턴  —  Command',cgood:true,
+       note:'정처기 정의 — "요청 자체를 객체로 캡슐화하여 요청의 취소·큐잉·로깅을 가능하게 한다." 리모컨 버튼에 기능을 꽂는 그림으로 기억하세요.'},
+      {line:8,secs:[sec('메서드 영역','GoF 23 — 3분류 지도','var(--violet)',[v('','생성 (5)','Singleton · FM · AF · Builder · Prototype',{cls:'good',grp:true}),v('','구조 (7)','Adapter · Bridge · Composite · Decorator · Facade · Flyweight · Proxy',{cls:'good',grp:true}),v('','행위 (11)','Observer · Strategy · TM · State · Command + 6',{cls:'good'})])],
+       calc:'생성 = 만들기 / 구조 = 조립 / 행위 = 협력',
+       note:'졸업 정리 — 헷갈리는 짝 구분법: FM vs AF(하나 vs 세트) · Decorator vs Proxy(추가 vs 제어) · Strategy vs State(밖에서 vs 스스로) · TM vs Strategy(상속 vs 위임) · Facade vs Mediator(구조의 창구 vs 행위의 중재). 나머지 6개(Chain·Interpreter·Iterator·Mediator·Memento·Visitor)는 드릴 존에서 — 23개 전부 만나고 졸업하세요!'}
+    ]
+  }],
+  quiz:{code:'/* 기출 정의 매칭 */',q:'"요청 자체를 객체로 캡슐화하여 요청의 취소·큐잉·로깅을 가능하게 하는 패턴"은?',opts:['Observer','Iterator','Command','Strategy'],ans:2,
+    exp:'"요청을 객체로" — Command입니다. 버튼(호출자)과 실제 일(수신자)이 분리되어 요청을 저장·취소·재실행할 수 있게 되죠. Strategy(알고리즘 교체)와 헷갈리면 — Command는 "할 일"을, Strategy는 "하는 방법"을 캡슐화합니다.'}
+}
+];
+
+/* ---------- drill zone : 23 GoF definitions (정답은 항상 o[0], 표시할 때 섞음) ---------- */
+const DRILL=[
+  {c:'인스턴스가 오직 하나임을 보장하고 전역 접근점을 제공한다',o:['Singleton','Prototype','Factory Method','Facade']},
+  {c:'생성 인터페이스만 정의하고, 어떤 클래스를 인스턴스화할지는 서브클래스가 결정한다 (Virtual Constructor)',o:['Factory Method','Abstract Factory','Builder','Template Method']},
+  {c:'구체 클래스를 지정하지 않고 서로 관련된 객체들의 군(family)을 생성하는 인터페이스를 제공한다',o:['Abstract Factory','Factory Method','Composite','Builder']},
+  {c:'복잡한 객체의 생성 과정과 표현을 분리해, 같은 절차로 다른 표현을 만들 수 있게 한다',o:['Builder','Prototype','Decorator','Abstract Factory']},
+  {c:'원형(원본) 인스턴스를 복제(clone)하여 새 객체를 만든다',o:['Prototype','Singleton','Flyweight','Memento']},
+  {c:'클래스의 인터페이스를 변환하여 호환되지 않던 클래스들을 함께 동작시킨다',o:['Adapter','Bridge','Proxy','Decorator']},
+  {c:'추상(기능) 계층과 구현 계층을 분리하여 각각 독립적으로 확장할 수 있게 한다',o:['Bridge','Adapter','Strategy','Facade']},
+  {c:'객체들을 트리 구조로 구성해 부분-전체 계층을 표현하고, 단일 객체와 복합 객체를 동일하게 다룬다',o:['Composite','Decorator','Iterator','Flyweight']},
+  {c:'객체에 동적으로 새로운 책임(기능)을 추가한다',o:['Decorator','Proxy','Adapter','State']},
+  {c:'서브시스템의 인터페이스 집합에 통합된 상위 인터페이스를 제공해 쓰기 쉽게 한다',o:['Facade','Mediator','Adapter','Composite']},
+  {c:'공유(sharing)를 통해 다수의 잘게 쪼개진 객체를 메모리 효율적으로 지원한다',o:['Flyweight','Singleton','Prototype','Proxy']},
+  {c:'실제 객체에 대한 접근을 제어하는 대리자(surrogate)를 둔다',o:['Proxy','Decorator','Facade','Command']},
+  {c:'요청을 처리할 기회를 사슬로 연결된 여러 객체에게 차례로 넘겨, 요청자와 처리자의 결합을 피한다',o:['Chain of Responsibility','Command','Mediator','Observer']},
+  {c:'요청 자체를 객체로 캡슐화해 취소·큐잉·로깅을 가능하게 한다',o:['Command','Strategy','Memento','Interpreter']},
+  {c:'언어의 문법 규칙을 클래스로 표현하고, 그 규칙에 따라 문장을 해석하는 해석자를 만든다',o:['Interpreter','Visitor','Iterator','Builder']},
+  {c:'내부 표현을 노출하지 않고 집합체의 원소들에 순차적으로 접근하는 방법을 제공한다',o:['Iterator','Visitor','Composite','Observer']},
+  {c:'객체 간의 복잡한 상호작용(M:N)을 중재자 하나에 캡슐화하여 직접 참조를 없앤다',o:['Mediator','Observer','Facade','Proxy']},
+  {c:'캡슐화를 깨지 않고 객체의 내부 상태를 저장해 두었다가 복원할 수 있게 한다 (undo)',o:['Memento','State','Prototype','Command']},
+  {c:'한 객체의 상태 변화 시 의존하는 모든 객체에게 자동으로 통지되는 1:N 의존 관계를 정의한다',o:['Observer','Mediator','Chain of Responsibility','State']},
+  {c:'객체의 내부 상태에 따라 행위를 바꾸며, 상태를 별도의 객체로 캡슐화한다',o:['State','Strategy','Observer','Memento']},
+  {c:'알고리즘 군을 정의하고 각각 캡슐화하여 상호 교체 가능하게 한다',o:['Strategy','State','Template Method','Bridge']},
+  {c:'알고리즘의 골격은 상위 클래스가 정의하고, 일부 단계는 서브클래스가 재정의한다',o:['Template Method','Factory Method','Strategy','Builder']},
+  {c:'객체 구조는 그대로 두고, 수행할 연산을 방문자 객체로 분리해 새 연산을 쉽게 추가한다',o:['Visitor','Iterator','Decorator','Interpreter']}
+];
+
+/* ---------- render engine ---------- */
+const state={}; // id -> {mode, step}
+const solved={}; // id -> bool
+
+/* ---------- part dividers & progress persistence ---------- */
+const PARTS={
+  p1:['PART 1','생성 패턴 — 객체를 어떻게 만들까 (01–04)'],
+  p5:['PART 2','구조 패턴 — 어떻게 조립할까 (05–08)'],
+  p9:['PART 3','행위 패턴 — 어떻게 협력할까 (09–13)']
+};
+const STORE_KEY='dplab-progress-v1';
+function saveProgress(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify({solved:solved,state:state})); }catch(e){}
+}
+function loadProgress(){
+  try{
+    const d=JSON.parse(localStorage.getItem(STORE_KEY)||'null');
+    if(!d) return;
+    PROBLEMS.forEach(p=>{
+      if(d.solved && d.solved[p.id]) solved[p.id]=true;
+      const s=d.state && d.state[p.id];
+      if(s && state[p.id]){
+        const m=Math.min(Math.max(0,s.mode|0), p.modes.length-1);
+        state[p.id].mode=m;
+        state[p.id].step=Math.min(Math.max(0,s.step|0), p.modes[m].steps.length-1);
+      }
+    });
+  }catch(e){}
+}
+
+function cellEl(x,dim){
+  const d=document.createElement('div');
+  d.className='cellrow'+(x.cls?' '+x.cls:'')+(x.ptr?' ptr':'')+(x.grp?' grp':'');
+  if(dim) d.style.opacity='0.5';
+  const a=document.createElement('span');a.className='addr';a.textContent=x.addr;
+  const n=document.createElement('span');n.className='nm';n.textContent=x.name;
+  const val=document.createElement('span');val.className='val';val.textContent=x.val+(x.ptr?' →':'');
+  d.appendChild(a);d.appendChild(n);d.appendChild(val);
+  if(x.lock){const l=document.createElement('span');l.className='lock';l.textContent='🔒';l.setAttribute('aria-label','읽기 전용');d.appendChild(l);}
+  return d;
+}
+
+function renderStage(prob){
+  const st=state[prob.id];
+  const mode=prob.modes[st.mode];
+  const step=mode.steps[st.step];
+  const root=document.getElementById('stage-'+prob.id);
+
+  let modeHtml='';
+  if(prob.modes.length>1){
+    modeHtml='<div class="modes">'+prob.modes.map((m,i)=>
+      '<button class="btn mode-btn'+(i===st.mode?' on':'')+'" data-mode="'+i+'">'+m.label+'</button>'
+    ).join('')+'</div>';
+  }
+
+  const ctrl='<div class="steps-ctrl">'
+    +'<button class="btn nav-prev">← 이전</button>'
+    +'<button class="btn nav-next">다음 →</button>'
+    +'<span class="stepn">'+(st.step+1)+' / '+mode.steps.length+'</span></div>';
+
+  const codeHtml='<pre class="code">'+mode.lines.map((l,i)=>{
+    const cls=(i===step.line?'ln on':(i<=step.line?'ln seen':'ln'));
+    return '<span class="'+cls+'">'+escapeHtml(l||' ')+'</span>';
+  }).join('')+'</pre>';
+
+  let memHtml='';
+  if(step.frames){
+    memHtml=step.frames.map(f=>{
+      return '<div class="memsec"><div class="sh">'+escapeHtml(f.title)+'</div>'
+        + f.rows.map(r=>cellEl(r,f.dim).outerHTML).join('')+'</div>';
+    }).join('');
+  } else if(step.secs){
+    memHtml=step.secs.map(s=>{
+      const tag=s.tag?'<span class="tag" style="background:'+s.tag+'"></span>':'';
+      const badge=s.badge?'<span class="badge">— '+escapeHtml(s.badge)+'</span>':'';
+      const body=s.rows.length? s.rows.map(r=>cellEl(r,false).outerHTML).join('') : '<div class="empty">(비어 있음)</div>';
+      return '<div class="memsec"><div class="sh">'+tag+escapeHtml(s.sh)+' '+badge+'</div>'+body+'</div>';
+    }).join('');
+  }
+
+  const calcHtml = step.calc ? '<div class="calc'+(step.cbad?' bad':(step.cgood?' good':''))+'">'+escapeHtml(step.calc)+'</div>' : '';
+  const noteHtml = '<div class="note">'+escapeHtml(step.note)+'</div>';
+
+  root.innerHTML = modeHtml + ctrl
+    + '<div class="stage">'
+    +   '<div class="pane"><div class="pane-label">코드</div>'+codeHtml+'</div>'
+    +   '<div class="pane"><div class="pane-label">구조</div>'+memHtml+'</div>'
+    + '</div>' + calcHtml + noteHtml;
+
+  root.querySelectorAll('.mode-btn').forEach(b=>b.onclick=()=>{st.mode=+b.dataset.mode;st.step=0;renderStage(prob);saveProgress();});
+  root.querySelector('.nav-prev').onclick=()=>{const n=mode.steps.length;st.step=(st.step-1+n)%n;renderStage(prob);saveProgress();};
+  root.querySelector('.nav-next').onclick=()=>{const n=mode.steps.length;st.step=(st.step+1)%n;renderStage(prob);saveProgress();};
+}
+
+function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+function renderQuiz(prob){
+  const root=document.getElementById('quiz-'+prob.id);
+  const qz=prob.quiz;
+  root.innerHTML=''
+    +'<div class="q"><span class="qmono">'+escapeHtml(qz.code)+'</span><br>'+escapeHtml(qz.q)+'</div>'
+    +'<div class="opts">'+qz.opts.map((o,i)=>'<button class="opt" data-i="'+i+'">'+escapeHtml(o)+'</button>').join('')+'</div>'
+    +'<div class="exp" id="exp-'+prob.id+'"></div>';
+  const opts=[...root.querySelectorAll('.opt')];
+  const exp=root.querySelector('.exp');
+  opts.forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i, ok=(i===qz.ans);
+    opts.forEach(o=>o.disabled=true);
+    if(ok){ b.classList.add('correct'); if(!solved[prob.id]){solved[prob.id]=true;updateScore();} }
+    else { b.classList.add('wrong'); opts[qz.ans].classList.add('correct'); }
+    exp.classList.add('show');
+    exp.innerHTML=(ok?'<b>정답.</b> ':'<b class="no">정답은 '+escapeHtml(qz.opts[qz.ans])+'.</b> ')+escapeHtml(qz.exp);
+    saveProgress();
+  });
+  if(solved[prob.id]){
+    opts.forEach(o=>o.disabled=true);
+    opts[qz.ans].classList.add('correct');
+    exp.classList.add('show');
+    exp.innerHTML='<b>정답.</b> '+escapeHtml(qz.exp);
+  }
+}
+
+function updateScore(){
+  const n=Object.values(solved).filter(Boolean).length;
+  document.getElementById('score').textContent=n;
+  const sn=document.getElementById('snScore'); if(sn) sn.textContent=n;
+  const bar=document.getElementById('snBar'); if(bar) bar.style.width=(PROBLEMS.length?(n/PROBLEMS.length*100):0)+'%';
+  document.querySelectorAll('.pip,.sn-item').forEach(p=>{
+    p.classList.toggle('done', !!solved[p.dataset.id]);
+  });
+}
+
+function buildSideNav(){
+  const nav=document.getElementById('snList');
+  if(!nav) return;
+  nav.innerHTML=PROBLEMS.map((p,i)=>{
+    const part=PARTS[p.id]?'<div class="sn-part">'+escapeHtml(PARTS[p.id][0])+'</div>':'';
+    return part+'<button class="sn-item" data-id="'+p.id+'" role="tab" title="'+escapeHtml(p.title)+'">'
+      +'<span class="sn-num">'+(i+1)+'</span>'
+      +'<span class="sn-txt">'+escapeHtml(p.title)+'</span>'
+      +'<span class="sn-check" aria-hidden="true">✓</span>'
+      +'</button>';
+  }).join('');
+  nav.querySelectorAll('.sn-item').forEach(b=>b.onclick=()=>{
+    document.getElementById(b.dataset.id).scrollIntoView({behavior:'smooth',block:'start'});
+  });
+}
+function ensureVisible(item){
+  const nav=document.getElementById('sidenav');
+  if(!nav||!item) return;
+  const it=item.getBoundingClientRect(), nv=nav.getBoundingClientRect();
+  if(it.top<nv.top) nav.scrollTop-=(nv.top-it.top)+10;
+  else if(it.bottom>nv.bottom) nav.scrollTop+=(it.bottom-nv.bottom)+10;
+}
+
+function buildPips(){
+  const rail=document.getElementById('pips');
+  rail.innerHTML=PROBLEMS.map((p,i)=>'<button class="pip" role="tab" data-id="'+p.id+'" data-idx="'+i+'" aria-label="문제 '+(i+1)+'로 이동">'+(i+1)+'</button>').join('');
+  const pips=[...rail.querySelectorAll('.pip')];
+  pips.forEach(p=>p.onclick=()=>{
+    document.getElementById(p.dataset.id).scrollIntoView({behavior:'smooth',block:'start'});
+  });
+  if(typeof IntersectionObserver!=='undefined'){
+    const obs=new IntersectionObserver(entries=>{
+      entries.forEach(e=>{
+        if(e.isIntersecting){
+          document.querySelectorAll('.pip,.sn-item').forEach(el=>el.classList.toggle('active', el.dataset.id===e.target.id));
+          ensureVisible(document.querySelector('.sn-item.active'));
+        }
+      });
+    },{rootMargin:'-45% 0px -45% 0px'});
+    PROBLEMS.forEach(p=>obs.observe(document.getElementById(p.id)));
+  } else {
+    pips[0].classList.add('active');
+  }
+}
+
+/* ---------- drill zone ---------- */
+const DRILL_BEST_KEY='dplab-drill-best';
+let drillOrder=[],drillIdx=0,drillStreak=0,drillCorrect=0;
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=arr[i];arr[i]=arr[j];arr[j]=t;}return arr;}
+function drillBest(){try{return +localStorage.getItem(DRILL_BEST_KEY)||0;}catch(e){return 0;}}
+function setDrillBest(n){try{localStorage.setItem(DRILL_BEST_KEY,String(n));}catch(e){}}
+function drillStats(){
+  return '<div class="drill-stats"><span>Q <b>'+Math.min(drillIdx+1,DRILL.length)+'</b> / '+DRILL.length+'</span>'
+    +'<span>🔥 연속 <b>'+drillStreak+'</b></span><span>맞힘 <b>'+drillCorrect+'</b></span>'
+    +'<span>최고 기록 <b>'+drillBest()+'</b></span></div>';
+}
+function startDrill(){
+  drillOrder=shuffle(DRILL.map((_,i)=>i));
+  drillIdx=0;drillStreak=0;drillCorrect=0;
+  renderDrill();
+}
+function renderDrill(){
+  const root=document.getElementById('drillBody');
+  if(!root) return;
+  if(drillIdx>=drillOrder.length){
+    if(drillCorrect>drillBest()) setDrillBest(drillCorrect);
+    const perfect=drillCorrect===DRILL.length;
+    root.innerHTML=drillStats()
+      +'<div class="drill-done"><div class="big">'+drillCorrect+' / '+DRILL.length+'</div>'
+      +'<div class="msg">'+(perfect?'23패턴 전부 정복! 정처기 패턴 문제는 이제 받아쓰기입니다.':'틀린 패턴은 본문의 같은 분류 문제로 돌아가 열쇠말을 다시 확인하세요.')+'</div>'
+      +'<button class="btn" id="drillAgain">↺ 다시 섞어서 훈련</button></div>';
+    document.getElementById('drillAgain').onclick=startDrill;
+    return;
+  }
+  const q=DRILL[drillOrder[drillIdx]];
+  const opts=shuffle(q.o.map((t,i)=>({t:t,ok:i===0})));
+  root.innerHTML=drillStats()
+    +'<div class="drill-code">"'+escapeHtml(q.c)+'"</div>'
+    +'<div class="q" style="margin-bottom:10px;">어떤 패턴인가?</div>'
+    +'<div class="opts">'+opts.map(o=>'<button class="opt" data-ok="'+(o.ok?1:0)+'">'+escapeHtml(o.t)+'</button>').join('')+'</div>'
+    +'<div class="exp" id="drillExp"></div>';
+  const btns=[...root.querySelectorAll('.opt')];
+  btns.forEach(b=>b.onclick=()=>{
+    btns.forEach(o=>o.disabled=true);
+    const ok=b.dataset.ok==='1';
+    if(ok){ b.classList.add('correct'); drillCorrect++; drillStreak++; }
+    else { b.classList.add('wrong'); drillStreak=0; btns.find(o=>o.dataset.ok==='1').classList.add('correct'); }
+    const exp=root.querySelector('#drillExp');
+    exp.classList.add('show');
+    exp.innerHTML=(ok?'<b>정답!</b>':'<b class="no">아깝다 — 초록이 정답.</b>')
+      +' <button class="btn" id="drillNext" style="margin-left:8px;">다음 →</button>';
+    document.getElementById('drillNext').onclick=()=>{drillIdx++;renderDrill();};
+  });
+}
+
+function build(){
+  const main=document.getElementById('problems');
+  main.innerHTML=PROBLEMS.map(p=>{
+    const part=PARTS[p.id]?'<div class="part-head"><span class="pk">'+PARTS[p.id][0]+'</span>'+escapeHtml(PARTS[p.id][1])+'</div>':'';
+    return part
+    +'<section class="prob" id="'+p.id+'">'
+    +  '<div class="prob-head">'
+    +    '<div class="prob-num">'+p.num+'</div>'
+    +    '<div class="prob-title">'+escapeHtml(p.title)+'</div>'
+    +    '<div class="prob-tag">'+escapeHtml(p.tag)+'</div>'
+    +  '</div>'
+    +  '<div class="prob-body">'
+    +    '<div id="stage-'+p.id+'"></div>'
+    +    '<div class="quiz"><div id="quiz-'+p.id+'"></div></div>'
+    +  '</div>'
+    +'</section>';
+  }).join('');
+
+  PROBLEMS.forEach(p=>{ state[p.id]={mode:0,step:0}; });
+  loadProgress();
+  PROBLEMS.forEach(p=>{ renderStage(p); renderQuiz(p); });
+  buildSideNav();
+  buildPips();
+  updateScore();
+  document.getElementById('scoreTotal').textContent=PROBLEMS.length;
+  const snTot=document.getElementById('snTot'); if(snTot) snTot.textContent=PROBLEMS.length;
+  const sd=document.getElementById('snDrill');
+  if(sd) sd.onclick=()=>{document.getElementById('drill').scrollIntoView({behavior:'smooth',block:'start'});};
+  startDrill();
+}
+
+document.getElementById('resetAll').onclick=()=>{
+  Object.keys(solved).forEach(k=>delete solved[k]);
+  try{ localStorage.removeItem(STORE_KEY); }catch(e){}
+  PROBLEMS.forEach(p=>{state[p.id]={mode:0,step:0};renderStage(p);renderQuiz(p);});
+  updateScore();
+  startDrill();
+  document.getElementById(PROBLEMS[0].id).scrollIntoView({behavior:'smooth'});
+};
+
+build();
+</script>
+</body>
+</html>

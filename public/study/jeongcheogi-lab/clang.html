@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>포인터 메모리 랩 · C Pointer Memory Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f7f8fa;
+    --panel:#ffffff;
+    --panel-2:#f2f4f7;
+    --cell:#ffffff;
+    --line:#dbe1ea;
+    --line-soft:#e6eaf0;
+    --ink:#1a2230;
+    --ink-dim:#5a6b80;
+    --ink-faint:#93a1b3;
+    --cyan:#0e9e8f;
+    --cyan-bg:rgba(14,158,143,0.10);
+    --cyan-line:rgba(14,158,143,0.45);
+    --amber:#c47a12;
+    --amber-bg:rgba(196,122,18,0.11);
+    --amber-line:rgba(196,122,18,0.42);
+    --red:#d43e5e;
+    --red-bg:rgba(212,62,94,0.10);
+    --red-line:rgba(212,62,94,0.42);
+    --green:#1f9d5a;
+    --green-bg:rgba(31,157,90,0.11);
+    --green-line:rgba(31,157,90,0.42);
+    --violet:#7b5bd6;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --sans:'Space Grotesk',system-ui,sans-serif;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);line-height:1.6;
+    background-image:radial-gradient(circle at 12% 0%, rgba(14,158,143,0.06), transparent 45%),
+                     radial-gradient(circle at 88% 8%, rgba(123,91,214,0.05), transparent 40%);
+  }
+  @media (prefers-reduced-motion: reduce){ *{animation:none!important;transition:none!important;} }
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 80px;}
+
+  /* header */
+  header.top{margin-bottom:28px;}
+  .kick{font-family:var(--mono);font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:var(--cyan);margin-bottom:10px;}
+  h1{font-size:clamp(28px,5vw,44px);font-weight:700;line-height:1.05;margin:0 0 12px;letter-spacing:-0.02em;}
+  h1 .sub{display:block;font-family:var(--mono);font-weight:400;font-size:clamp(13px,2.4vw,16px);color:var(--ink-dim);letter-spacing:0;margin-top:8px;}
+  .lede{color:var(--ink-dim);max-width:60ch;font-size:15px;}
+  .xlinks{display:flex;gap:8px;flex-wrap:wrap;}
+  a.xlink{font-family:var(--mono);font-size:12px;color:var(--cyan);text-decoration:none;border:0.5px solid var(--cyan-line);background:var(--cyan-bg);padding:5px 10px;border-radius:6px;display:inline-block;margin-top:14px;}
+  a.xlink:hover{border-color:var(--cyan);}
+
+  /* memory-map legend */
+  .maplegend{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 4px;}
+  .maplegend .seg{font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:6px;border:0.5px solid var(--line);color:var(--ink-dim);display:flex;align-items:center;gap:7px;}
+  .maplegend .dot{width:8px;height:8px;border-radius:2px;display:inline-block;}
+
+  /* progress rail */
+  .rail{position:sticky;top:0;z-index:20;background:rgba(247,248,250,0.88);backdrop-filter:blur(10px);border-bottom:0.5px solid var(--line);margin:24px -20px 0;padding:12px 20px;}
+  .rail-inner{max-width:960px;margin:0 auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .pips{display:flex;gap:6px;flex-wrap:wrap;}
+  .pip{font-family:var(--mono);font-size:12px;width:30px;height:30px;border-radius:7px;border:0.5px solid var(--line);background:var(--panel-2);color:var(--ink-dim);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;padding:0;}
+  .pip:hover{border-color:var(--cyan-line);color:var(--ink);}
+  .pip.active{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--cyan);}
+  .pip.done{color:var(--green);border-color:var(--green-line);}
+  .pip.done.active{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--cyan);}
+  .score{margin-left:auto;font-family:var(--mono);font-size:13px;color:var(--ink-dim);}
+  .score b{color:var(--cyan);}
+
+  /* left sidenav */
+  .sidenav{position:fixed;top:0;left:0;bottom:0;width:264px;background:var(--panel);border-right:0.5px solid var(--line);overflow-y:auto;padding:22px 14px 28px;z-index:30;display:none;flex-direction:column;gap:18px;}
+  .sn-head{display:flex;flex-direction:column;gap:10px;}
+  .sn-lab{font-family:var(--mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--cyan);}
+  .sn-title{font-size:16px;font-weight:600;line-height:1.2;letter-spacing:-0.01em;}
+  .sn-switch{display:flex;gap:6px;margin-top:2px;}
+  .sn-switch a{flex:1;text-align:center;font-family:var(--mono);font-size:11.5px;padding:6px 6px;border-radius:7px;border:0.5px solid var(--line);background:var(--panel-2);color:var(--ink-dim);text-decoration:none;transition:all .13s;}
+  .sn-switch a:hover{border-color:var(--cyan-line);color:var(--ink);}
+  .sn-switch a.on{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--cyan);font-weight:500;}
+  .sn-score{font-family:var(--mono);}
+  .sn-score-row{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--ink-dim);margin-bottom:8px;}
+  .sn-score-row b{font-size:15px;color:var(--cyan);}
+  .sn-score-row .tot{color:var(--ink-faint);}
+  .sn-bar{height:5px;background:var(--panel-2);border:0.5px solid var(--line-soft);border-radius:3px;overflow:hidden;}
+  .sn-bar-fill{height:100%;width:0;background:var(--green);border-radius:3px;transition:width .35s ease;}
+  .sn-list{display:flex;flex-direction:column;gap:2px;}
+  .sn-part{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--amber);margin:15px 4px 6px;}
+  .sn-part:first-child{margin-top:0;}
+  .sn-item{display:flex;align-items:center;gap:9px;width:100%;text-align:left;font-family:var(--sans);font-size:12.5px;padding:6px 8px;border-radius:8px;border:0.5px solid transparent;background:transparent;color:var(--ink-dim);cursor:pointer;transition:background .12s,color .12s,border-color .12s;}
+  .sn-item:hover{background:var(--panel-2);color:var(--ink);}
+  .sn-item.active{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--ink);}
+  .sn-num{flex:none;width:22px;height:22px;border-radius:6px;background:var(--panel-2);border:0.5px solid var(--line);font-family:var(--mono);font-size:11px;display:flex;align-items:center;justify-content:center;color:var(--ink-dim);}
+  .sn-item.active .sn-num{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--cyan);}
+  .sn-item.done .sn-num{background:var(--green-bg);border-color:var(--green-line);color:var(--green);}
+  .sn-txt{flex:1;line-height:1.22;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .sn-check{flex:none;color:var(--green);font-size:12px;opacity:0;transition:opacity .12s;}
+  .sn-item.done .sn-check{opacity:1;}
+  @media (min-width:1120px){
+    .sidenav{display:flex;}
+    body{padding-left:264px;}
+    .rail{display:none;}
+  }
+
+  /* problem card */
+  .prob{margin-top:28px;border:0.5px solid var(--line);border-radius:16px;background:var(--panel);overflow:hidden;scroll-margin-top:64px;box-shadow:0 1px 3px rgba(26,34,48,0.04),0 8px 24px rgba(26,34,48,0.05);}
+  .prob-head{padding:18px 20px 16px;border-bottom:0.5px solid var(--line-soft);}
+  .prob-num{font-family:var(--mono);font-size:12px;color:var(--amber);letter-spacing:0.1em;}
+  .prob-title{font-size:19px;font-weight:600;margin:4px 0 2px;}
+  .prob-tag{font-family:var(--mono);font-size:11.5px;color:var(--ink-faint);}
+  .prob-body{padding:20px;}
+
+  /* part divider */
+  .part-head{margin:44px 4px -6px;font-family:var(--mono);font-size:12px;color:var(--ink-dim);display:flex;align-items:center;gap:10px;}
+  .part-head .pk{color:var(--amber);letter-spacing:0.14em;font-weight:700;}
+  .part-head::after{content:'';flex:1;height:0.5px;background:var(--line);}
+
+  /* code + memory grid */
+  .stage{display:grid;grid-template-columns:minmax(0,0.82fr) minmax(0,1fr);gap:16px;align-items:start;}
+  @media (max-width:720px){ .stage{grid-template-columns:1fr;} }
+  .pane{background:var(--panel-2);border:0.5px solid var(--line-soft);border-radius:var(--radius);padding:13px;}
+  .pane-label{font-family:var(--mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px;}
+  .pane-label .muted{color:var(--ink-faint);text-transform:none;letter-spacing:0;}
+
+  pre.code{margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.95;white-space:pre;overflow-x:auto;}
+  .code .ln{display:block;padding:1px 8px;border-radius:5px;color:var(--ink-faint);transition:background .12s,color .12s;}
+  .code .ln.seen{color:var(--ink);}
+  .code .ln.on{background:var(--cyan-bg);color:var(--ink);}
+
+  .memsec{margin-bottom:11px;}
+  .memsec:last-child{margin-bottom:0;}
+  .memsec .sh{font-family:var(--mono);font-size:11px;color:var(--ink-dim);margin-bottom:7px;display:flex;align-items:center;gap:7px;}
+  .memsec .sh .badge{font-size:10px;color:var(--ink-faint);}
+  .memsec .sh .tag{width:7px;height:7px;border-radius:2px;}
+
+  .cellrow{display:flex;align-items:center;gap:9px;border:0.5px solid var(--line);background:var(--cell);border-radius:7px;padding:6px 10px;margin-bottom:5px;font-family:var(--mono);}
+  .cellrow.grp{margin-bottom:3px;}
+  .cellrow .addr{font-size:11px;color:var(--ink-faint);min-width:86px;}
+  .cellrow .nm{font-size:12.5px;font-weight:500;color:var(--ink);min-width:44px;}
+  .cellrow .val{font-size:12.5px;margin-left:auto;color:var(--ink);}
+  .cellrow.hot{background:var(--cyan-bg);border-color:var(--cyan-line);}
+  .cellrow.tgt{border-color:var(--cyan-line);}
+  .cellrow.ptr .val{color:var(--cyan);}
+  .cellrow.good{background:var(--green-bg);border-color:var(--green-line);}
+  .cellrow.good .val{color:var(--green);}
+  .cellrow.bad{background:var(--red-bg);border-color:var(--red-line);}
+  .cellrow.bad .val{color:var(--red);}
+  .cellrow .lock{font-size:11px;color:var(--ink-faint);margin-left:4px;}
+  .empty{font-family:var(--mono);font-size:12px;color:var(--ink-faint);padding:5px 2px;}
+
+  /* controls */
+  .steps-ctrl{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+  .modes{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap;}
+  button.btn{font-family:var(--mono);font-size:12px;padding:7px 12px;border-radius:7px;border:0.5px solid var(--line);background:var(--panel-2);color:var(--ink);cursor:pointer;transition:all .13s;}
+  button.btn:hover:not(:disabled){border-color:var(--cyan-line);}
+  button.btn:disabled{opacity:0.4;cursor:default;}
+  button.btn.on{background:var(--cyan-bg);border-color:var(--cyan-line);color:var(--cyan);}
+  .stepn{font-family:var(--mono);font-size:12px;color:var(--ink-dim);}
+
+  .calc{margin-top:12px;border-radius:var(--radius);padding:11px 13px;font-family:var(--mono);font-size:12.5px;white-space:pre;overflow-x:auto;background:var(--cyan-bg);color:var(--cyan);border:0.5px solid var(--cyan-line);}
+  .calc.bad{background:var(--red-bg);color:var(--red);border-color:var(--red-line);}
+  .calc.good{background:var(--green-bg);color:var(--green);border-color:var(--green-line);}
+  .note{margin-top:12px;background:var(--panel-2);border:0.5px solid var(--line-soft);border-radius:var(--radius);padding:12px 14px;font-size:14px;color:var(--ink);}
+
+  /* quiz */
+  .quiz{margin-top:16px;border-top:0.5px dashed var(--line);padding-top:16px;}
+  .quiz .q{font-size:14.5px;font-weight:500;margin-bottom:10px;}
+  .quiz .q .qmono{font-family:var(--mono);color:var(--amber);}
+  .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;}
+  button.opt{font-family:var(--mono);font-size:13px;padding:9px 12px;border-radius:7px;border:0.5px solid var(--line);background:var(--panel-2);color:var(--ink);cursor:pointer;transition:all .13s;text-align:center;}
+  button.opt:hover:not(:disabled){border-color:var(--cyan-line);}
+  button.opt:disabled{cursor:default;}
+  button.opt.correct{background:var(--green-bg);border-color:var(--green-line);color:var(--green);}
+  button.opt.wrong{background:var(--red-bg);border-color:var(--red-line);color:var(--red);}
+  .exp{display:none;margin-top:11px;background:var(--panel-2);border:0.5px solid var(--line-soft);border-radius:var(--radius);padding:11px 13px;font-size:13.5px;line-height:1.65;}
+  .exp.show{display:block;}
+  .exp b{color:var(--green);}
+  .exp b.no{color:var(--red);}
+
+  footer{margin-top:44px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--ink-faint);}
+  .reset-all{margin-top:14px;}
+
+  a.skip{position:absolute;left:-999px;}
+  a.skip:focus{left:8px;top:8px;position:fixed;background:var(--cyan);color:#02110f;padding:8px 12px;border-radius:6px;z-index:99;font-family:var(--mono);}
+</style>
+</head>
+<body>
+<a href="#p1" class="skip">본문으로 건너뛰기</a>
+<aside class="sidenav" id="sidenav" aria-label="문제 목록">
+  <div class="sn-head">
+    <div class="sn-lab">C Pointer Memory Lab</div>
+    <div class="sn-title">포인터 메모리 랩</div>
+    <div class="sn-switch">
+      <a href="clang.html" class="on">C</a>
+      <a href="java.html">Java</a>
+      <a href="python.html">Python</a>
+    </div>
+    <div class="sn-switch">
+      <a href="clang.html" class="on">1편 · 포인터</a>
+      <a href="clang2.html">2편 · 마스터</a>
+    </div>
+  </div>
+  <div class="sn-score">
+    <div class="sn-score-row"><span>SCORE</span><span><b id="snScore">0</b> / <span class="tot" id="snTot">15</span></span></div>
+    <div class="sn-bar"><div class="sn-bar-fill" id="snBar"></div></div>
+  </div>
+  <nav class="sn-list" id="snList" role="tablist"></nav>
+</aside>
+<div class="wrap">
+  <header class="top">
+    <div class="kick">C Pointer Memory Lab</div>
+    <h1>포인터 메모리 랩
+      <span class="sub">15개 문제 · 주소를 직접 따라가며 배우는 포인터</span>
+    </h1>
+    <p class="lede">포인터가 어려운 건 코드가 어려워서가 아니라 <b>어디에 뭐가 있는지 안 보여서</b>입니다. 각 문제를 한 줄씩 실행하며 스택·힙·데이터 영역의 주소가 어떻게 변하는지 직접 따라가 보세요. 아래에서 답도 맞혀볼 수 있습니다.</p>
+    <div class="xlinks">
+      <a class="xlink" href="clang2.html">2편 · C 마스터 랩 →</a>
+      <a class="xlink" href="java.html">자바 랩 →</a>
+      <a class="xlink" href="python.html">파이썬 랩 →</a>
+      <a class="xlink" href="quiz.html">🔥 기출 실전 랩 →</a>
+    </div>
+
+    <div class="maplegend" aria-label="메모리 영역 색상 안내">
+      <span class="seg"><span class="dot" style="background:var(--cyan)"></span>스택 · 자동 정리</span>
+      <span class="seg"><span class="dot" style="background:var(--amber)"></span>힙 · malloc 전용</span>
+      <span class="seg"><span class="dot" style="background:var(--violet)"></span>.rodata · 읽기 전용</span>
+      <span class="seg"><span class="dot" style="background:var(--green)"></span>.text · 기계어 코드</span>
+    </div>
+  </header>
+
+  <div class="rail">
+    <div class="rail-inner">
+      <div class="pips" id="pips" role="tablist" aria-label="문제 바로가기"></div>
+      <div class="score">SCORE <b id="score">0</b> / <span id="scoreTotal">15</span></div>
+    </div>
+  </div>
+
+  <main id="problems"></main>
+
+  <div style="text-align:center;">
+    <button class="btn reset-all" id="resetAll">↺ 전체 다시 풀기</button>
+  </div>
+
+  <footer>
+    포인터도 그냥 변수입니다 · 안에 든 게 주소일 뿐
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- helpers to build memory rows ---------- */
+function v(addr,name,val,o){o=o||{};return{addr:addr,name:name,val:val,cls:o.cls||'',ptr:!!o.ptr,lock:!!o.lock,grp:!!o.grp};}
+function sec(sh,badge,tag,rows){return{sh:sh,badge:badge||'',tag:tag||'',rows:rows};}
+
+/* ---------- PROBLEM DEFINITIONS ---------- */
+const PROBLEMS = [
+/* ===== 1 : basic deref ===== */
+{
+  id:'p1', num:'PROBLEM 01', title:'역참조 — 남의 상자 열기', tag:'* 연산자 · 간접 수정',
+  modes:[{
+    lines:['int a = 10;','int *p = &a;','*p = 20;','printf("%d", a);'],
+    steps:[
+      {line:0,secs:[sec('스택','자동 정리','var(--cyan)',[v('0x7ffd104c','a','10',{cls:'hot'})]),sec('힙','비어 있음','var(--amber)',[])],
+       note:'스택에 a라는 4바이트 상자가 생겼습니다. 주소 0x7ffd104c는 우리가 정한 게 아니라 실행 시 OS가 정해줍니다.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',[v('0x7ffd104c','a','10',{cls:'tgt'}),v('0x7ffd1040','p','0x7ffd104c',{cls:'hot',ptr:1})]),sec('힙','비어 있음','var(--amber)',[])],
+       note:'p도 스택 위 평범한 상자입니다. 다만 든 값이 "숫자 10"이 아니라 "a의 주소"라는 점만 달라요. &a는 "a의 주소를 내놔"라는 뜻입니다.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',[v('0x7ffd104c','a','20',{cls:'hot'}),v('0x7ffd1040','p','0x7ffd104c',{ptr:1})]),sec('힙','비어 있음','var(--amber)',[])],
+       calc:'*p = 20  →  p에 적힌 주소(0x7ffd104c)로 가서\n            그 상자에 20을 넣어라',
+       note:'*p는 "p에 적힌 주소로 찾아가서 열어라"입니다. a 상자가 열리고 20이 들어갑니다. p 자체는 하나도 안 변했습니다.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('0x7ffd104c','a','20',{cls:'hot'}),v('0x7ffd1040','p','0x7ffd104c',{ptr:1})]),sec('힙','비어 있음','var(--amber)',[])],
+       note:'a를 직접 건드린 적 없는데 20이 출력됩니다. 이게 포인터의 핵심 — 이름이 아니라 주소로 남의 상자를 열 수 있다는 것. malloc을 안 불렀으니 힙은 계속 비어 있습니다.'}
+    ]
+  }],
+  quiz:{code:'*p = 20; printf("%d", a);',q:'출력값은?',opts:['10','20','a의 주소','컴파일 에러'],ans:1,
+    exp:'p는 a의 주소를 담고 있으므로 *p = 20은 a 자체를 20으로 바꿉니다. 포인터를 통한 간접 수정의 기본입니다.'}
+},
+/* ===== 2 : array & pointer arithmetic ===== */
+{
+  id:'p2', num:'PROBLEM 02', title:'배열과 포인터 산술 — 칸 단위로 걷기', tag:'p+n · decay · sizeof',
+  modes:[{
+    lines:['int arr[5] = {1,2,3,4,5};','int *p = arr;','int *q = p + 2;','printf("%d", *q);'],
+    steps:[
+      {line:0,secs:[sec('스택','배열은 연속','var(--cyan)',arrRows(-1,true)),sec('힙','비어 있음','var(--amber)',[])],
+       note:'배열의 핵심은 "연속"입니다. 주소가 0x…30,34,38,3c,40 — 정확히 4씩 늘어납니다. int 하나가 4바이트니까요.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',arrRows(0,false).concat([v('0x7ffd1048','p','0x7ffd1030',{cls:'hot',ptr:1})])),sec('힙','비어 있음','var(--amber)',[])],
+       note:'int *p = arr; 에 &가 없죠? 배열 이름은 그 자체로 "첫 원소의 주소"로 변합니다. 이걸 배열 붕괴(decay)라 부릅니다. arr == &arr[0].'},
+      {line:2,secs:[sec('스택','','var(--cyan)',arrRows(2,false).concat([v('0x7ffd1048','p','0x7ffd1030',{ptr:1}),v('0x7ffd1050','q','0x7ffd1038',{cls:'hot',ptr:1})])),sec('힙','비어 있음','var(--amber)',[])],
+       calc:'p + 2  =  0x7ffd1030 + (2 × sizeof(int))\n       =  0x7ffd1030 + 8\n       =  0x7ffd1038',
+       note:'포인터 산술의 전부입니다. +2는 "2바이트 뒤"가 아니라 "int 2개 뒤"라서 실제로는 8바이트를 건너뜁니다. 컴파일러가 타입 크기를 자동으로 곱해줘요.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',arrRows(2,false).concat([v('0x7ffd1048','p','0x7ffd1030',{ptr:1}),v('0x7ffd1050','q','0x7ffd1038',{ptr:1})])),sec('힙','비어 있음','var(--amber)',[])],
+       calc:'*q  →  0x7ffd1038 을 열어라  →  3\n\n*(p+2)  ==  p[2]  ==  arr[2]  ==  3',
+       note:'세 표기가 완전히 같습니다. 대괄호 []는 문법 설탕이라 a[i]를 컴파일러가 *(a+i)로 바꿉니다. 그래서 2[arr]도 컴파일됩니다(쓰지는 마세요).'}
+    ]
+  }],
+  quiz:{code:'int *p = arr; printf("%d", *(p+2));',q:'출력값은?',opts:['1','2','3','쓰레기값'],ans:2,
+    exp:'p+2는 int 2개(8바이트) 뒤인 arr[2]를 가리키므로 3. *(p+2) == p[2] == arr[2].'}
+},
+/* ===== 3 : swap / stack frames ===== */
+{
+  id:'p3', num:'PROBLEM 03', title:'swap 함정 — 스택 프레임의 삶과 죽음', tag:'pass by value · 프레임',
+  modes:[
+   {label:'값 전달 — 안 바뀜',
+    lines:['void swap(int x,int y){','    int t=x; x=y; y=t;','}','int a=1,b=2;','swap(a,b);','printf("%d %d",a,b);'],
+    steps:[
+      {line:3,frames:[fr('main 프레임',false,[v('0x7ffd1050','a','1',{cls:'hot'}),v('0x7ffd1054','b','2',{cls:'hot'})])],
+       note:'출발점. a와 b가 main 프레임에 놓였습니다. 주소는 0x…50, 0x…54.'},
+      {line:4,frames:[fr('swap 프레임 — 방금 생김',false,[v('0x7ffd1020','x','1',{cls:'hot'}),v('0x7ffd1024','y','2',{cls:'hot'})]),fr('main 프레임',true,[v('0x7ffd1050','a','1'),v('0x7ffd1054','b','2')])],
+       note:'여기가 전부입니다. x는 0x…20, a는 0x…50 — 완전히 다른 상자예요. 값 1만 베껴 적은 복사본이지 a 자신이 아닙니다.'},
+      {line:1,frames:[fr('swap 프레임',false,[v('0x7ffd1020','x','2',{cls:'hot'}),v('0x7ffd1024','y','1',{cls:'hot'}),v('0x7ffd1028','t','1')]),fr('main 프레임',true,[v('0x7ffd1050','a','1'),v('0x7ffd1054','b','2')])],
+       note:'swap 안에서는 교환이 완벽히 성공합니다. x=2, y=1. 문제는 이게 복사본이라는 것. main의 a, b는 미동도 없습니다.'},
+      {line:2,frames:[fr('main 프레임',false,[v('0x7ffd1050','a','1',{cls:'hot'}),v('0x7ffd1054','b','2',{cls:'hot'})])],
+       note:'함수가 끝나면 swap 프레임이 통째로 날아갑니다. x,y,t와 열심히 바꾼 값 전부. 스택은 이렇게 자동 정리됩니다.'},
+      {line:5,frames:[fr('main 프레임',false,[v('0x7ffd1050','a','1',{cls:'hot'}),v('0x7ffd1054','b','2',{cls:'hot'})])],
+       calc:'출력:  1 2      아무것도 안 바뀜',
+       note:'C는 무조건 값 복사(pass by value)입니다. 예외 없습니다. 실제로 바꾸려면? 오른쪽 탭을 보세요.'}
+    ]},
+   {label:'주소 전달 — 바뀜',
+    lines:['void swap(int *x,int *y){','    int t=*x; *x=*y; *y=t;','}','int a=1,b=2;','swap(&a,&b);','printf("%d %d",a,b);'],
+    steps:[
+      {line:3,frames:[fr('main 프레임',false,[v('0x7ffd1050','a','1',{cls:'hot'}),v('0x7ffd1054','b','2',{cls:'hot'})])],
+       note:'출발점은 똑같습니다.'},
+      {line:4,frames:[fr('swap 프레임 — 방금 생김',false,[v('0x7ffd1020','x','0x7ffd1050',{cls:'hot',ptr:1}),v('0x7ffd1024','y','0x7ffd1054',{cls:'hot',ptr:1})]),fr('main 프레임',false,[v('0x7ffd1050','a','1',{cls:'tgt'}),v('0x7ffd1054','b','2',{cls:'tgt'})])],
+       note:'여기도 여전히 값 복사입니다. 다만 복사한 값이 "1"이 아니라 "a의 주소"예요. 복사본을 넘겼는데도 원본에 닿는 이유 — 주소는 복사해도 가리키는 곳이 같으니까.'},
+      {line:1,frames:[fr('swap 프레임',false,[v('0x7ffd1020','x','0x7ffd1050',{ptr:1}),v('0x7ffd1024','y','0x7ffd1054',{ptr:1}),v('0x7ffd1028','t','1',{cls:'hot'})]),fr('main 프레임',false,[v('0x7ffd1050','a','1',{cls:'tgt'}),v('0x7ffd1054','b','2')])],
+       calc:'t = *x  →  x의 주소(0x…50)를 열어라  →  1',
+       note:'*x는 "x에 적힌 주소로 가서 열어라" → a의 값 1. 그걸 t에 백업합니다.'},
+      {line:1,frames:[fr('swap 프레임',false,[v('0x7ffd1020','x','0x7ffd1050',{ptr:1}),v('0x7ffd1024','y','0x7ffd1054',{ptr:1}),v('0x7ffd1028','t','1')]),fr('main 프레임',false,[v('0x7ffd1050','a','2',{cls:'hot'}),v('0x7ffd1054','b','1',{cls:'hot'})])],
+       note:'결정적 순간. main 프레임에 손도 안 댔는데 a=2, b=1로 바뀌었습니다. swap이 팔을 뻗어 남의 프레임 상자를 연 겁니다.'},
+      {line:5,frames:[fr('main 프레임',false,[v('0x7ffd1050','a','2',{cls:'hot'}),v('0x7ffd1054','b','1',{cls:'hot'})])],
+       calc:'출력:  2 1      성공',
+       note:'swap 프레임은 똑같이 사라지지만 이번엔 남긴 게 있습니다 — main 상자를 이미 고쳐놨으니까. 정리: C에 참조 전달은 없습니다. "주소를 값으로 복사"뿐이고, 우리는 그걸 참조처럼 씁니다.'}
+    ]}
+  ],
+  quiz:{code:'void swap(int x,int y){int t=x;x=y;y=t;} ... swap(a,b);',q:'출력값은? (a=1, b=2)',opts:['1 2','2 1','2 2','컴파일 에러'],ans:0,
+    exp:'C는 값 복사입니다. swap 안의 x,y는 복사본이라 원본은 그대로. 바꾸려면 int *x,int *y로 주소를 넘겨야 합니다.'}
+},
+/* ===== 4 : string / rodata ===== */
+{
+  id:'p4', num:'PROBLEM 04', title:'문자열 포인터 — 세 번째 동네', tag:'char* · .rodata · \\0',
+  modes:[
+   {label:'char *s = "hello"',
+    lines:['char *s = "hello";','printf("%c", *s);','printf("%c", *(s+4));','*s = \'H\';'],
+    steps:[
+      {line:0,secs:[sec('스택','포인터 1개','var(--cyan)',[v('0x7ffd1048','s','0x00400604',{cls:'hot',ptr:1})]),sec('.rodata','컴파일 시점에 박제','var(--violet)',roRows(-1,false))],
+       note:'놀랄 지점 — 문자열 "hello"는 스택에도 힙에도 없습니다. 실행 파일 안에 박혀 있다가 읽기 전용 영역에 올라갑니다. 주소가 0x004…로 스택(0x7ff…)과 딴 동네죠. 스택엔 s라는 8바이트 포인터 하나뿐.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1048','s','0x00400604',{ptr:1})]),sec('.rodata','','var(--violet)',roRows(0,false))],
+       calc:"*s  →  0x00400604 를 열어라  →  'h'",
+       note:'s는 첫 글자를 가리킵니다. 문자열 포인터는 "문자열 전체"가 아니라 그냥 첫 글자의 주소일 뿐이에요.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1048','s','0x00400604',{ptr:1})]),sec('.rodata','','var(--violet)',roRows(4,false))],
+       calc:"s + 4  =  0x00400604 + (4 × sizeof(char))\n       =  0x00400608  →  'o'",
+       note:'문제 2와 비교해 보세요. 거긴 +2가 8바이트를 건너뛰었는데 여긴 +4가 정확히 4바이트. char가 1바이트라서요. 산술은 언제나 "타입 크기 × 숫자".'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1048','s','0x00400604',{ptr:1})]),sec('.rodata','쓰기 시도 → 거부','var(--violet)',roRows(0,true))],
+       calc:'Segmentation fault (core dumped)',cbad:true,
+       note:'컴파일은 통과하는데 실행하면 죽습니다. 읽기 전용이라 OS가 쓰기를 막아요. 초보를 가장 많이 울리는 줄입니다. 고치려면 오른쪽 탭.'}
+    ]},
+   {label:'char s[] = "hello"',
+    lines:['char s[] = "hello";','printf("%c", *s);','s[0] = \'H\';','sizeof(s);'],
+    steps:[
+      {line:0,secs:[sec('스택','6바이트 통째 복사','var(--cyan)',strArr(0,'h')),sec('.rodata','원본 — 복사만','var(--violet)',roRows(-1,false))],
+       note:'대괄호 하나 바꿨을 뿐인데 그림이 완전히 달라집니다. 이건 포인터가 아니라 진짜 배열. .rodata의 "hello"를 스택 내 상자 6칸에 통째로 베껴옵니다. 이제 내 것이라 마음대로 고쳐도 됩니다.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',strArr(0,'h')),sec('.rodata','','var(--violet)',roRows(-1,false))],
+       calc:"*s  →  0x7ffd1040 를 열어라  →  'h'",
+       note:'읽는 것까지는 포인터 버전과 결과가 같습니다. 배열 이름이 첫 원소 주소로 붕괴하는 것도 문제 2와 같고요. 그래서 차이를 눈치채기 어렵습니다.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',strArr(0,'H')),sec('.rodata','원본은 그대로','var(--violet)',roRows(-1,false))],
+       calc:"s[0] = 'H'  →  정상 동작.  이제 s는 \"Hello\"",cgood:true,
+       note:'같은 코드가 왼쪽 탭에서는 죽고 여기서는 삽니다. 값이 어디 있느냐가 전부를 결정합니다. 이게 포인터를 주소로 그려봐야 하는 이유예요.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',strArr(-1,'H')),sec('.rodata','','var(--violet)',roRows(-1,false))],
+       calc:'sizeof(s) = 6   ← 진짜 배열 (1바이트 × 6칸)\n왼쪽 탭:\nsizeof(s) = 8   ← 그냥 포인터 하나',cgood:true,
+       note:'문제 2의 sizeof 함정이 문자열에서도 반복됩니다. 정리: 고칠 거면 배열, 읽기만 할 거면 const char *를 쓰세요. const를 붙이면 컴파일러가 실행 전에 잡아줍니다.'}
+    ]}
+  ],
+  quiz:{code:'char *s = "hello"; printf("%c%c", *s, *(s+4));',q:'출력값은?',opts:['he','ho','hl','h\\0'],ans:1,
+    exp:"*s = 'h', *(s+4) = 'o'. 참고로 *(s+5)는 문자열 끝을 알리는 널 문자 \\0 입니다."}
+},
+/* ===== 5 : double pointer ===== */
+{
+  id:'p5', num:'PROBLEM 05', title:'이중 포인터 — 포인터를 가리키는 포인터', tag:'** · 두 단계 추적',
+  modes:[{
+    lines:['int a = 5;','int *p = &a;','int **pp = &p;','printf("%d", **pp);'],
+    steps:[
+      {line:0,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1060','a','5',{cls:'hot'})]),sec('힙','비어 있음','var(--amber)',[])],
+       note:'평범한 int a. 값 5, 주소 0x…60.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1060','a','5',{cls:'tgt'}),v('0x7ffd1058','p','0x7ffd1060',{cls:'hot',ptr:1})]),sec('힙','비어 있음','var(--amber)',[])],
+       note:'p는 a를 가리킵니다. 문제 1과 똑같은 구조. p 안엔 a의 주소 0x…60.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1060','a','5'),v('0x7ffd1058','p','0x7ffd1060',{cls:'tgt',ptr:1}),v('0x7ffd1050','pp','0x7ffd1058',{cls:'hot',ptr:1})]),sec('힙','비어 있음','var(--amber)',[])],
+       note:'pp는 "p라는 포인터 변수 자체"를 가리킵니다. &p는 p의 주소(0x…58). 이제 사슬이 두 칸이 됐습니다: pp → p → a.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1060','a','5',{cls:'good'}),v('0x7ffd1058','p','0x7ffd1060',{ptr:1}),v('0x7ffd1050','pp','0x7ffd1058',{ptr:1})]),sec('힙','비어 있음','var(--amber)',[])],
+       calc:'*pp   →  0x…58 을 열면  p  (= 0x…60)\n**pp  →  다시 0x…60 을 열면  a  (= 5)',
+       note:'* 하나가 한 칸입니다. *pp는 p까지, **pp는 a까지 두 칸을 걸어갑니다. 이중 포인터는 "함수 안에서 포인터 변수 자체를 바꾸고 싶을 때" 씁니다 — 문제 3의 논리를 한 단계 위에 적용한 것.'}
+    ]
+  }],
+  quiz:{code:'int **pp = &p; printf("%d", **pp);',q:'출력값은? (a=5, p=&a)',opts:['5','a의 주소','p의 주소','컴파일 에러'],ans:0,
+    exp:'pp → p → a로 두 단계. *pp는 p(=a의 주소), **pp는 a의 값 5. * 하나가 한 단계라고 세면 됩니다.'}
+},
+/* ===== 6 : heap malloc / dangling ===== */
+{
+  id:'p6', num:'PROBLEM 06', title:'힙 등장 — malloc, free, 댕글링 포인터', tag:'malloc · free · use-after-free',
+  modes:[{
+    lines:['int *p = malloc(sizeof(int));','*p = 42;','free(p);','printf("%d", *p);   // 위험'],
+    steps:[
+      {line:0,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','p','0x561a2c80',{cls:'hot',ptr:1})]),sec('힙','malloc이 잡아줌','var(--amber)',[v('0x561a2c80','','?',{cls:'hot'})])],
+       note:'드디어 힙 등장. malloc은 힙에서 4바이트를 빌려주고 그 주소(0x561a…)를 돌려줍니다. 스택의 p가 그 주소를 받아 듭니다. 힙 주소는 스택(0x7ff…)과 또 다른 대역이에요. 방금 받은 칸의 값은 아직 쓰레기(?).'},
+      {line:1,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','p','0x561a2c80',{ptr:1})]),sec('힙','','var(--amber)',[v('0x561a2c80','','42',{cls:'hot'})])],
+       calc:'*p = 42  →  힙의 0x561a2c80 칸에 42 저장',
+       note:'*p로 힙 칸을 열어 42를 넣습니다. 문제 1의 역참조와 똑같은 동작 — 대상이 스택이 아니라 힙일 뿐. 힙은 함수가 끝나도 자동으로 안 사라집니다.'},
+      {line:2,secs:[sec('스택','p는 그대로 남음','var(--cyan)',[v('0x7ffd1040','p','0x561a2c80',{cls:'bad',ptr:1})]),sec('힙','반납됨 — 더는 내 것 아님','var(--amber)',[v('0x561a2c80','','반납',{cls:'bad'})])],
+       calc:'free(p)  →  힙 칸을 OS에 반납',
+       note:'함정은 여기입니다. free는 힙 칸만 반납하고 p는 건드리지 않아요. p 안엔 여전히 0x561a…가 적혀 있습니다 — 이미 남의 땅이 된 주소를. 이걸 댕글링(dangling) 포인터라 부릅니다.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','p','0x561a2c80',{cls:'bad',ptr:1})]),sec('힙','내용 보장 안 됨','var(--amber)',[v('0x561a2c80','','???',{cls:'bad'})])],
+       calc:'*p  →  이미 반납한 칸을 다시 열기 (use-after-free)',cbad:true,
+       note:'운 좋으면 42가 나오고, 운 나쁘면 쓰레기값·크래시·보안 취약점이 됩니다. "가끔 되는" 게 제일 위험해요. 예방: free(p) 직후 p = NULL; 로 끊어두면 실수로 다시 써도 즉시 죽어서(=바로 발견) 조용한 버그를 막습니다.'}
+    ]
+  }],
+  quiz:{code:'free(p); printf("%d", *p);',q:'free 이후 *p 접근은?',opts:['항상 42','항상 크래시','정의되지 않은 동작','컴파일 에러'],ans:2,
+    exp:'use-after-free는 정의되지 않은 동작(UB)입니다. 될 때도 안 될 때도 있어 제일 위험. free 후 p=NULL로 끊는 습관으로 예방합니다.'}
+},
+/* ===== 7 : const pointers ===== */
+{
+  id:'p7', num:'PROBLEM 07', title:'const와 포인터 — 자물쇠를 어디에 채울까', tag:'const int* · int* const · 컴파일 타임 방어',
+  modes:[
+   {label:'const int *p — 내용물 잠금',
+    lines:['int a = 10, b = 30;','const int *p = &a;','printf("%d", *p);   // 읽기는 자유','p = &b;             // 이동도 자유','*p = 20;            // 컴파일 에러!'],
+    steps:[
+      {line:0,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','a','10',{cls:'hot'}),v('0x7ffd1044','b','30',{cls:'hot'})])],
+       note:'평범한 int 두 개로 시작합니다. 이번 문제의 주인공은 값이 아니라 "누가 무엇을 못 하게 되는가" — 자물쇠의 위치입니다.'},
+      {line:1,secs:[sec('스택','*p로 쓰기 금지 🔒','var(--cyan)',[v('0x7ffd1040','a','10',{cls:'tgt'}),v('0x7ffd1044','b','30'),v('0x7ffd1048','p','0x7ffd1040',{cls:'hot',ptr:1})])],
+       note:'const가 별표(*)의 왼쪽에 있으면 잠기는 건 "p라는 통로로 보는 내용물"입니다. 주의 — a 자체가 잠긴 게 아닙니다! a = 99; 는 여전히 합법이에요. 잠긴 건 변수가 아니라 통로. 문제 4의 .rodata는 방 자체가 잠겼던 것과 다른 점입니다.'},
+      {line:2,secs:[sec('스택','*p로 쓰기 금지 🔒','var(--cyan)',[v('0x7ffd1040','a','10',{cls:'good'}),v('0x7ffd1044','b','30'),v('0x7ffd1048','p','0x7ffd1040',{ptr:1})])],
+       calc:'*p  →  0x7ffd1040 을 열어 읽기  →  10   (읽기는 OK)',cgood:true,
+       note:'읽기는 자유입니다. const int *는 "읽기 전용 창문"이라고 생각하면 됩니다.'},
+      {line:3,secs:[sec('스택','*p로 쓰기 금지 🔒','var(--cyan)',[v('0x7ffd1040','a','10'),v('0x7ffd1044','b','30',{cls:'tgt'}),v('0x7ffd1048','p','0x7ffd1044',{cls:'hot',ptr:1})])],
+       note:'포인터 자신은 안 잠겼으니 화살표는 마음껏 돌릴 수 있습니다. 창문을 b 쪽으로 옮겨 단 셈이에요. 어느 창문으로 보든 쓰기는 여전히 금지입니다.'},
+      {line:4,secs:[sec('스택','쓰기 시도 → 컴파일 거부','var(--cyan)',[v('0x7ffd1040','a','10'),v('0x7ffd1044','b','30',{cls:'bad'}),v('0x7ffd1048','p','0x7ffd1044',{ptr:1})])],
+       calc:"error: assignment of read-only location '*p'",cbad:true,
+       note:'이 줄이 있으면 실행 파일 자체가 만들어지지 않습니다(앞 스텝들은 이 줄을 지운 버전의 실행 모습이었어요). 문제 4의 Segfault는 실행 중에 죽었지만, 이건 컴파일러가 실행 전에 잡아주는 "좋은 실패"입니다. const를 붙이는 이유가 바로 이것.'}
+    ]},
+   {label:'int *const p — 포인터 잠금',
+    lines:['int a = 10, b = 30;','int *const p = &a;','*p = 20;            // 내용 수정 자유','printf("%d", a);    // 20','p = &b;             // 컴파일 에러!'],
+    steps:[
+      {line:0,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','a','10',{cls:'hot'}),v('0x7ffd1044','b','30',{cls:'hot'})])],
+       note:'출발점은 같습니다. 이번엔 const가 별표의 오른쪽 — 자물쇠가 다른 곳에 채워집니다.'},
+      {line:1,secs:[sec('스택','p 재대입 금지 🔒','var(--cyan)',[v('0x7ffd1040','a','10',{cls:'tgt'}),v('0x7ffd1044','b','30'),v('0x7ffd1048','p','0x7ffd1040',{cls:'hot',ptr:1,lock:1})])],
+       note:'잠긴 건 포인터 p 자신입니다. p는 태어날 때 가리킨 곳(a)만 평생 가리켜야 해요. 대신 그 안의 내용물은 자유입니다.'},
+      {line:2,secs:[sec('스택','p 재대입 금지 🔒','var(--cyan)',[v('0x7ffd1040','a','20',{cls:'hot'}),v('0x7ffd1044','b','30'),v('0x7ffd1048','p','0x7ffd1040',{ptr:1,lock:1})])],
+       calc:'*p = 20  →  내용물은 안 잠김  →  a 가 20 으로',
+       note:'왼쪽 탭과 정확히 반대죠. 이쪽은 내용 수정이 자유입니다.'},
+      {line:3,secs:[sec('스택','p 재대입 금지 🔒','var(--cyan)',[v('0x7ffd1040','a','20',{cls:'good'}),v('0x7ffd1044','b','30'),v('0x7ffd1048','p','0x7ffd1040',{ptr:1,lock:1})])],
+       note:'문제 1의 간접 수정 그대로 — a를 직접 안 건드렸는데 20이 출력됩니다.'},
+      {line:4,secs:[sec('스택','재대입 시도 → 컴파일 거부','var(--cyan)',[v('0x7ffd1040','a','20'),v('0x7ffd1044','b','30'),v('0x7ffd1048','p','0x7ffd1040',{cls:'bad',ptr:1,lock:1})])],
+       calc:"error: assignment of read-only variable 'p'",cbad:true,
+       note:'화살표를 돌리려는 순간 컴파일러가 막습니다. 정리 — 선언은 오른쪽에서 왼쪽으로 읽으세요. int *const p: "p는 const 포인터다, int를 가리키는". const int *p: "p는 포인터다, const int를 가리키는". 이 요령이면 절대 안 틀립니다.'}
+    ]}
+  ],
+  quiz:{code:'int a = 1, b = 2; int const *p = &a;',q:'컴파일 에러가 나는 줄은?',opts:['*p = 9;','p = &b;','둘 다 에러','둘 다 정상'],ans:0,
+    exp:'함정 변형입니다. int const *p는 const int *p와 완전히 같은 선언 — const가 int 뒤에 있어도 별표의 왼쪽이면 내용물 잠금입니다. 오른쪽에서 왼쪽으로: "p는 포인터다, const int를 가리키는". 그래서 *p = 9;가 에러, p = &b;는 자유. 포인터 자신을 잠그려면 int *const p라고 써야 합니다.'}
+},
+/* ===== 8 : *p++ precedence ===== */
+{
+  id:'p8', num:'PROBLEM 08', title:'*p++ 삼형제 — 별과 ++의 우선순위 전쟁', tag:'*p++ · (*p)++ · 우선순위',
+  modes:[
+   {label:'*p++ — 포인터가 걷는다',
+    lines:['int arr[3] = {10, 20, 30};','int *p = arr;','int x = *p++;','printf("%d %d", x, *p);   // 10 20'],
+    steps:[
+      {line:0,secs:[sec('스택','','var(--cyan)',p8Rows([10,20,30],{0:'hot',1:'hot',2:'hot'}))],
+       note:'문제 2에서 본 연속 배열입니다. 주소가 4씩 늘어나는 것만 다시 확인해 두세요.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',p8Rows([10,20,30],{0:'tgt'}).concat([v('0x7ffd1040','p','0x7ffd1030',{cls:'hot',ptr:1})]))],
+       note:'p는 첫 칸을 가리킵니다. 여기까지는 준비 운동.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',p8Rows([10,20,30],{}).concat([v('0x7ffd1040','p','0x7ffd1034',{cls:'hot',ptr:1}),v('0x7ffd1048','x','10',{cls:'hot'})]))],
+       calc:'*p++  ==  *(p++)   ← 후위 ++ 가 * 보다 셈\n값은 "지금" 주소 0x7ffd1030 에서 읽고  →  x = 10\np는 int 한 칸(4바이트) 전진  →  0x7ffd1034',
+       note:'변한 건 p뿐입니다. arr 세 칸은 미동도 없어요. *p++는 "값을 키우는" 코드가 아니라 "읽고 나서 포인터가 한 칸 걷는" 코드입니다. 문자열 복사 루프에서 매일 만나는 관용구예요.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',p8Rows([10,20,30],{1:'good'}).concat([v('0x7ffd1040','p','0x7ffd1034',{ptr:1}),v('0x7ffd1048','x','10')]))],
+       calc:'출력:  10 20',
+       note:'x에는 걷기 전에 읽은 10, *p는 걸어간 자리의 20. "먼저 쓰고, 나중에 걷는다" — 후위(post)의 뜻 그대로입니다.'}
+    ]},
+   {label:'(*p)++ — 값이 자란다',
+    lines:['int arr[3] = {10, 20, 30};','int *p = arr;','int x = (*p)++;','printf("%d %d", x, *p);   // 10 11'],
+    steps:[
+      {line:0,secs:[sec('스택','','var(--cyan)',p8Rows([10,20,30],{0:'hot',1:'hot',2:'hot'}))],
+       note:'출발은 왼쪽 탭과 완전히 같습니다. 다른 건 괄호 하나뿐.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',p8Rows([10,20,30],{0:'tgt'}).concat([v('0x7ffd1040','p','0x7ffd1030',{cls:'hot',ptr:1})]))],
+       note:'p는 첫 칸을 가리킵니다.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',p8Rows([11,20,30],{0:'hot'}).concat([v('0x7ffd1040','p','0x7ffd1030',{cls:'tgt',ptr:1}),v('0x7ffd1048','x','10',{cls:'hot'})]))],
+       calc:'(*p)++   ← 괄호가 * 를 먼저 묶음\n0x7ffd1030 을 열어 10 을 x 에 주고\n그 칸을 10 → 11 로',
+       note:'이번엔 p가 0x7ffd1030에 못 박혀 있고 arr[0]이 자랐습니다. 왼쪽 탭과 화면을 번갈아 보세요 — 같은 세 글자인데 움직이는 상자가 다릅니다.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',p8Rows([11,20,30],{0:'good'}).concat([v('0x7ffd1040','p','0x7ffd1030',{ptr:1}),v('0x7ffd1048','x','10')]))],
+       calc:'출력:  10 11',
+       note:'삼형제 정리 — *p++는 포인터가 걷는다 · (*p)++는 값이 자란다(옛 값을 돌려줌) · ++*p는 값이 자란 뒤 새 값(11)을 바로 돌려준다. 참고로 후위 ++는 *보다 우선순위가 높고, 전위 ++는 *와 같은 급이지만 오른쪽부터 결합합니다 — 이유는 달라도 결론은 하나, 헷갈리면 괄호를 치세요.'}
+    ]}
+  ],
+  quiz:{code:'int arr[3] = {10,20,30}; int *p = arr; printf("%d", *++p);',q:'출력값은?',opts:['10','11','20','21'],ans:2,
+    exp:'*++p는 *(++p)입니다 — p가 먼저 arr[1](주소 +4)로 걸어간 뒤 그 칸을 열므로 20. 후위 ++는 *보다 우선순위가 높아서, 전위 ++는 *와 같은 급이지만 오른쪽부터 결합해서 — 이유는 다르지만 결과적으로 둘 다 p에 먼저 붙습니다. 11을 골랐다면 ++가 값에 붙는다고 본 최다 오답 — 값에 붙이려면 (*p)++처럼 괄호로 묶어야 합니다.'}
+},
+/* ===== 9 : 2D array vs pointer array ===== */
+{
+  id:'p9', num:'PROBLEM 09', title:'2차원 배열 vs 포인터 배열 — 진짜 격자와 주소 목록', tag:'m[i][j] · char *w[] · 행 우선 배치',
+  modes:[
+   {label:'int m[2][3] — 한 덩어리',
+    lines:['int m[2][3] = {{1,2,3},{4,5,6}};','int *p = &m[0][0];','printf("%d", m[1][1]);    // 5','printf("%d", *(p + 4));   // 같은 칸!'],
+    steps:[
+      {line:0,secs:[sec('스택','0행 3칸 + 1행 3칸 — 끊김 없이 연속','var(--cyan)',mgrid({0:'hot',1:'hot',2:'hot',3:'hot',4:'hot',5:'hot'}))],
+       note:'겉모습은 2×3 격자지만 메모리는 1차원입니다. 여섯 칸이 0x…30부터 4씩, 끊김 없이 한 줄로 누워 있어요. 0행이 끝나면 바로 그 다음 주소에서 1행이 시작됩니다.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',mgrid({0:'tgt'}).concat([v('0x7ffd1048','p','0x7ffd1030',{cls:'hot',ptr:1})]))],
+       note:'p는 격자의 첫 칸을 가리키는 평범한 int 포인터입니다. 격자라는 건 컴파일러 머릿속 얘기고, 주소 입장에선 그냥 시작점 하나예요.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',mgrid({4:'good'}).concat([v('0x7ffd1048','p','0x7ffd1030',{ptr:1})]))],
+       calc:'&m[1][1] = 0x7ffd1030 + (1×3 + 1)×4\n         = 0x7ffd1030 + 16  =  0x7ffd1040',
+       note:'m[i][j]의 정체는 곱셈+덧셈 한 번의 주소 계산입니다. 행이 +1 늘면 열 개수(3)만큼, 즉 12바이트를 점프해요. 2차원 배열을 함수에 넘길 때 열 개수를 꼭 적어야 하는 이유가 이 곱셈입니다.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',mgrid({4:'hot'}).concat([v('0x7ffd1048','p','0x7ffd1030',{ptr:1})]))],
+       calc:'p + 4  =  0x7ffd1030 + 4×4  =  0x7ffd1040  →  5\n\nm[1][1] 과 정확히 같은 칸!',
+       note:'격자 표기와 1차원 걷기가 같은 주소로 수렴했습니다 — 이게 행 우선(row-major) 배치의 전부예요. (엄밀한 표준 조문으로는 안쪽 배열 경계를 넘는 산술이라 회색지대지만, 6칸 연속 배치는 표준이 보장하므로 실제 컴파일러에선 항상 이렇게 동작합니다.)'}
+    ]},
+   {label:'char *w[2] — 주소 목록',
+    lines:['char *w[2] = {"hi", "world"};','printf("%s", w[1]);       // world','printf("%c", w[1][3]);    // \'l\'','w[0] = w[1];              // 화살표만 이동','printf("%s", w[0]);       // world'],
+    steps:[
+      {line:0,secs:[sec('스택','포인터 2개짜리 배열','var(--cyan)',[v('0x7ffd1050','w[0]','0x00400610',{cls:'hot',ptr:1,grp:true}),v('0x7ffd1058','w[1]','0x00400613',{cls:'hot',ptr:1})]),sec('.rodata','시작 간격 3바이트 — 길이 따라 들쭉날쭉','var(--violet)',hwRo(-1))],
+       note:'왼쪽 탭과 완전히 다른 그림입니다. w에 든 건 문자가 아니라 주소 두 개 — 문자들은 .rodata에 삽니다. "hi"는 \\0 포함 3바이트, 그래서 "world"의 시작이 딱 3칸 뒤(0x…13)예요. 줄마다 길이가 달라도 상관없는 구조.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1050','w[0]','0x00400610',{ptr:1,grp:true}),v('0x7ffd1058','w[1]','0x00400613',{cls:'tgt',ptr:1})]),sec('.rodata','','var(--violet)',hwRo(3))],
+       calc:'w[1]  →  0x00400613 부터 \\0 까지  →  "world"',
+       note:'%s는 받은 주소부터 \\0을 만날 때까지 읽습니다. 문제 4에서 본 문자열 포인터 그대로예요.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1050','w[0]','0x00400610',{ptr:1,grp:true}),v('0x7ffd1058','w[1]','0x00400613',{cls:'tgt',ptr:1})]),sec('.rodata','','var(--violet)',hwRo(6))],
+       calc:"w[1][3]  →  *(w[1] + 3)\n=  0x00400613 + 3  =  0x00400616  →  'l'",
+       note:'대괄호 두 개의 정체가 왼쪽 탭과 다릅니다. 여긴 "배열에서 주소를 꺼내고(w[1]) + 그 주소에서 걷기([3])" — 곱셈 공식이 아니라 역참조+덧셈 두 단계입니다. 겉 문법이 같아도 주소 경로가 달라요.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1050','w[0]','0x00400613',{cls:'hot',ptr:1,grp:true}),v('0x7ffd1058','w[1]','0x00400613',{ptr:1})]),sec('.rodata','','var(--violet)',hwRo(-1))],
+       note:'.rodata는 미동도 없습니다. 화살표 하나만 돌아갔어요. 격자였다면 값 여섯 칸을 옮겨야 했을 일입니다.'},
+      {line:4,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1050','w[0]','0x00400613',{cls:'tgt',ptr:1,grp:true}),v('0x7ffd1058','w[1]','0x00400613',{ptr:1})]),sec('.rodata','','var(--violet)',hwRo(3))],
+       calc:'출력:  world',
+       note:'이제 둘 다 "world"를 가리킵니다. 이 "주소 목록" 구조가 바로 main(int argc, char *argv[])의 argv — 명령행 인자들의 모양입니다.'}
+    ]}
+  ],
+  quiz:{code:'int m[3][2] = {{1,2},{3,4},{5,6}}; int *p = &m[0][0]; printf("%d", *(p+3));',q:'출력값은?',opts:['3','4','5','쓰레기값'],ans:1,
+    exp:'이번엔 한 행이 2칸입니다. p+3은 시작에서 int 3칸(12바이트) 뒤 — 3 = 1×2 + 1 이니 m[1][1]의 4입니다. 공식은 언제나 "시작 + (행×열개수 + 열)". 본문(3열)과 행 크기가 다르니 공식을 실제로 돌려야 풀립니다. 5를 골랐다면 본문 답을 기억으로 옮긴 것 — 격자가 바뀌면 걸음 수의 의미도 바뀝니다.'}
+},
+/* ===== 10 : return address of local ===== */
+{
+  id:'p10', num:'PROBLEM 10', title:'지역 변수 주소 반환 — 철거된 방의 열쇠', tag:'return &local · 프레임 재사용 · UB',
+  modes:[
+   {label:'return &x — 철거될 방',
+    lines:['int *make(void) {','    int x = 10;','    return &x;      // 컴파일러도 경고!','}','int *p = make();','printf("%d", *p);   // 10? 아직 운 좋게 생존','printf("%d", *p);   // ??? 이번엔 쓰레기'],
+    steps:[
+      {line:1,frames:[fr('make 프레임 — 방금 생김',false,[v('0x7ffd1020','x','10',{cls:'hot'})]),fr('main 프레임',true,[v('0x7ffd1050','p','?')])],
+       note:'main이 make를 부르자 스택 위에 make 프레임이 생기고 x가 놓였습니다. 여기까지는 문제 3과 같아요.'},
+      {line:2,frames:[fr('make 프레임 — 곧 철거',false,[v('0x7ffd1020','x','10',{cls:'bad'})]),fr('main 프레임',true,[v('0x7ffd1050','p','?')])],
+       calc:'반환값  =  0x7ffd1020   ← make 프레임 "안"의 주소!',cbad:true,
+       note:'주소 자체는 값으로 복사돼 살아남지만, 그 주소가 가리키는 방은 함수와 함께 철거될 운명입니다. 컴파일러도 압니다 — "warning: address of local variable \'x\' returned" 경고가 뜨죠. 함정은, 경고(warning)는 에러와 달리 실행을 막지 않는다는 것.'},
+      {line:4,frames:[fr('main 프레임',false,[v('0x7ffd1050','p','0x7ffd1020',{cls:'bad',ptr:1})]),fr('옛 make 자리 — 철거됨 · 재사용 대기',true,[v('0x7ffd1020','','10')])],
+       note:'make 프레임은 통째로 사라졌는데 p는 그 폐허의 주소를 쥐고 있습니다. 문제 6의 댕글링 포인터와 같은 병 — 동네만 힙에서 스택으로 바뀌었어요. 값 10은 "아직" 우연히 남아 있을 뿐입니다.'},
+      {line:5,frames:[fr('main 프레임',false,[v('0x7ffd1050','p','0x7ffd1020',{cls:'bad',ptr:1})]),fr('옛 make 자리 — 아직 아무도 안 덮음',true,[v('0x7ffd1020','','10',{cls:'hot'})])],
+       calc:'*p  →  0x7ffd1020  →  10   (순전히 운)',
+       note:'첫 printf는 대개 10을 출력합니다. 인자 *p를 읽는 시점이 printf가 호출되기 전이라 방이 아직 안 덮였거든요. "어? 되는데요?"의 정체가 이겁니다. 하지만 printf 자신이 실행되면서 바로 이 자리에 자기 프레임을 폅니다.'},
+      {line:6,frames:[fr('main 프레임',false,[v('0x7ffd1050','p','0x7ffd1020',{cls:'bad',ptr:1})]),fr('옛 make 자리 — 첫 printf가 쓰고 감',false,[v('0x7ffd1020','','???',{cls:'bad'})])],
+       calc:'*p  →  첫 printf 가 덮고 간 방  →  쓰레기값 (UB)',cbad:true,
+       note:'두 번째 읽기는 첫 printf가 어질러 놓은 자리를 만납니다. 지역 변수 주소 반환은 언제나 정의되지 않은 동작(UB) — 최신 컴파일러는 아예 NULL 반환으로 바꿔 즉시 죽이기도 합니다. 살아남아야 할 값은 힙에 두세요 → 오른쪽 탭.'}
+    ]},
+   {label:'malloc — 살아남는 값',
+    lines:['int *make(void) {','    int *x = malloc(sizeof(int));','    *x = 10;','    return x;       // 힙 주소는 생존','}','int *p = make();    // *p == 10'],
+    steps:[
+      {line:1,frames:[fr('make 프레임',false,[v('0x7ffd1020','x','0x561a2c80',{cls:'hot',ptr:1})]),fr('main 프레임',true,[v('0x7ffd1050','p','?')]),fr('힙 · malloc 전용',false,[v('0x561a2c80','','?',{cls:'tgt'})])],
+       note:'이번엔 값을 담을 방을 힙에서 빌립니다. x는 make 프레임에 있지만, x가 가리키는 4바이트는 스택이 아니라 힙(0x561a…)에 있어요.'},
+      {line:2,frames:[fr('make 프레임',false,[v('0x7ffd1020','x','0x561a2c80',{ptr:1})]),fr('main 프레임',true,[v('0x7ffd1050','p','?')]),fr('힙 · malloc 전용',false,[v('0x561a2c80','','10',{cls:'hot'})])],
+       calc:'*x = 10  →  힙 0x561a2c80 에 저장',
+       note:'값이 스택 프레임 바깥에 놓였습니다. 이게 전부예요 — 이 한 끗이 생사를 가릅니다.'},
+      {line:3,frames:[fr('make 프레임 — 반환 준비',false,[v('0x7ffd1020','x','0x561a2c80',{cls:'hot',ptr:1})]),fr('main 프레임',true,[v('0x7ffd1050','p','?')]),fr('힙 · malloc 전용',false,[v('0x561a2c80','','10')])],
+       note:'반환하는 건 힙 주소입니다. 힙은 함수 프레임의 철거와 무관하게 free 전까지 살아 있습니다.'},
+      {line:5,frames:[fr('main 프레임',false,[v('0x7ffd1050','p','0x561a2c80',{cls:'hot',ptr:1})]),fr('힙 · malloc 전용',false,[v('0x561a2c80','','10',{cls:'good'})])],
+       calc:'*p  →  0x561a2c80  →  10   (프레임이 죽어도 생존)',cgood:true,
+       note:'make 프레임은 똑같이 사라졌지만 값은 힙에서 멀쩡합니다. 스택은 함수의 수명, 힙은 free까지의 수명. 단 — 이 방의 반납은 이제 호출한 쪽 책임이 됐습니다. 바로 다음 문제가 그 이야기입니다.'}
+    ]}
+  ],
+  quiz:{code:'int *f(void) { int x = 10; return &x; } int *p = f(); printf("%d", *p);',q:'실행 결과는?',opts:['항상 10','항상 0','정의되지 않은 동작','컴파일 에러'],ans:2,
+    exp:'컴파일은 됩니다 — 경고만 뜨죠(경고와 에러의 차이!). 하지만 f가 끝나는 순간 x의 방은 프레임째 철거되고 그 자리는 다음 함수 호출이 재사용합니다. 실제로 10이 나올 때가 많아 "항상 10"이 최다 오답인데, 그게 이 버그가 몇 달씩 숨어 사는 이유예요. 살아남을 값은 malloc(힙)이나 static에 두세요.'}
+},
+/* ===== 11 : memory leak ===== */
+{
+  id:'p11', num:'PROBLEM 11', title:'메모리 누수 — 열쇠를 잃어버린 방', tag:'leak · 포인터 덮어쓰기 · free 먼저',
+  modes:[
+   {label:'free 없이 갈아타기 — 누수',
+    lines:['int *p = malloc(sizeof(int));','*p = 1;','p = malloc(sizeof(int));  // 앗, free 없이!','*p = 2;','free(p);                  // 두 번째 방만 반납'],
+    steps:[
+      {line:0,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','p','0x561a2c80',{cls:'hot',ptr:1})]),sec('힙','','var(--amber)',[v('0x561a2c80','블록A','?',{cls:'hot'})])],
+       note:'문제 6과 같은 출발입니다. 힙에서 4바이트를 빌리고 p가 그 주소를 쥡니다.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','p','0x561a2c80',{ptr:1})]),sec('힙','','var(--amber)',[v('0x561a2c80','블록A','1',{cls:'hot'})])],
+       calc:'*p = 1  →  블록 A 에 저장',
+       note:'문제 1의 역참조 그대로 — 대상이 힙일 뿐입니다.'},
+      {line:2,secs:[sec('스택','0x561a2c80 을 아는 사람이 없어짐','var(--cyan)',[v('0x7ffd1040','p','0x561a2d00',{cls:'hot',ptr:1})]),sec('힙','','var(--amber)',[v('0x561a2c80','블록A','1 · 주소 분실',{cls:'bad'}),v('0x561a2d00','블록B','?',{cls:'hot'})])],
+       calc:'p = malloc(…)  →  p 가 새 방(0x561a2d00)으로 갈아탐\n옛 방 주소 0x561a2c80 은…  이제 어디에도 없음',cbad:true,
+       note:'결정적 순간입니다. 스택 어디를 훑어봐도 0x561a2c80이 안 남았어요. free는 주소를 알아야 부를 수 있는데, 그 주소를 아는 포인터가 하나도 없습니다. 블록 A는 멀쩡히 살아 있는데 영원히 반납 불가 — 이게 메모리 누수입니다.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','p','0x561a2d00',{ptr:1})]),sec('힙','','var(--amber)',[v('0x561a2c80','블록A','1 · 주소 분실',{cls:'bad'}),v('0x561a2d00','블록B','2',{cls:'hot'})])],
+       note:'프로그램은 아무 일 없다는 듯 계속 돕니다. 누수는 크래시를 안 내는 게 특징이자 무서움이에요.'},
+      {line:4,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','p','0x561a2d00',{ptr:1})]),sec('힙','','var(--amber)',[v('0x561a2c80','블록A','1 · 주소 분실',{cls:'bad'}),v('0x561a2d00','블록B','반납',{cls:'good'})])],
+       calc:'free(p)  →  블록 B 만 반납\n블록 A 4바이트  —  프로그램 끝까지 회수 불가 (leak)',cbad:true,
+       note:'이 코드가 서버의 반복문 안에 있었다면 몇 시간 뒤 메모리가 바닥납니다. "안 죽고 조용히 쌓인다" — use-after-free(문제 6)가 없는 걸 또 쓰는 병이라면, 누수는 있는 걸 못 버리는 병입니다.'}
+    ]},
+   {label:'갈아타기 전에 반납',
+    lines:['int *p = malloc(sizeof(int));','*p = 1;','free(p);                  // 먼저 반납','p = malloc(sizeof(int));','*p = 2;','free(p);                  // 힙 잔고 0'],
+    steps:[
+      {line:0,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','p','0x561a2c80',{cls:'hot',ptr:1})]),sec('힙','','var(--amber)',[v('0x561a2c80','블록A','?',{cls:'hot'})])],
+       note:'출발은 같습니다.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','p','0x561a2c80',{ptr:1})]),sec('힙','','var(--amber)',[v('0x561a2c80','블록A','1',{cls:'hot'})])],
+       note:'블록 A에 1을 저장했습니다.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','p','0x561a2c80',{ptr:1})]),sec('힙','','var(--amber)',[v('0x561a2c80','블록A','반납',{cls:'good'})])],
+       calc:'free(p)  →  갈아타기 "전에" 먼저 반납',
+       note:'이 직후의 p는 잠시 댕글링(문제 6)이지만, 바로 다음 줄에서 새 주소를 받으니 괜찮습니다. 순서가 전부예요 — free 먼저, 갈아타기는 그 다음.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','p','0x561a2d00',{cls:'hot',ptr:1})]),sec('힙','','var(--amber)',[v('0x561a2c80','블록A','반납'),v('0x561a2d00','블록B','?',{cls:'hot'})])],
+       note:'이번엔 옛 방을 반납한 뒤라 마음 편히 갈아탑니다.'},
+      {line:4,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','p','0x561a2d00',{ptr:1})]),sec('힙','','var(--amber)',[v('0x561a2c80','블록A','반납'),v('0x561a2d00','블록B','2',{cls:'hot'})])],
+       note:'블록 B에 2를 저장.'},
+      {line:5,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','p','0x561a2d00',{ptr:1})]),sec('힙','','var(--amber)',[v('0x561a2c80','블록A','반납',{cls:'good'}),v('0x561a2d00','블록B','반납',{cls:'good'})])],
+       calc:'힙 잔고 0  —  빌린 만큼 전부 반납',cgood:true,
+       note:'malloc과 free가 1:1 짝을 이뤘습니다. 보너스 습관 — free 직후 p = NULL;을 넣어두면 실수로 free(p)를 또 불러도 안전합니다. free(NULL)은 C 표준이 보장하는 "아무 일도 안 함"이라, 반대편 사고인 double free까지 막는 백신이거든요.'}
+    ]}
+  ],
+  quiz:{code:'int *p = malloc(4); *p = 1; p = malloc(4);',q:'이 코드의 진짜 문제는?',opts:['즉시 크래시','첫 블록을 반납할 방법이 사라짐','두 번째 malloc이 실패함','컴파일 에러'],ans:1,
+    exp:'첫 블록의 주소를 쥔 포인터가 p 하나뿐이었는데 덮어썼으니 free할 길이 없습니다. 누수는 크래시 없이 조용히 쌓여서, 오래 도는 프로그램에서 한참 뒤에야 터지는 게 특징이에요. 갈아타기 전에 free — 순서 하나가 전부입니다.'}
+},
+/* ===== 12 : void* & byte view ===== */
+{
+  id:'p12', num:'PROBLEM 12', title:'타입은 안경 — void*와 바이트 단위로 열어 보기', tag:'void* · 캐스팅 · 리틀 엔디안',
+  modes:[
+   {label:'void* — 안경 벗은 주소',
+    lines:['int a = 7;','void *v = &a;          // 어떤 주소든 담김','// printf("%d", *v);   ← 살리면 컴파일 에러!','int *p = (int*)v;      // int 안경 씌우기','printf("%d", *p);      // 7'],
+    steps:[
+      {line:0,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','a','7',{cls:'hot'})])],
+       note:'평범한 int. 지금부터 이 4바이트를 여러 안경으로 봅니다.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','a','7',{cls:'tgt'}),v('0x7ffd1048','v','0x7ffd1040',{cls:'hot',ptr:1})])],
+       note:'void*는 "안경을 벗은 순수 주소"입니다. 어떤 타입의 주소든 캐스팅 없이 담을 수 있어요. 주소는 멀쩡히 들어 있습니다 — 없는 건 안경뿐.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','a','7',{cls:'tgt'}),v('0x7ffd1048','v','0x7ffd1040',{ptr:1})])],
+       calc:"error: invalid use of void expression\n*v  —  이 주소에서 몇 바이트를 어떻게 읽을지 알 수 없음",cbad:true,
+       note:'주석을 살리면 컴파일 자체가 거부됩니다. 4바이트? 1바이트? 8바이트? 타입(안경) 없이는 역참조가 성립할 수 없어요. 역참조란 사실 "주소로 가기 + 타입 크기만큼 읽기"의 합이었던 겁니다.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','a','7',{cls:'tgt'}),v('0x7ffd1048','v','0x7ffd1040',{ptr:1}),v('0x7ffd1050','p','0x7ffd1040',{cls:'hot',ptr:1})])],
+       calc:'(int*)v  →  같은 주소에 int 안경 씌우기\n값은 그대로 — 바뀌는 건 "읽는 방법"뿐',
+       note:'캐스팅은 메모리를 1비트도 건드리지 않습니다. v와 p 안의 값이 완전히 같죠? 해석 방법만 달라졌습니다.'},
+      {line:4,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','a','7',{cls:'good'}),v('0x7ffd1048','v','0x7ffd1040',{ptr:1}),v('0x7ffd1050','p','0x7ffd1040',{ptr:1})])],
+       calc:'*p  →  int 안경  →  0x7ffd1040 부터 4바이트  →  7',cgood:true,
+       note:'malloc이 void*를 돌려주는 이유가 이것 — "안경은 받는 쪽이 골라 쓰세요"(문제 6 회수)입니다. 참고로 malloc은 실패하면 NULL을 돌려주므로 받은 직후 if (p == NULL) 체크가 관례이고, NULL 역참조는 대부분 그 자리에서 즉시 크래시합니다 — free 후 p = NULL이 백신이 되는 이유죠.'}
+    ]},
+   {label:'(char*)&n — 4바이트 쪼개 보기',
+    lines:['unsigned int n = 0x12345678;','unsigned char *b = (unsigned char*)&n;','printf("%02x", b[0]);   // 78 — 끝자리가 먼저!','printf("%02x", b[1]);   // 56','printf("%02x", b[3]);   // 12'],
+    steps:[
+      {line:0,secs:[sec('스택','int 안경 — 한 덩어리','var(--cyan)',[v('0x7ffd1040','n','0x12345678',{cls:'hot'})])],
+       note:'먼저 약속 하나 — 16진수 두 자리가 1바이트입니다. 0x12345678은 12·34·56·78 네 바이트로 이루어진 수예요. int 안경으로 보면 이렇게 한 덩어리로 보입니다.'},
+      {line:1,secs:[sec('스택','char 안경 — 1바이트 4칸','var(--cyan)',nbytes({}).concat([v('0x7ffd1048','b','0x7ffd1040',{cls:'hot',ptr:1})]))],
+       calc:'(unsigned char*)&n  →  같은 메모리, 1바이트 안경',
+       note:'캐스팅하는 순간 같은 4바이트가 1바이트 칸 4개로 보입니다. 값은 하나도 안 변했어요 — 안경만 바뀌었습니다. 그런데 배치가 이상하죠? 78이 맨 앞이라니.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',nbytes({0:'hot'}).concat([v('0x7ffd1048','b','0x7ffd1040',{ptr:1})]))],
+       calc:'b[0]  →  0x7ffd1040 의 1바이트  →  78\n제일 "끝자리" 바이트가 제일 앞 주소에!  (리틀 엔디안)',
+       note:'사람이 쓰는 표기(0x12345678)와 메모리 배치가 거꾸로입니다. x86 계열 CPU는 낮은 자리 바이트를 낮은 주소에 놓아요 — 이걸 리틀 엔디안이라 부릅니다.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',nbytes({1:'hot'}).concat([v('0x7ffd1048','b','0x7ffd1040',{ptr:1})]))],
+       calc:'b[1]  →  0x7ffd1041  →  56',
+       note:'+1이 정확히 1바이트 — char 안경의 보폭입니다. 문제 2의 +1=4바이트와 문제 4의 +1=1바이트는 같은 규칙의 두 얼굴이었어요. 보폭은 언제나 안경(타입)이 정합니다.'},
+      {line:4,secs:[sec('스택','','var(--cyan)',nbytes({3:'hot'}).concat([v('0x7ffd1048','b','0x7ffd1040',{ptr:1})]))],
+       calc:'b[3]  →  0x7ffd1043  →  12',
+       note:'가장 높은 자리(12)가 가장 높은 주소에. 파일 포맷·네트워크 코드에서 반드시 다시 만나는 개념입니다 — 네트워크는 반대 순서(빅 엔디안)를 약속해서 htonl 같은 변환 함수가 존재해요.'}
+    ]}
+  ],
+  quiz:{code:'unsigned int n = 0x12345678; unsigned char *b = (unsigned char*)&n; printf("%02x", b[0]);',q:'리틀 엔디안 PC에서 출력값은?',opts:['12','78','56','정의되지 않은 동작'],ans:1,
+    exp:'캐스팅은 값을 바꾸지 않고 같은 메모리를 읽는 안경만 바꿉니다. char 안경으로 보면 4바이트가 1바이트씩 보이는데, 리틀 엔디안은 가장 낮은 자리 바이트(78)를 가장 낮은 주소에 놓습니다. 참고로 char*로 아무 객체나 바이트 단위로 들여다보는 건 표준이 허용하는 합법 기술입니다 — UB가 아니에요.'}
+},
+/* ===== 13 : function pointer ===== */
+{
+  id:'p13', num:'PROBLEM 13', title:'함수 포인터 — 코드에도 주소가 있다', tag:'int (*op)(int,int) · .text · 콜백',
+  modes:[{
+    lines:['int add(int a, int b) { return a + b; }','int sub(int a, int b) { return a - b; }','int (*op)(int, int) = add;','printf("%d ", op(3, 4));   // 7','op = sub;                  // 채널 변경','printf("%d", op(3, 4));    // -1'],
+    steps:[
+      {line:1,secs:[sec('스택','아직 비어 있음','var(--cyan)',[]),sec('.text','기계어 코드 · 읽기 전용','var(--green)',textRows('',''))],
+       note:'함수도 컴파일되면 기계어가 되어 메모리에 삽니다. 스택·힙·.rodata에 이은 네 번째 동네, .text — .rodata(0x004006…) 바로 아래 이웃(0x004005…)이고 역시 읽기 전용입니다. 이걸로 메모리 지도의 마지막 조각이 맞춰집니다.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1048','op','0x00400536',{cls:'hot',ptr:1})]),sec('.text','','var(--green)',textRows('tgt',''))],
+       calc:'op = add\nadd  →  이름이 코드 시작 주소로 붕괴 (문제 2의 배열과 같은 규칙)\n\n선언 읽기:  (*op)  op는 포인터다  →  (int,int)를 받아  →  int를 돌려주는',
+       note:'op는 "int 둘을 받아 int를 돌려주는 함수"의 주소를 담는 상자입니다. &add라고 안 써도 됩니다 — 함수 이름은 배열 이름처럼 저절로 주소가 돼요. 괄호 (*op)가 핵심인데, 이유는 아래 퀴즈에서.'},
+      {line:3,secs:[sec('add 프레임 — 방금 생김','op(3,4)가 호출','var(--cyan)',[v('0x7ffd1020','a','3',{cls:'hot'}),v('0x7ffd1024','b','4',{cls:'hot'})]),sec('스택','','var(--cyan)',[v('0x7ffd1048','op','0x00400536',{ptr:1})]),sec('.text','','var(--green)',textRows('hot',''))],
+       calc:'op(3, 4)  →  op에 적힌 0x00400536 으로 점프  →  3 + 4  =  7',
+       note:'호출할 함수가 코드에 이름으로 박혀 있지 않습니다. op에 적힌 주소가 그때그때 목적지를 정해요. add 프레임이 생겼다가 반환과 함께 사라집니다(문제 3).'},
+      {line:4,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1048','op','0x0040054a',{cls:'hot',ptr:1})]),sec('.text','','var(--green)',textRows('','tgt'))],
+       calc:'op = sub  →  0x0040054a   (리모컨 채널 변경)',
+       note:'코드는 한 글자도 안 바뀌었는데 다음 호출의 목적지가 바뀌었습니다. "어느 함수를 부를지"가 데이터가 된 것 — 함수 포인터의 전부입니다.'},
+      {line:5,secs:[sec('sub 프레임 — 방금 생김','같은 호출 줄','var(--cyan)',[v('0x7ffd1020','a','3',{cls:'hot'}),v('0x7ffd1024','b','4',{cls:'hot'})]),sec('스택','','var(--cyan)',[v('0x7ffd1048','op','0x0040054a',{ptr:1})]),sec('.text','','var(--green)',textRows('','hot'))],
+       calc:'op(3, 4)  →  이번엔 0x0040054a 로 점프  →  3 - 4  =  -1',
+       note:'같은 호출 줄, 다른 함수. qsort에 비교 함수를 넘기고 버튼에 콜백을 다는 원리가 전부 이것입니다.'}
+    ]
+  }],
+  quiz:{code:'/* 선언 읽기 */',q:'int 둘을 받아 int를 돌려주는 함수를 가리키는 포인터 op의 선언은?',opts:['int *op(int, int);','int (*op)(int, int);','int *(*op)(int, int);','int (op)(int, int);'],ans:1,
+    exp:'괄호가 핵심입니다. (*op)를 먼저 묶어야 "op는 포인터"가 선언의 중심이 됩니다. 첫 번째는 int*를 반환하는 함수 op의 선언(별이 반환 타입에 붙어버림), 세 번째는 함수 포인터는 맞지만 int*를 돌려주는 함수용, 네 번째는 괄호만 두른 평범한 함수 선언입니다. 안쪽부터 읽으세요 — (*op) 포인터다 → (int,int)를 받아 → int를 돌려주는.'}
+},
+/* ===== 14 : struct pointer ===== */
+{
+  id:'p14', num:'PROBLEM 14', title:'struct 포인터 — 화살표는 문법 설탕', tag:'struct · -> · 멤버 오프셋',
+  modes:[
+   {label:'스택의 struct — 점(.)',
+    lines:['struct Point { int x, y; };','struct Point pt = {3, 4};','pt.y = 10;','printf("%d", pt.y);   // 10'],
+    steps:[
+      {line:0,secs:[sec('스택','아직 아무것도 없음','var(--cyan)',[])],
+       note:'struct 선언은 설계도일 뿐 메모리를 만들지 않습니다. "int x 다음 int y" — 칸 배치 약속만 한 거예요.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','pt.x','3',{cls:'hot',grp:true}),v('0x7ffd1044','pt.y','4',{cls:'hot'})])],
+       note:'설계도대로 4바이트 + 4바이트가 연속으로 놓였습니다. 배열과 비슷한데, 번호 대신 이름이 붙은 칸막이 상자입니다.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','pt.x','3',{grp:true}),v('0x7ffd1044','pt.y','10',{cls:'hot'})])],
+       calc:'&pt.y  =  &pt + 4\n(x가 4바이트를 차지한 다음 칸 — 이 4를 "오프셋"이라 부릅니다)',
+       note:'멤버 접근의 정체는 "시작 주소 + 오프셋" 주소 계산입니다. 컴파일러는 y라는 이름을 +4로 번역할 뿐이에요.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','pt.x','3',{grp:true}),v('0x7ffd1044','pt.y','10',{cls:'good'})])],
+       calc:'출력:  10',
+       note:'여기까진 익숙하죠. 이 사실이 오른쪽 탭에서 화살표(->)의 정체를 밝혀줍니다.'}
+    ]},
+   {label:'힙의 struct — 화살표(->)',
+    lines:['struct Point *p = malloc(sizeof(struct Point));','p->x = 3;','p->y = 4;','printf("%d", (*p).y);  // p->y와 같은 뜻','free(p);'],
+    steps:[
+      {line:0,secs:[sec('스택','포인터 하나뿐','var(--cyan)',[v('0x7ffd1040','p','0x561a2c80',{cls:'hot',ptr:1})]),sec('힙','8바이트 상자','var(--amber)',[v('0x561a2c80','x','?',{grp:true}),v('0x561a2c84','y','?')])],
+       note:'이번엔 상자를 힙에 지었습니다. 스택엔 주소를 쥔 p 하나뿐 — 문제 6과 같은 구도인데 방이 두 칸짜리일 뿐이에요.'},
+      {line:1,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','p','0x561a2c80',{ptr:1})]),sec('힙','','var(--amber)',[v('0x561a2c80','x','3',{cls:'hot',grp:true}),v('0x561a2c84','y','?')])],
+       calc:'p->x  →  (*p).x  →  0x561a2c80 + 0  →  3 저장',
+       note:'화살표의 정체 — "p에 적힌 주소로 가서(*), 그 안의 멤버를(.)". 역참조 + 오프셋 덧셈입니다.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','p','0x561a2c80',{ptr:1})]),sec('힙','','var(--amber)',[v('0x561a2c80','x','3',{grp:true}),v('0x561a2c84','y','4',{cls:'hot'})])],
+       calc:'p->y  →  (*p).y  →  0x561a2c80 + 4  →  4 저장',
+       note:'y의 오프셋 +4가 그대로 쓰였죠. 왼쪽 탭의 &pt.y = &pt + 4와 완전히 같은 계산 — 대상이 힙일 뿐입니다.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','p','0x561a2c80',{ptr:1})]),sec('힙','','var(--amber)',[v('0x561a2c80','x','3',{grp:true}),v('0x561a2c84','y','4',{cls:'good'})])],
+       calc:'(*p).y  ==  p->y   완전히 같은 기계어',cgood:true,
+       note:'(*p).y를 매번 쓰기 귀찮아서 만든 줄임 표기가 화살표입니다. 문법 설탕일 뿐, 새로운 능력이 아니에요.'},
+      {line:4,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','p','0x561a2c80',{cls:'bad',ptr:1})]),sec('힙','반납됨','var(--amber)',[v('0x561a2c80','x','반납',{cls:'bad',grp:true}),v('0x561a2c84','y','반납',{cls:'bad'})])],
+       calc:'free(p)  →  두 칸짜리 상자 통째로 반납',
+       note:'malloc했으면 free — 문제 6의 규칙이 struct에도 그대로입니다. 이제 이 상자에 "다음 상자의 주소"를 담는 포인터 멤버를 하나 넣으면… 연결 리스트가 태어납니다. 마지막 문제로 가시죠.'}
+    ]}
+  ],
+  quiz:{code:'struct Point { int x, y; }; struct Point *p;',q:'p->y와 완전히 같은 표현은?',opts:['*p.y','(*p).y','&p.y','*(p.y)'],ans:1,
+    exp:'점(.)이 별표(*)보다 우선순위가 높아서 *p.y는 *(p.y)로 해석돼 컴파일 에러입니다(p는 포인터라 .을 쓸 수 없으니까요). 그래서 괄호로 (*p).y라고 묶어야 하고, 매번 쓰기 귀찮아서 만든 줄임 표기가 바로 -> 입니다. "주소로 가서(*), 그 안의 멤버를(.)" — 문제 1의 역참조에 오프셋 덧셈을 얹은 것뿐이에요.'}
+},
+/* ===== 15 : linked list ===== */
+{
+  id:'p15', num:'PROBLEM 15', title:'최종 보스 — 연결 리스트 첫 마디', tag:'struct Node · malloc · next 사슬',
+  modes:[{
+    lines:['struct Node { int val; struct Node *next; };','struct Node *a = malloc(sizeof *a);','struct Node *b = malloc(sizeof *b);','a->val = 1;  a->next = b;','b->val = 2;  b->next = NULL;','printf("%d", a->next->val);   // 2'],
+    steps:[
+      {line:1,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','a','0x561a2c80',{cls:'hot',ptr:1})]),sec('힙','','var(--amber)',[v('0x561a2c80','A.val','?',{cls:'hot',grp:true}),v('0x561a2c88','A.next','?',{cls:'hot'})])],
+       note:'노드 하나가 힙에 생겼습니다. val(4바이트) 뒤에 보이지 않는 빈칸 4바이트가 숨어 있어요 — 8바이트 포인터 next가 8의 배수 주소(0x…88)에만 앉으려 해서 컴파일러가 끼운 패딩입니다. 그래서 sizeof(struct Node)는 12가 아니라 16. 참고로 sizeof *a는 "a가 가리킬 대상의 크기" — 타입이 바뀌어도 이 줄을 고칠 필요가 없어 실무에서 선호하는 표기예요.'},
+      {line:2,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','a','0x561a2c80',{ptr:1,grp:true}),v('0x7ffd1048','b','0x561a2cb0',{cls:'hot',ptr:1})]),sec('힙','0x…80 vs 0x…b0 — 연속일 필요 없음!','var(--amber)',nodes('?','?','?','?',{bv:'hot',bn:'hot'}))],
+       note:'두 번째 노드는 뚝 떨어진 주소에 생겼습니다. 배열(문제 2)은 연속이 생명이었지만, 지금부터 만드는 구조엔 연속이 필요 없습니다 — 주소로 이으면 되니까요.'},
+      {line:3,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','a','0x561a2c80',{ptr:1,grp:true}),v('0x7ffd1048','b','0x561a2cb0',{ptr:1})]),sec('힙','','var(--amber)',nodes('1','0x561a2cb0','?','?',{av:'hot',an:'hot'}))],
+       calc:'a->next = b  →  노드 A의 next 칸에 노드 B의 주소를 적기',
+       note:'철컥 — 노드 A가 노드 B의 방 번호를 쥔 순간, 흩어져 있던 두 방이 한 줄이 됐습니다. 이 포인터 하나가 "연결"의 전부입니다.'},
+      {line:4,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','a','0x561a2c80',{ptr:1,grp:true}),v('0x7ffd1048','b','0x561a2cb0',{ptr:1})]),sec('힙','','var(--amber)',nodes('1','0x561a2cb0','2','NULL',{bv:'hot',bn:'hot'}))],
+       note:'NULL은 "다음은 없음"이라는 끝 표시입니다. 리스트를 걷는 코드는 NULL을 만나면 멈춰요.'},
+      {line:5,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','a','0x561a2c80',{cls:'hot',ptr:1,grp:true}),v('0x7ffd1048','b','0x561a2cb0',{ptr:1})]),sec('힙','','var(--amber)',nodes('1','0x561a2cb0','2','NULL',{av:'tgt',an:'tgt'}))],
+       calc:'1단계:  a  →  0x561a2c80  (노드 A)',
+       note:'이제 사슬을 따라갑니다. 문제 5에서 "* 하나가 한 칸"이었죠 — 화살표도 하나가 한 칸입니다.'},
+      {line:5,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','a','0x561a2c80',{ptr:1,grp:true}),v('0x7ffd1048','b','0x561a2cb0',{ptr:1})]),sec('힙','','var(--amber)',nodes('1','0x561a2cb0','2','NULL',{an:'good',bv:'tgt',bn:'tgt'}))],
+       calc:'2단계:  a->next  →  0x561a2c88 칸을 열면  0x561a2cb0  (노드 B)',
+       note:'첫 화살표로 한 칸. 노드 B의 주소를 손에 넣었습니다.'},
+      {line:5,secs:[sec('스택','','var(--cyan)',[v('0x7ffd1040','a','0x561a2c80',{ptr:1,grp:true}),v('0x7ffd1048','b','0x561a2cb0',{ptr:1})]),sec('힙','','var(--amber)',nodes('1','0x561a2cb0','2','NULL',{bv:'good'}))],
+       calc:'3단계:  a->next->val  →  노드 B의 val 칸  →  2',cgood:true,
+       note:'노드가 100개여도 스택엔 머리 포인터 하나면 충분합니다. 주소로 잇는 줄서기 — 이게 연결 리스트의 전부이고, 여기까지 그릴 수 있으면 트리와 그래프로 가는 문이 열린 겁니다. 졸업을 축하합니다!'}
+    ]
+  }],
+  quiz:{code:'free(b); printf("%d", a->next->val);',q:'b를 반납한 뒤 이 접근의 결과는?',opts:['항상 2','항상 크래시','정의되지 않은 동작','컴파일 에러'],ans:2,
+    exp:'a->next엔 여전히 노드 B의 옛 주소가 적혀 있습니다 — 문제 6의 댕글링 포인터가 연결 리스트에서 다시 등장한 거예요. 리스트를 지울 땐 next를 미리 백업해 두고 앞에서부터 차례로 free하는 습관이 필요합니다(문제 11의 누수와 문제 6의 use-after-free를 동시에 피하는 길). 이 답을 스스로 설명할 수 있다면, 졸업입니다.'}
+}
+];
+
+/* ---------- row builders that need closure over addresses ---------- */
+function arrRows(hotIdx, allHot){
+  const A=['0x7ffd1030','0x7ffd1034','0x7ffd1038','0x7ffd103c','0x7ffd1040'];
+  return [1,2,3,4,5].map((val,i)=>v(A[i],'arr['+i+']',String(val),{cls:allHot?'hot':(i===hotIdx?'good':''),grp:true}));
+}
+function roRows(hotIdx, bad){
+  const R=['0x00400604','0x00400605','0x00400606','0x00400607','0x00400608','0x00400609'];
+  const C=["'h'","'e'","'l'","'l'","'o'","'\\0'"];
+  return R.map((a,i)=>v(a,'',C[i],{cls: bad?'bad':(i===hotIdx?'good':''),lock:true,grp:true}));
+}
+function strArr(hotIdx, first){
+  const A=['0x7ffd1040','0x7ffd1041','0x7ffd1042','0x7ffd1043','0x7ffd1044','0x7ffd1045'];
+  const C=["'"+first+"'","'e'","'l'","'l'","'o'","'\\0'"];
+  return A.map((a,i)=>v(a,'s['+i+']',C[i],{cls:i===hotIdx?'hot':'',grp:true}));
+}
+function fr(title,dim,rows){return{title:title,dim:dim,rows:rows};}
+function p8Rows(vals,marks){
+  const A=['0x7ffd1030','0x7ffd1034','0x7ffd1038'];
+  return vals.map((val,i)=>v(A[i],'arr['+i+']',String(val),{cls:(marks&&marks[i])||'',grp:true}));
+}
+function mgrid(marks){
+  const A=['0x7ffd1030','0x7ffd1034','0x7ffd1038','0x7ffd103c','0x7ffd1040','0x7ffd1044'];
+  const N=['m[0][0]','m[0][1]','m[0][2]','m[1][0]','m[1][1]','m[1][2]'];
+  return A.map((a,i)=>v(a,N[i],String(i+1),{cls:(marks&&marks[i])||'',grp:i!==2&&i!==5}));
+}
+function hwRo(hotIdx){
+  const A=['0x00400610','0x00400611','0x00400612','0x00400613','0x00400614','0x00400615','0x00400616','0x00400617','0x00400618'];
+  const C=["'h'","'i'","'\\0'","'w'","'o'","'r'","'l'","'d'","'\\0'"];
+  return A.map((a,i)=>v(a,'',C[i],{cls:i===hotIdx?'good':'',lock:true,grp:i!==2&&i!==8}));
+}
+function nbytes(marks){
+  const A=['0x7ffd1040','0x7ffd1041','0x7ffd1042','0x7ffd1043'];
+  const C=['78','56','34','12'];
+  return A.map((a,i)=>v(a,'b['+i+']',C[i],{cls:(marks&&marks[i])||'',grp:true}));
+}
+function textRows(addCls,subCls){
+  return [v('0x00400536','add','기계어…',{cls:addCls||'',lock:true,grp:true}),v('0x0040054a','sub','기계어…',{cls:subCls||'',lock:true})];
+}
+function nodes(av,an,bv,bn,marks){
+  marks=marks||{};
+  return [
+    v('0x561a2c80','A.val',av,{cls:marks.av||'',grp:true}),
+    v('0x561a2c88','A.next',an,{cls:marks.an||'',ptr:String(an).indexOf('0x')===0}),
+    v('0x561a2cb0','B.val',bv,{cls:marks.bv||'',grp:true}),
+    v('0x561a2cb8','B.next',bn,{cls:marks.bn||'',ptr:String(bn).indexOf('0x')===0})
+  ];
+}
+
+/* ---------- render engine ---------- */
+const state={}; // id -> {mode, step}
+const solved={}; // id -> bool
+
+/* ---------- part dividers & progress persistence ---------- */
+const PARTS={
+  p1:['PART 1','포인터 기초 — 주소와 친해지기 (01–06)'],
+  p7:['PART 2','규칙과 메모리 위생 — 컴파일러·힙이 지켜보는 것 (07–11)'],
+  p12:['PART 3','타입 · 코드 · 자료구조 — 메모리 지도의 완성 (12–15)']
+};
+const STORE_KEY='pointerlab-progress-v1';
+function saveProgress(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify({solved:solved,state:state})); }catch(e){}
+}
+function loadProgress(){
+  try{
+    const d=JSON.parse(localStorage.getItem(STORE_KEY)||'null');
+    if(!d) return;
+    PROBLEMS.forEach(p=>{
+      if(d.solved && d.solved[p.id]) solved[p.id]=true;
+      const s=d.state && d.state[p.id];
+      if(s && state[p.id]){
+        const m=Math.min(Math.max(0,s.mode|0), p.modes.length-1);
+        state[p.id].mode=m;
+        state[p.id].step=Math.min(Math.max(0,s.step|0), p.modes[m].steps.length-1);
+      }
+    });
+  }catch(e){}
+}
+
+function cellEl(x,dim){
+  const d=document.createElement('div');
+  d.className='cellrow'+(x.cls?' '+x.cls:'')+(x.ptr?' ptr':'')+(x.grp?' grp':'');
+  if(dim) d.style.opacity='0.5';
+  const a=document.createElement('span');a.className='addr';a.textContent=x.addr;
+  const n=document.createElement('span');n.className='nm';n.textContent=x.name;
+  const val=document.createElement('span');val.className='val';val.textContent=x.val+(x.ptr?' →':'');
+  d.appendChild(a);d.appendChild(n);d.appendChild(val);
+  if(x.lock){const l=document.createElement('span');l.className='lock';l.textContent='🔒';l.setAttribute('aria-label','읽기 전용');d.appendChild(l);}
+  return d;
+}
+
+function renderStage(prob){
+  const st=state[prob.id];
+  const mode=prob.modes[st.mode];
+  const step=mode.steps[st.step];
+  const root=document.getElementById('stage-'+prob.id);
+
+  // mode tabs
+  let modeHtml='';
+  if(prob.modes.length>1){
+    modeHtml='<div class="modes">'+prob.modes.map((m,i)=>
+      '<button class="btn mode-btn'+(i===st.mode?' on':'')+'" data-mode="'+i+'">'+m.label+'</button>'
+    ).join('')+'</div>';
+  }
+
+  // controls
+  const ctrl='<div class="steps-ctrl">'
+    +'<button class="btn nav-prev">← 이전</button>'
+    +'<button class="btn nav-next">다음 →</button>'
+    +'<span class="stepn">'+(st.step+1)+' / '+mode.steps.length+'</span></div>';
+
+  // code
+  const codeHtml='<pre class="code">'+mode.lines.map((l,i)=>{
+    const cls=(i===step.line?'ln on':(i<=step.line?'ln seen':'ln'));
+    return '<span class="'+cls+'">'+escapeHtml(l||' ')+'</span>';
+  }).join('')+'</pre>';
+
+  // memory
+  let memHtml='';
+  if(step.frames){
+    memHtml=step.frames.map(f=>{
+      return '<div class="memsec"><div class="sh">'+escapeHtml(f.title)+'</div>'
+        + f.rows.map(r=>cellEl(r,f.dim).outerHTML).join('')+'</div>';
+    }).join('');
+  } else if(step.secs){
+    memHtml=step.secs.map(s=>{
+      const tag=s.tag?'<span class="tag" style="background:'+s.tag+'"></span>':'';
+      const badge=s.badge?'<span class="badge">— '+escapeHtml(s.badge)+'</span>':'';
+      const body=s.rows.length? s.rows.map(r=>cellEl(r,false).outerHTML).join('') : '<div class="empty">(비어 있음)</div>';
+      return '<div class="memsec"><div class="sh">'+tag+escapeHtml(s.sh)+' '+badge+'</div>'+body+'</div>';
+    }).join('');
+  }
+
+  const calcHtml = step.calc ? '<div class="calc'+(step.cbad?' bad':(step.cgood?' good':''))+'">'+escapeHtml(step.calc)+'</div>' : '';
+  const noteHtml = '<div class="note">'+escapeHtml(step.note)+'</div>';
+
+  root.innerHTML = modeHtml + ctrl
+    + '<div class="stage">'
+    +   '<div class="pane"><div class="pane-label">코드</div>'+codeHtml+'</div>'
+    +   '<div class="pane"><div class="pane-label">메모리</div>'+memHtml+'</div>'
+    + '</div>' + calcHtml + noteHtml;
+
+  // wire
+  root.querySelectorAll('.mode-btn').forEach(b=>b.onclick=()=>{st.mode=+b.dataset.mode;st.step=0;renderStage(prob);saveProgress();});
+  root.querySelector('.nav-prev').onclick=()=>{const n=mode.steps.length;st.step=(st.step-1+n)%n;renderStage(prob);saveProgress();};
+  root.querySelector('.nav-next').onclick=()=>{const n=mode.steps.length;st.step=(st.step+1)%n;renderStage(prob);saveProgress();};
+}
+
+function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+function renderQuiz(prob){
+  const root=document.getElementById('quiz-'+prob.id);
+  const qz=prob.quiz;
+  root.innerHTML=''
+    +'<div class="q"><span class="qmono">'+escapeHtml(qz.code)+'</span><br>'+escapeHtml(qz.q)+'</div>'
+    +'<div class="opts">'+qz.opts.map((o,i)=>'<button class="opt" data-i="'+i+'">'+escapeHtml(o)+'</button>').join('')+'</div>'
+    +'<div class="exp" id="exp-'+prob.id+'"></div>';
+  const opts=[...root.querySelectorAll('.opt')];
+  const exp=root.querySelector('.exp');
+  opts.forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i, ok=(i===qz.ans);
+    opts.forEach(o=>o.disabled=true);
+    if(ok){ b.classList.add('correct'); if(!solved[prob.id]){solved[prob.id]=true;updateScore();} }
+    else { b.classList.add('wrong'); opts[qz.ans].classList.add('correct'); }
+    exp.classList.add('show');
+    exp.innerHTML=(ok?'<b>정답.</b> ':'<b class="no">정답은 '+escapeHtml(qz.opts[qz.ans])+'.</b> ')+escapeHtml(qz.exp);
+    saveProgress();
+  });
+  if(solved[prob.id]){
+    opts.forEach(o=>o.disabled=true);
+    opts[qz.ans].classList.add('correct');
+    exp.classList.add('show');
+    exp.innerHTML='<b>정답.</b> '+escapeHtml(qz.exp);
+  }
+}
+
+function updateScore(){
+  const n=Object.values(solved).filter(Boolean).length;
+  document.getElementById('score').textContent=n;
+  const sn=document.getElementById('snScore'); if(sn) sn.textContent=n;
+  const bar=document.getElementById('snBar'); if(bar) bar.style.width=(PROBLEMS.length?(n/PROBLEMS.length*100):0)+'%';
+  document.querySelectorAll('.pip,.sn-item').forEach(p=>{
+    p.classList.toggle('done', !!solved[p.dataset.id]);
+  });
+}
+
+function buildSideNav(){
+  const nav=document.getElementById('snList');
+  if(!nav) return;
+  nav.innerHTML=PROBLEMS.map((p,i)=>{
+    const part=PARTS[p.id]?'<div class="sn-part">'+escapeHtml(PARTS[p.id][0])+'</div>':'';
+    return part+'<button class="sn-item" data-id="'+p.id+'" role="tab" title="'+escapeHtml(p.title)+'">'
+      +'<span class="sn-num">'+(i+1)+'</span>'
+      +'<span class="sn-txt">'+escapeHtml(p.title)+'</span>'
+      +'<span class="sn-check" aria-hidden="true">✓</span>'
+      +'</button>';
+  }).join('');
+  nav.querySelectorAll('.sn-item').forEach(b=>b.onclick=()=>{
+    document.getElementById(b.dataset.id).scrollIntoView({behavior:'smooth',block:'start'});
+  });
+}
+function ensureVisible(item){
+  const nav=document.getElementById('sidenav');
+  if(!nav||!item) return;
+  const it=item.getBoundingClientRect(), nv=nav.getBoundingClientRect();
+  if(it.top<nv.top) nav.scrollTop-=(nv.top-it.top)+10;
+  else if(it.bottom>nv.bottom) nav.scrollTop+=(it.bottom-nv.bottom)+10;
+}
+
+function buildPips(){
+  const rail=document.getElementById('pips');
+  rail.innerHTML=PROBLEMS.map((p,i)=>'<button class="pip" role="tab" data-id="'+p.id+'" data-idx="'+i+'" aria-label="문제 '+(i+1)+'로 이동">'+(i+1)+'</button>').join('');
+  const pips=[...rail.querySelectorAll('.pip')];
+  pips.forEach(p=>p.onclick=()=>{
+    document.getElementById(p.dataset.id).scrollIntoView({behavior:'smooth',block:'start'});
+  });
+  // active on scroll (progressive enhancement)
+  if(typeof IntersectionObserver!=='undefined'){
+    const obs=new IntersectionObserver(entries=>{
+      entries.forEach(e=>{
+        if(e.isIntersecting){
+          document.querySelectorAll('.pip,.sn-item').forEach(el=>el.classList.toggle('active', el.dataset.id===e.target.id));
+          ensureVisible(document.querySelector('.sn-item.active'));
+        }
+      });
+    },{rootMargin:'-45% 0px -45% 0px'});
+    PROBLEMS.forEach(p=>obs.observe(document.getElementById(p.id)));
+  } else {
+    pips[0].classList.add('active');
+  }
+}
+
+function build(){
+  const main=document.getElementById('problems');
+  main.innerHTML=PROBLEMS.map(p=>{
+    const part=PARTS[p.id]?'<div class="part-head"><span class="pk">'+PARTS[p.id][0]+'</span>'+escapeHtml(PARTS[p.id][1])+'</div>':'';
+    return part
+    +'<section class="prob" id="'+p.id+'">'
+    +  '<div class="prob-head">'
+    +    '<div class="prob-num">'+p.num+'</div>'
+    +    '<div class="prob-title">'+escapeHtml(p.title)+'</div>'
+    +    '<div class="prob-tag">'+escapeHtml(p.tag)+'</div>'
+    +  '</div>'
+    +  '<div class="prob-body">'
+    +    '<div id="stage-'+p.id+'"></div>'
+    +    '<div class="quiz"><div id="quiz-'+p.id+'"></div></div>'
+    +  '</div>'
+    +'</section>';
+  }).join('');
+
+  PROBLEMS.forEach(p=>{ state[p.id]={mode:0,step:0}; });
+  loadProgress();
+  PROBLEMS.forEach(p=>{ renderStage(p); renderQuiz(p); });
+  buildSideNav();
+  buildPips();
+  updateScore();
+  document.getElementById('scoreTotal').textContent=PROBLEMS.length;
+  const snTot=document.getElementById('snTot'); if(snTot) snTot.textContent=PROBLEMS.length;
+}
+
+document.getElementById('resetAll').onclick=()=>{
+  Object.keys(solved).forEach(k=>delete solved[k]);
+  try{ localStorage.removeItem(STORE_KEY); }catch(e){}
+  PROBLEMS.forEach(p=>{state[p.id]={mode:0,step:0};renderStage(p);renderQuiz(p);});
+  updateScore();
+  document.getElementById(PROBLEMS[0].id).scrollIntoView({behavior:'smooth'});
+};
+
+build();
+</script>
+</body>
+</html>
