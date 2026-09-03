@@ -17,8 +17,13 @@ export const site = {
   naverSiteVerification: '',
 } as const
 
-/** 경로를 절대 URL로 (canonical/og 용) */
+/**
+ * 경로를 절대 URL로 (canonical/og/JSON-LD 용).
+ * GitHub Pages는 페이지를 디렉터리 URL(/posts/x/)로 서빙하고 슬래시 없는 요청은 301로 보내므로,
+ * canonical·sitemap도 실제 서빙 형태(슬래시 있음)로 통일한다. 파일(.xml/.png 등)은 그대로.
+ */
 export function absUrl(path: string): string {
   if (path === '/') return site.baseUrl + '/'
-  return site.baseUrl + path
+  const isFile = /\.[a-z0-9]+$/i.test(path)
+  return site.baseUrl + (isFile || path.endsWith('/') ? path : path + '/')
 }

@@ -23,6 +23,7 @@ function buildPost(path: string, raw: string, kind: PostKind): Post {
   const title = typeof data.title === 'string' ? data.title : slug
   const date = typeof data.date === 'string' ? data.date.slice(0, 10) : slug.slice(0, 10)
   const categories = Array.isArray(data.categories) ? data.categories : []
+  const description = typeof data.description === 'string' && data.description ? data.description : undefined
 
   const lines = body.split('\n')
 
@@ -48,7 +49,7 @@ function buildPost(path: string, raw: string, kind: PostKind): Post {
   }
   if (excerpt.length > 130) excerpt = excerpt.slice(0, 130).trim() + '…'
 
-  return { slug, title, date, categories, subtitle, excerpt, body, kind }
+  return { slug, title, date, categories, subtitle, excerpt, description, body, kind }
 }
 
 function collect(raws: Record<string, string>, kind: PostKind): Post[] {

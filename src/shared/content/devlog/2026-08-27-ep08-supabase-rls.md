@@ -4,6 +4,7 @@ title: "서고엔 장부가 분명히 있는데, 관문은 빈손으로 돌아�
 date: 2026-08-27 09:00:00 +0900
 lang: ko
 categories: [개발일지]
+description: "Supabase에서 실제로 자주 쓰는 기능 순위와 RLS(Row Level Security) 정책 작성법 — select·insert·upsert, 관계 조회, 페이지네이션, using vs with check, auth.uid() 성능, anon/service_role, getUser vs getSession."
 ---
 
 > *「결국 매일 쓰는 건 몇 개 안 된다. 그리고 그중 하나가 매번 발목을 잡는다」*
@@ -36,7 +37,7 @@ select count(*) from public.ledger;   -- 1,204
 - **프시 사서** — 7화의 그 사서. 관리인 열쇠를 들고 있어서 뭐든 다 보인다. 그래서 이번 사건의 원인을 늦게 알아챘다.
 - **셸리** — 여전히 검은 창의 셸 정령.
 
-## 먼저, 결국 매일 쓰는 건 몇 개 안 된다
+## 먼저, 결국 매일 쓰는 건 몇 개 안 된다 — Supabase 실사용 빈도
 
 서고를 쓴 지 며칠 만에 알았다. 상회가 파는 물건은 많은데, **손이 가는 건 정해져 있다.** 견습 기준으로 정리하면 이렇다.
 
@@ -55,7 +56,7 @@ select count(*) from public.ledger;   -- 1,204
 
 > 아래 코드는 `@supabase/supabase-js` **2.112.0** 기준이다.
 
-## 1. 장부 꺼내기 — `select`
+## 1. 장부 꺼내기 — `select` 쿼리 빌더
 
 ```js
 const { data, error } = await supabase
@@ -138,7 +139,7 @@ const { count } = await supabase
 
 장부가 수십만 장이면 `count: 'exact'`가 비싸진다. 그럴 땐 `'planned'`나 `'estimated'`로 바꾼다.
 
-## 2. 장부 쓰기
+## 2. 장부 쓰기 — insert · update · upsert · delete
 
 ```js
 // 넣기 — 넣은 결과를 받으려면 .select() 를 붙여야 한다
@@ -170,7 +171,7 @@ await supabase.from('ledger').delete().eq('status','draft').maxAffected(10)
 
 지정한 수보다 많이 건드리게 되면 아예 실패시킨다. 다만 서버 버전을 타니 되는지 확인하고 쓰자.
 
-## 3. 열람 규약 (RLS) — 오늘 나를 빈손으로 돌려보낸 것
+## 3. 열람 규약(RLS, Row Level Security) — 오늘 나를 빈손으로 돌려보낸 것
 
 여기가 핵심이다.
 
@@ -286,7 +287,7 @@ rollback;
 - 브라우저에 나가는 `anon` 열쇠는 **공개돼도 되는 물건**이다. 그걸 숨기는 게 보안이 아니라, **규약이 보안**이다.
 - 공개 서가에 규약을 안 켜두면 `supabase db advisors`가 잡아준다. 7화의 검진 도구를 여기서 쓴다.
 
-## 4. 문지기 (Auth)
+## 4. 문지기 (Auth) — 로그인과 getUser vs getSession
 
 규약이 `auth.uid()`를 물어보니, 손님이 누구인지 정해주는 쪽도 있어야 한다.
 
@@ -313,7 +314,7 @@ await supabase.auth.signOut()
 
 서버에서 `getSession()`으로 신원을 판단하면 안 된다. 저장소 값은 손님이 만질 수 있으니까. 서버 코드에서는 `getUser()`다.
 
-## 5. 쿼리 빌더가 막히면 — RPC
+## 5. 쿼리 빌더가 막히면 — RPC(Postgres 함수)
 
 여러 서가를 한 번에 고치거나, 집계가 복잡하거나, 트랜잭션이 필요하면 쿼리 빌더로는 안 된다. 그럴 땐 서고 안에 함수를 만들어 두고 부른다.
 
@@ -339,7 +340,7 @@ const { data } = await supabase.rpc('close_month', { p_month: '2026-08-01' })
 
 `security invoker`와 `security definer`의 차이가 중요하다. **`invoker`는 부른 손님 자격**이라 규약이 그대로 적용되고, **`definer`는 만든 사람 자격**이라 규약을 넘어선다. 편하다고 `definer`를 남발하면 규약을 열심히 써둔 의미가 사라진다.
 
-## 6. 창고와 파발 — 솔직히 덜 쓴다
+## 6. 창고(Storage)와 파발(Realtime) — 솔직히 덜 쓴다
 
 ```js
 // 창고 (Storage)
@@ -362,7 +363,7 @@ supabase.channel('ledger-watch')
 
 파발은 **정말 실시간이 필요할 때만** 쓴다. 대시보드 숫자가 몇 초 늦게 바뀌어도 되는 곳에 붙였다가, 연결만 늘고 얻는 게 없었다. 예측하지 말고 대응하라던 원칙은 여기서도 통했다 — **필요해진 다음에** 붙이면 된다.
 
-## 자주 밟는 함정
+## 자주 밟는 함정 — 빈 배열, single(), RLS
 
 | 증상 | 진짜 원인 |
 |---|---|

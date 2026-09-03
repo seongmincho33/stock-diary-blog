@@ -11,7 +11,12 @@ const { posts, devPosts, researchNotes } = await import(join(root, 'dist-server'
 const ORIGIN = 'https://seongmincho33.github.io'
 const BASE = '/stock-diary-blog'
 const HOME = `${ORIGIN}${BASE}/`
-const abs = (p) => (p === '/' ? HOME : `${ORIGIN}${BASE}${p}`)
+// 실제 서빙 형태(디렉터리 URL = 트레일링 슬래시)로 통일. 파일(.html 등)은 그대로 — src/shared/config/site.ts 와 같은 규칙
+const abs = (p) => {
+  if (p === '/') return HOME
+  const isFile = /\.[a-z0-9]+$/i.test(p)
+  return `${ORIGIN}${BASE}${isFile || p.endsWith('/') ? p : p + '/'}`
+}
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
 /** dist/study/<slug>/**.html 을 훑어 sitemap 항목으로 */
@@ -79,7 +84,7 @@ const items = feedPosts
       <link>${postUrl(p)}</link>
       <guid isPermaLink="true">${postUrl(p)}</guid>
       <pubDate>${rfc822(p.date)}</pubDate>
-      <description>${esc(p.subtitle ? `${p.subtitle} — ${p.excerpt}` : p.excerpt)}</description>
+      <description>${esc(p.description ?? (p.subtitle ? `${p.subtitle} — ${p.excerpt}` : p.excerpt))}</description>
     </item>`,
   )
   .join('\n')

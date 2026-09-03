@@ -47,7 +47,7 @@ export function getMeta(path: string): PageMeta {
   if (postMatch) {
     const post = getPost(decodeURIComponent(postMatch[1]))
     if (post) {
-      const desc = truncate(post.subtitle ? `${post.subtitle} — ${post.excerpt}` : post.excerpt, 150)
+      const desc = post.description ?? truncate(post.subtitle ? `${post.subtitle} — ${post.excerpt}` : post.excerpt, 150)
       const canonical = absUrl(`/posts/${post.slug}`)
       return {
         title: `${post.title} · ${site.title}`,
@@ -78,7 +78,7 @@ export function getMeta(path: string): PageMeta {
   if (devMatch) {
     const post = getPost(decodeURIComponent(devMatch[1]), 'dev')
     if (post) {
-      const desc = truncate(post.subtitle ? `${post.subtitle} — ${post.excerpt}` : post.excerpt, 150)
+      const desc = post.description ?? truncate(post.subtitle ? `${post.subtitle} — ${post.excerpt}` : post.excerpt, 150)
       const canonical = absUrl(`/dev/${post.slug}`)
       // 개발일지 OG 카드는 매매일지와 파일명이 겹치지 않도록 dev- 접두사
       const ogImage = ogImageFor(`dev-${post.slug}`)
