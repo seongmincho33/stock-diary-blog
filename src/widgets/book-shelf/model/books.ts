@@ -169,6 +169,13 @@ export const books: Book[] = [
     cover: `${B}books/dev6.jpg`,
     url: 'https://product.kyobobook.co.kr/detail/S000001743834',
   },
+  {
+    category: 'dev',
+    title: '요즘 우아한 백엔드 개발',
+    author: '우아한형제들',
+    cover: `${B}books/dev7.jpg`,
+    url: 'https://product.kyobobook.co.kr/detail/S000220700975',
+  },
 ]
 
 export const bookSections: BookSection[] = [
