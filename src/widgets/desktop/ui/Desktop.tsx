@@ -1,17 +1,68 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { site } from '@/shared/config/site'
 import { Ticker } from './Ticker'
 import { Taskbar } from './Taskbar'
 
-const MENUS = [
-  ['파', '일'],
-  ['편', '집'],
-  ['보', '기'],
-  ['종', '목'],
-  ['차', '트'],
-  ['도', '움말'],
+/** 상단 탭 하나 */
+interface Tab {
+  key: string
+  label: string
+  to: string
+}
+
+const TABS: Record<string, Tab> = {
+  home: { key: 'home', label: '홈', to: '/' },
+  posts: { key: 'posts', label: '매매일지', to: '/posts' },
+  dev: { key: 'dev', label: '개발일지', to: '/dev' },
+  study: { key: 'study', label: '개발공부', to: '/study' },
+  books: { key: 'books', label: '추천도서', to: '/books' },
+  prayer: { key: 'prayer', label: '기도문', to: '/prayer' },
+  principles: { key: 'principles', label: '원칙', to: '/principles' },
+  mindset: { key: 'mindset', label: '심법', to: '/mindset' },
+  truths: { key: 'truths', label: '진리', to: '/truths' },
+  research: { key: 'research', label: '연구', to: '/research' },
+  about: { key: 'about', label: '소개', to: '/about' },
+}
+
+type GroupKey = 'stock' | 'dev' | 'company'
+
+/** 메뉴바 그룹 — 클릭하면 아래 탭 묶음이 바뀐다. hot = Win98식 단축키 밑줄 글자 */
+interface Group {
+  key: GroupKey
+  hot: string
+  rest: string
+  tabs: string[]
+}
+
+const GROUPS: Group[] = [
+  {
+    key: 'stock',
+    hot: '주',
+    rest: '식',
+    tabs: ['home', 'posts', 'study', 'books', 'prayer', 'principles', 'mindset', 'truths', 'research', 'about'],
+  },
+  { key: 'dev', hot: '개', rest: '발', tabs: ['dev', 'study'] },
+  { key: 'company', hot: '회', rest: '사', tabs: [] },
 ]
+
+/** 현재 경로가 켜는 탭. /admin 처럼 탭이 없는 경로는 null, 그 외 미매칭은 홈 */
+function activeTabKey(pathname: string): string | null {
+  const hit = Object.values(TABS).find((t) => t.to !== '/' && pathname.startsWith(t.to))
+  if (hit) return hit.key
+  if (pathname.startsWith('/admin')) return null
+  return 'home'
+}
+
+function groupHas(group: GroupKey, pathname: string): boolean {
+  const key = activeTabKey(pathname)
+  return key !== null && (GROUPS.find((g) => g.key === group)?.tabs.includes(key) ?? false)
+}
+
+/** 경로만으로 정한 기본 그룹 — 여러 그룹에 속한 탭(개발공부)은 앞선 그룹(주식) */
+function groupOf(pathname: string): GroupKey {
+  return GROUPS.find((g) => groupHas(g.key, pathname))?.key ?? 'stock'
+}
 
 function MiniCandle() {
   return (
@@ -43,29 +94,14 @@ function screenLabel(pathname: string): string {
 export function Desktop({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
   const label = screenLabel(pathname)
-  const isPosts = pathname.startsWith('/posts')
-  const isDev = pathname.startsWith('/dev')
-  const isStudy = pathname.startsWith('/study')
-  const isAbout = pathname.startsWith('/about')
-  const isBooks = pathname.startsWith('/books')
-  const isPrayer = pathname.startsWith('/prayer')
-  const isPrinciples = pathname.startsWith('/principles')
-  const isMindset = pathname.startsWith('/mindset')
-  const isTruths = pathname.startsWith('/truths')
-  const isAdmin = pathname.startsWith('/admin')
-  const isResearch = pathname.startsWith('/research')
-  const isHome =
-    !isPosts &&
-    !isDev &&
-    !isStudy &&
-    !isAbout &&
-    !isBooks &&
-    !isPrayer &&
-    !isPrinciples &&
-    !isMindset &&
-    !isTruths &&
-    !isAdmin &&
-    !isResearch
+  // 메뉴바에서 고른 그룹. null 이면 경로가 정한다. 경로가 바뀌어 고른 그룹 밖으로 나가면 자동 전환.
+  const [picked, setPicked] = useState<GroupKey | null>(null)
+  useEffect(() => {
+    setPicked((p) => (p && groupHas(p, pathname) ? p : null))
+  }, [pathname])
+  const group = picked ?? groupOf(pathname)
+  const tabKey = activeTabKey(pathname)
+  const tabs = (GROUPS.find((g) => g.key === group)?.tabs ?? []).map((k) => TABS[k])
 
   return (
     <div className="desktop">
@@ -135,13 +171,19 @@ export function Desktop({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        {/* 메뉴바 (장식 + 관리자 진입) */}
+        {/* 메뉴바 — 탭 그룹 전환(주식/개발/회사) + 관리자 진입 */}
         <div className="menubar">
-          {MENUS.map(([k, r]) => (
-            <span key={k} className="menubar__item" aria-hidden>
-              <u>{k}</u>
-              {r}
-            </span>
+          {GROUPS.map((g) => (
+            <button
+              key={g.key}
+              type="button"
+              className={`menubar__item menubar__item--group${group === g.key ? ' is-active' : ''}`}
+              aria-pressed={group === g.key}
+              onClick={() => setPicked(g.key)}
+            >
+              <u>{g.hot}</u>
+              {g.rest}
+            </button>
           ))}
           <NavLink to="/admin" className="menubar__item menubar__item--admin">
             <u>관</u>리자
@@ -151,39 +193,15 @@ export function Desktop({ children }: { children: ReactNode }) {
         {/* 탭(네비) + 티커 */}
         <div className="tabbar">
           <nav className="tabbar__tabs">
-            <NavLink to="/" className={() => `tab${isHome ? ' is-active' : ''}`}>
-              홈
-            </NavLink>
-            <NavLink to="/posts" className={() => `tab${isPosts ? ' is-active' : ''}`}>
-              매매일지
-            </NavLink>
-            <NavLink to="/dev" className={() => `tab${isDev ? ' is-active' : ''}`}>
-              개발일지
-            </NavLink>
-            <NavLink to="/study" className={() => `tab${isStudy ? ' is-active' : ''}`}>
-              개발공부
-            </NavLink>
-            <NavLink to="/books" className={() => `tab${isBooks ? ' is-active' : ''}`}>
-              추천도서
-            </NavLink>
-            <NavLink to="/prayer" className={() => `tab${isPrayer ? ' is-active' : ''}`}>
-              기도문
-            </NavLink>
-            <NavLink to="/principles" className={() => `tab${isPrinciples ? ' is-active' : ''}`}>
-              원칙
-            </NavLink>
-            <NavLink to="/mindset" className={() => `tab${isMindset ? ' is-active' : ''}`}>
-              심법
-            </NavLink>
-            <NavLink to="/truths" className={() => `tab${isTruths ? ' is-active' : ''}`}>
-              진리
-            </NavLink>
-            <NavLink to="/research" className={() => `tab${isResearch ? ' is-active' : ''}`}>
-              연구
-            </NavLink>
-            <NavLink to="/about" className={() => `tab${isAbout ? ' is-active' : ''}`}>
-              소개
-            </NavLink>
+            {tabs.length === 0 ? (
+              <span className="tab tab--dim">준비 중</span>
+            ) : (
+              tabs.map((t) => (
+                <NavLink key={t.key} to={t.to} className={() => `tab${tabKey === t.key ? ' is-active' : ''}`}>
+                  {t.label}
+                </NavLink>
+              ))
+            )}
           </nav>
           <Ticker />
         </div>
