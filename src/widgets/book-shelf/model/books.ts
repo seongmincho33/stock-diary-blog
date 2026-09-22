@@ -125,6 +125,13 @@ export const books: Book[] = [
     cover: `${B}books/book15.jpg`,
     url: 'https://ebook-product.kyobobook.co.kr/dig/epd/ebook/E000005494268',
   },
+  {
+    category: 'stock',
+    title: '설득의 심리학 1',
+    author: '로버트 치알디니',
+    cover: `${B}books/book16.jpg`,
+    url: 'https://product.kyobobook.co.kr/detail/S000201525819',
+  },
 
   // ── 개발 ────────────────────────────────────
   {
