@@ -183,6 +183,13 @@ export const books: Book[] = [
     cover: `${B}books/dev7.jpg`,
     url: 'https://product.kyobobook.co.kr/detail/S000220700975',
   },
+  {
+    category: 'dev',
+    title: '모던 소프트웨어 엔지니어링',
+    author: '데이비드 팔리',
+    cover: `${B}books/dev8.jpg`,
+    url: 'https://product.kyobobook.co.kr/detail/S000216211642',
+  },
 ]
 
 export const bookSections: BookSection[] = [
