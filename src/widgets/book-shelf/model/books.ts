@@ -190,6 +190,13 @@ export const books: Book[] = [
     cover: `${B}books/dev8.jpg`,
     url: 'https://product.kyobobook.co.kr/detail/S000216211642',
   },
+  {
+    category: 'dev',
+    title: '주니어 백엔드 개발자가 반드시 알아야 할 실무 지식',
+    author: '최범균',
+    cover: `${B}books/dev9.jpg`,
+    url: 'https://product.kyobobook.co.kr/detail/S000216376461',
+  },
 ]
 
 export const bookSections: BookSection[] = [
