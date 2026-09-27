@@ -142,6 +142,18 @@ export function getMeta(path: string): PageMeta {
     }
   }
 
+  if (path === '/books/dev') {
+    return {
+      title: `개발 추천도서 · ${site.title}`,
+      description:
+        '단타마스터의 개발 책장 — 소프트웨어 엔지니어링, 아키텍처, 인프라·배포, 분산 시스템, 백엔드 실무까지 읽고 밑줄 그은 개발서 모음.',
+      canonical: absUrl('/books/dev'),
+      ogImage: ogImageFor(),
+      ogType: 'website',
+      jsonLd: websiteJsonLd(),
+    }
+  }
+
   if (path === '/books') {
     return {
       title: `추천도서 · ${site.title}`,

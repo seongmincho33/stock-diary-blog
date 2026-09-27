@@ -1,11 +1,15 @@
-import { bookSections } from '../model/books'
+import { bookSections, type BookCategory } from '../model/books'
 
-export function BookShelf() {
+/** only 를 주면 그 갈래만 (예: 개발 탭의 /books/dev) */
+export function BookShelf({ only }: { only?: BookCategory } = {}) {
+  const sections = only ? bookSections.filter((s) => s.key === only) : bookSections
+  const title = only === 'dev' ? '개발 추천도서' : only === 'stock' ? '주식·투자 추천도서' : '추천도서'
+
   return (
     <section className="panel bookshelf">
-      <div className="panel__title">📖 단타마스터의 책장 — 추천도서</div>
+      <div className="panel__title">📖 단타마스터의 책장 — {title}</div>
       <div className="panel__body bookshelf__body">
-        {bookSections.map((sec) => (
+        {sections.map((sec) => (
           <div key={sec.key} className="bookshelf__section">
             <h2 className="bookshelf__cat">
               <span className={`bookshelf__cat-ic bookshelf__cat-ic--${sec.key}`} aria-hidden />
@@ -28,7 +32,9 @@ export function BookShelf() {
             </div>
           </div>
         ))}
-        <p className="bookshelf__note">※ 표지를 누르면 교보문고 상세페이지로 이동합니다. (투자 권유 아님)</p>
+        <p className="bookshelf__note">
+          ※ 표지를 누르면 교보문고 상세페이지로 이동합니다.{only === 'dev' ? '' : ' (투자 권유 아님)'}
+        </p>
       </div>
     </section>
   )

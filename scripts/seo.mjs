@@ -46,6 +46,7 @@ const urls = [
   { loc: abs('/study') },
   { loc: abs('/about') },
   { loc: abs('/books') },
+  { loc: abs('/books/dev') },
   { loc: abs('/prayer') },
   { loc: abs('/principles') },
   { loc: abs('/mindset') },

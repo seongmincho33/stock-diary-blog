@@ -52,6 +52,7 @@ export function AppRoutes() {
           <Route path="/study" element={<StudyPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/books" element={<BooksPage />} />
+          <Route path="/books/dev" element={<BooksPage only="dev" />} />
           <Route path="/prayer" element={<PrayerPage />} />
           <Route path="/principles" element={<CreedPage slug="principles" />} />
           <Route path="/mindset" element={<CreedPage slug="mindset" />} />

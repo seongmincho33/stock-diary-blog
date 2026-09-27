@@ -1,9 +1,9 @@
-import { BookShelf } from '@/widgets/book-shelf'
+import { BookShelf, type BookCategory } from '@/widgets/book-shelf'
 
-export function BooksPage() {
+export function BooksPage({ only }: { only?: BookCategory } = {}) {
   return (
     <div className="screen">
-      <BookShelf />
+      <BookShelf only={only} />
     </div>
   )
 }

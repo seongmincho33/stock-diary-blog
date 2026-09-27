@@ -17,6 +17,7 @@ const TABS: Record<string, Tab> = {
   dev: { key: 'dev', label: '개발일지', to: '/dev' },
   study: { key: 'study', label: '개발공부', to: '/study' },
   books: { key: 'books', label: '추천도서', to: '/books' },
+  booksDev: { key: 'booksDev', label: '추천도서', to: '/books/dev' },
   prayer: { key: 'prayer', label: '기도문', to: '/prayer' },
   principles: { key: 'principles', label: '원칙', to: '/principles' },
   mindset: { key: 'mindset', label: '심법', to: '/mindset' },
@@ -40,15 +41,18 @@ const GROUPS: Group[] = [
     key: 'stock',
     hot: '주',
     rest: '식',
-    tabs: ['home', 'posts', 'study', 'books', 'prayer', 'principles', 'mindset', 'truths', 'research', 'about'],
+    tabs: ['home', 'posts', 'books', 'prayer', 'principles', 'mindset', 'truths', 'research', 'about'],
   },
-  { key: 'dev', hot: '개', rest: '발', tabs: ['dev', 'study'] },
+  { key: 'dev', hot: '개', rest: '발', tabs: ['dev', 'study', 'booksDev'] },
   { key: 'company', hot: '회', rest: '사', tabs: [] },
 ]
 
 /** 현재 경로가 켜는 탭. /admin 처럼 탭이 없는 경로는 null, 그 외 미매칭은 홈 */
 function activeTabKey(pathname: string): string | null {
-  const hit = Object.values(TABS).find((t) => t.to !== '/' && pathname.startsWith(t.to))
+  // 최장 prefix 우선 — /books/dev 가 /books 보다 먼저 잡혀야 한다
+  const hit = Object.values(TABS)
+    .filter((t) => t.to !== '/' && pathname.startsWith(t.to))
+    .sort((a, b) => b.to.length - a.to.length)[0]
   if (hit) return hit.key
   if (pathname.startsWith('/admin')) return null
   return 'home'
