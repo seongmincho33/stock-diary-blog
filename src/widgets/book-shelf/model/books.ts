@@ -132,6 +132,13 @@ export const books: Book[] = [
     cover: `${B}books/book16.jpg`,
     url: 'https://product.kyobobook.co.kr/detail/S000201525819',
   },
+  {
+    category: 'stock',
+    title: '히스토리아 비테이',
+    author: '최재천',
+    cover: `${B}books/book17.jpg`,
+    url: 'https://ebook-product.kyobobook.co.kr/dig/epd/ebook/E000013289567',
+  },
 
   // ── 개발 ────────────────────────────────────
   {
