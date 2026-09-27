@@ -119,6 +119,18 @@ export function getMeta(path: string): PageMeta {
     }
   }
 
+  if (path === '/hantu') {
+    return {
+      title: `한투마스터 — 직접 만든 주식 데스크톱 앱 · ${site.title}`,
+      description:
+        '한국투자증권(KIS) Open API로 직접 만든 개인용 주식 데스크톱 앱 한투마스터. 보유 현황·관심종목·차트·팩터모델·매크로·레짐 플레이북·지수투자. Tauri·React·Rust·PostgreSQL. 주문/자동매매 없는 시세 조회 전용.',
+      canonical: absUrl('/hantu'),
+      ogImage: ogImageFor(),
+      ogType: 'website',
+      jsonLd: websiteJsonLd(),
+    }
+  }
+
   if (path === '/study') {
     return {
       title: `개발공부 · ${site.title}`,

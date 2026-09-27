@@ -17,6 +17,7 @@ function Clock() {
 const START_ITEMS = [
   { label: '홈', to: '/', ic: '#1186d6' },
   { label: '매매일지', to: '/posts', ic: '#ffd54a' },
+  { label: '한투마스터', to: '/hantu', ic: '#1f9d8f' },
   { label: '개발일지', to: '/dev', ic: '#0b7285' },
   { label: '개발공부', to: '/study', ic: '#0b6e4f' },
   { label: '추천도서', to: '/books', ic: '#b58900' },

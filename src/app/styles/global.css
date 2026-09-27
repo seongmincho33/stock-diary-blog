@@ -1447,6 +1447,163 @@ img {
 }
 
 /* =========================================================
+   한투마스터 — 직접 만든 프로그램 소개/홍보
+   ========================================================= */
+/* 프로그램 아이콘 — 녹색 시세창에 캔들 3개 (flat 픽셀) */
+.hantu__ic,
+.hantu-promo__ic {
+  flex: none;
+  display: block;
+  width: 46px;
+  height: 46px;
+  background: #0b1a12;
+  box-shadow: inset -1px -1px #000, inset 1px 1px var(--gray), inset -2px -2px #000, inset 2px 2px #2a3a30;
+  position: relative;
+}
+.hantu__ic::before,
+.hantu-promo__ic::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  bottom: 10px;
+  width: 6px;
+  height: 14px;
+  background: var(--up);
+  box-shadow: 11px -6px 0 0 var(--down), 22px 4px 0 0 var(--up);
+}
+.hantu__ic::after,
+.hantu-promo__ic::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  height: 2px;
+  background: #2f8f5b;
+}
+
+/* 홈 홍보 카드 */
+.hantu-promo__body {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.hantu-promo__tx {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+.hantu-promo__lead {
+  margin: 0 0 5px;
+  line-height: 1.6;
+}
+.hantu-promo__sub {
+  margin: 0;
+  font-size: 11px;
+  color: #777;
+}
+.hantu-promo__btn {
+  flex: none;
+}
+
+/* 소개 페이지 */
+.hantu .panel + .panel {
+  margin-top: 14px;
+}
+.hantu__head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.hantu__id {
+  min-width: 0;
+}
+.hantu__name {
+  margin: 0;
+  font-family: var(--font-head);
+  font-size: 21px;
+  font-weight: normal;
+  color: var(--navy);
+}
+.hantu__tagline {
+  margin: 3px 0 0;
+  color: #444;
+}
+.hantu__ver {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: #888;
+}
+.hantu__summary {
+  margin: 0 0 10px;
+  line-height: 1.7;
+}
+.hantu__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.hantu__menus {
+  display: grid;
+  gap: 1px;
+}
+.hantu__menu {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 10px;
+  padding: 7px 4px;
+  border-bottom: 1px solid #ededed;
+}
+.hantu__menu-lb {
+  color: var(--navy);
+  font-weight: bold;
+}
+.hantu__menu-ds {
+  color: #333;
+  line-height: 1.6;
+}
+.hantu__dl-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.hantu__dl-btn {
+  font-family: var(--font-head);
+}
+.btn-98.is-disabled {
+  color: #808080;
+  text-shadow: 1px 1px #fff;
+  cursor: default;
+}
+.hantu__req {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: #555;
+}
+.hantu__note {
+  margin: 0;
+  font-size: 11px;
+  color: #888;
+  line-height: 1.6;
+}
+.hantu__disc {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.7;
+}
+.hantu__disc li {
+  margin: 4px 0;
+}
+@media (max-width: 520px) {
+  .hantu__menu {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
+/* =========================================================
    개발공부 — 테마별 문서 묶음 목록
    ========================================================= */
 .study-list .hts-list__head {

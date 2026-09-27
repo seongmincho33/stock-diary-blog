@@ -30,6 +30,7 @@ export function getStaticPaths(): string[] {
     '/posts',
     '/dev',
     '/study',
+    '/hantu',
     '/about',
     '/books',
     '/books/dev',

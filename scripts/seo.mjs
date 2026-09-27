@@ -44,6 +44,7 @@ const urls = [
   { loc: abs('/posts'), lastmod: posts[0]?.date },
   { loc: abs('/dev'), lastmod: devPosts[0]?.date },
   { loc: abs('/study') },
+  { loc: abs('/hantu') },
   { loc: abs('/about') },
   { loc: abs('/books') },
   { loc: abs('/books/dev') },

@@ -14,6 +14,7 @@ interface Tab {
 const TABS: Record<string, Tab> = {
   home: { key: 'home', label: '홈', to: '/' },
   posts: { key: 'posts', label: '매매일지', to: '/posts' },
+  hantu: { key: 'hantu', label: '한투마스터', to: '/hantu' },
   dev: { key: 'dev', label: '개발일지', to: '/dev' },
   study: { key: 'study', label: '개발공부', to: '/study' },
   books: { key: 'books', label: '추천도서', to: '/books' },
@@ -41,7 +42,7 @@ const GROUPS: Group[] = [
     key: 'stock',
     hot: '주',
     rest: '식',
-    tabs: ['home', 'posts', 'books', 'prayer', 'principles', 'mindset', 'truths', 'research', 'about'],
+    tabs: ['home', 'posts', 'hantu', 'books', 'prayer', 'principles', 'mindset', 'truths', 'research', 'about'],
   },
   { key: 'dev', hot: '개', rest: '발', tabs: ['dev', 'study', 'booksDev'] },
   { key: 'company', hot: '회', rest: '사', tabs: [] },
@@ -84,6 +85,7 @@ function screenLabel(pathname: string): string {
   if (/^\/dev\/.+/.test(pathname)) return '글 보기' // /dev/<슬러그> (개별 글)
   if (pathname.startsWith('/dev')) return '개발일지' // /dev, /dev/ (목록)
   if (pathname.startsWith('/study')) return '개발공부'
+  if (pathname.startsWith('/hantu')) return '한투마스터'
   if (pathname.startsWith('/about')) return '소개'
   if (pathname.startsWith('/books')) return '추천도서'
   if (pathname.startsWith('/prayer')) return '기도문'

@@ -7,6 +7,7 @@ import { PostPage } from '@/pages/post'
 import { DevListPage } from '@/pages/dev-list'
 import { DevPostPage } from '@/pages/dev-post'
 import { StudyPage } from '@/pages/study'
+import { HantuPage } from '@/pages/hantu'
 import { AboutPage } from '@/pages/about'
 import { BooksPage } from '@/pages/books'
 import { PrayerPage } from '@/pages/prayer'
@@ -50,6 +51,7 @@ export function AppRoutes() {
           <Route path="/dev" element={<DevListPage />} />
           <Route path="/dev/:slug" element={<DevPostPage />} />
           <Route path="/study" element={<StudyPage />} />
+          <Route path="/hantu" element={<HantuPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/books" element={<BooksPage />} />
           <Route path="/books/dev" element={<BooksPage only="dev" />} />
